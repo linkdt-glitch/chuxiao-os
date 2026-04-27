@@ -1,0 +1,291 @@
+import { revalidatePath } from "next/cache";
+import { approveApproval, createApproval, rejectApproval } from "@/lib/approvals";
+import { logAction } from "@/lib/audit";
+import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
+import { emitEvent } from "@/lib/events";
+import { canApproveFinance, getFinanceScope } from "@/lib/finance/permissions";
+import { demoFinanceAccounts } from "@/lib/finance/accounts";
+import { demoFinanceCategories } from "@/lib/finance/categories";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { FinanceRecord, FinanceRecordInput, FinanceRecordStatus, FinanceRecordType } from "@/lib/finance/types";
+
+const now = new Date("2026-04-25T10:00:00.000Z").toISOString();
+
+export const demoFinanceRecords: FinanceRecord[] = [
+  {
+    id: "fin_001",
+    organization_id: "org_qiming",
+    record_no: "FIN-202604-0001",
+    record_type: "expense",
+    status: "approved",
+    amount: 680,
+    currency: "CNY",
+    occurred_at: "2026-04-25",
+    category_id: "cat_product",
+    subcategory_id: "cat_sample",
+    account_id: "acc_wechat",
+    payment_method: "微信支付",
+    counterparty_name: "供应商",
+    description: "支付供应商打样费",
+    quantity: 1,
+    project_name: "新款产品开发",
+    submitted_by: "mem_founder",
+    member_id: "mem_founder",
+    reimbursement_required: true,
+    reimbursed: false,
+    risk_level: "low",
+    source: "ai_parse",
+    metadata: { notes: "演示数据" },
+    created_at: now,
+    updated_at: now,
+    category: demoFinanceCategories[2],
+    subcategory: demoFinanceCategories[2].children?.[0],
+    account: demoFinanceAccounts[2],
+    submitter: { id: "mem_founder", display_name: "创始人" }
+  },
+  {
+    id: "fin_002",
+    organization_id: "org_qiming",
+    record_no: "FIN-202604-0002",
+    record_type: "income",
+    status: "approved",
+    amount: 16800,
+    currency: "CNY",
+    occurred_at: "2026-04-22",
+    category_id: "cat_sales",
+    account_id: "acc_bank",
+    payment_method: "银行转账",
+    counterparty_name: "客户 A",
+    description: "产品销售收入",
+    quantity: 1,
+    submitted_by: "mem_founder",
+    member_id: "mem_founder",
+    reimbursement_required: false,
+    reimbursed: false,
+    risk_level: "low",
+    source: "manual",
+    metadata: {},
+    created_at: now,
+    updated_at: now,
+    category: demoFinanceCategories[0],
+    account: demoFinanceAccounts[1],
+    submitter: { id: "mem_founder", display_name: "创始人" }
+  }
+];
+
+function normalizeRecord(row: Record<string, unknown>): FinanceRecord {
+  return {
+    ...(row as unknown as FinanceRecord),
+    category: (row.category ?? null) as FinanceRecord["category"],
+    subcategory: (row.subcategory ?? null) as FinanceRecord["subcategory"],
+    account: (row.account ?? null) as FinanceRecord["account"],
+    submitter: (row.submitter ?? null) as FinanceRecord["submitter"],
+    approver: (row.approver ?? null) as FinanceRecord["approver"]
+  };
+}
+
+async function nextRecordNo() {
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  const date = new Date();
+  const month = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
+  if (!supabase) return `FIN-${month}-${String(demoFinanceRecords.length + 1).padStart(4, "0")}`;
+
+  const { count } = await supabase
+    .from("finance_records")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organization.id)
+    .gte("created_at", `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`);
+
+  return `FIN-${month}-${String((count ?? 0) + 1).padStart(4, "0")}`;
+}
+
+async function applyAccountMovement(record: Pick<FinanceRecord, "account_id" | "record_type" | "amount">) {
+  if (!record.account_id) return;
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return;
+
+  const delta = record.record_type === "income" || record.record_type === "refund" ? Number(record.amount) : -Number(record.amount);
+  const { data: account } = await supabase.from("finance_accounts").select("current_balance").eq("id", record.account_id).single();
+  if (!account) return;
+  await supabase
+    .from("finance_accounts")
+    .update({ current_balance: Number(account.current_balance) + delta })
+    .eq("id", record.account_id);
+}
+
+export async function getFinanceRecords(filters?: {
+  record_type?: FinanceRecordType | "all";
+  status?: FinanceRecordStatus | "all";
+  date_from?: string;
+  date_to?: string;
+  category_id?: string;
+  member_id?: string;
+  limit?: number;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  const scope = await getFinanceScope();
+  if (!supabase) return demoFinanceRecords.slice(0, filters?.limit ?? demoFinanceRecords.length);
+
+  let query = supabase
+    .from("finance_records")
+    .select("*, category:finance_categories!finance_records_category_id_fkey(*), subcategory:finance_categories!finance_records_subcategory_id_fkey(*), account:finance_accounts(*), submitter:organization_members!finance_records_submitted_by_fkey(id,display_name,email), approver:organization_members!finance_records_approved_by_fkey(id,display_name,email)")
+    .eq("organization_id", organization.id)
+    .order("occurred_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (scope.scope === "own") query = query.or(`submitted_by.eq.${scope.member.id},member_id.eq.${scope.member.id}`);
+  if (filters?.record_type && filters.record_type !== "all") query = query.eq("record_type", filters.record_type);
+  if (filters?.status && filters.status !== "all") query = query.eq("status", filters.status);
+  if (filters?.date_from) query = query.gte("occurred_at", filters.date_from);
+  if (filters?.date_to) query = query.lte("occurred_at", filters.date_to);
+  if (filters?.category_id) query = query.eq("category_id", filters.category_id);
+  if (filters?.member_id) query = query.eq("submitted_by", filters.member_id);
+  if (filters?.limit) query = query.limit(filters.limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).map((item) => normalizeRecord(item));
+}
+
+export async function getFinanceRecord(id: string) {
+  const records = await getFinanceRecords();
+  return records.find((record) => record.id === id) ?? null;
+}
+
+export async function createFinanceRecord(input: FinanceRecordInput) {
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  const member = await getCurrentMember();
+  const status: FinanceRecordStatus = input.submit_for_approval || input.status === "pending_approval" ? "pending_approval" : input.status ?? "draft";
+
+  const payload = {
+    organization_id: organization.id,
+    record_no: await nextRecordNo(),
+    record_type: input.record_type,
+    status,
+    amount: input.amount,
+    currency: input.currency || "CNY",
+    occurred_at: input.occurred_at || new Date().toISOString().slice(0, 10),
+    category_id: input.category_id || null,
+    subcategory_id: input.subcategory_id || null,
+    account_id: input.account_id || null,
+    payment_method: input.payment_method || null,
+    counterparty_name: input.counterparty_name || null,
+    description: input.description,
+    quantity: input.quantity ?? 1,
+    project_name: input.project_name || null,
+    member_id: input.member_id || member.id,
+    submitted_by: member.id,
+    reimbursement_required: Boolean(input.reimbursement_required),
+    reimbursed: Boolean(input.reimbursed),
+    risk_level: input.risk_level || "low",
+    source: input.source || "manual",
+    metadata: input.metadata ?? {}
+  };
+
+  if (!supabase) return { ...payload, id: "demo_created", created_at: now, updated_at: now } as FinanceRecord;
+
+  const { data, error } = await supabase.from("finance_records").insert(payload).select().single();
+  if (error) throw error;
+
+  let record = data as FinanceRecord;
+  if (status === "pending_approval") {
+    record = await submitFinanceRecord(record.id);
+  } else {
+    await logAction({ event_key: "finance.record.created", action: "create", module: "finance", related_record_type: "finance_record", related_record_id: record.id, after_data: record as unknown as Record<string, unknown> });
+    await emitEvent({ event_key: "finance.record.created", module: "finance", payload: { id: record.id, record_no: record.record_no, amount: record.amount } });
+  }
+
+  revalidatePath("/finance");
+  revalidatePath("/finance/records");
+  return record;
+}
+
+export async function updateFinanceRecord(id: string, input: Partial<FinanceRecordInput>) {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: true };
+
+  const { data: before } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  const { data, error } = await supabase.from("finance_records").update(input).eq("id", id).select().single();
+  if (error) throw error;
+
+  await logAction({ event_key: "finance.record.updated", action: "update", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
+  await emitEvent({ event_key: "finance.record.updated", module: "finance", payload: { id } });
+  if (input.status === "paid" && before.status !== "paid") {
+    await applyAccountMovement(data as FinanceRecord);
+    await logAction({ event_key: "finance.record.paid", action: "paid", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
+    await emitEvent({ event_key: "finance.record.paid", module: "finance", payload: { id, amount: data.amount } });
+  }
+  revalidatePath("/finance/records");
+  return data as FinanceRecord;
+}
+
+export async function submitFinanceRecord(id: string) {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return demoFinanceRecords[0];
+
+  const { data: record, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  if (readError) throw readError;
+
+  const approval = await createApproval({
+    title: `财务审批 ${record.record_no}`,
+    description: `${record.description}，金额 ${record.amount} ${record.currency}`,
+    related_module: "finance",
+    related_record_type: "finance_record",
+    related_record_id: record.id,
+    risk_level: record.risk_level,
+    metadata: { amount: record.amount, currency: record.currency, record_type: record.record_type }
+  });
+
+  const { data, error } = await supabase
+    .from("finance_records")
+    .update({ status: "pending_approval", approval_request_id: "id" in approval ? approval.id : null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  await logAction({ event_key: "finance.record.submitted", action: "submit", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: record, after_data: data });
+  await emitEvent({ event_key: "finance.record.submitted", module: "finance", payload: { id, approval_request_id: data.approval_request_id } });
+  revalidatePath("/finance");
+  revalidatePath("/finance/reimbursements");
+  return data as FinanceRecord;
+}
+
+export async function approveFinanceRecord(id: string) {
+  if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
+  const supabase = await createSupabaseServerClient();
+  const member = await getCurrentMember();
+  if (!supabase) return { ok: true };
+
+  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  if (readError) throw readError;
+  if (before.approval_request_id) await approveApproval(before.approval_request_id);
+
+  const { data, error } = await supabase.from("finance_records").update({ status: "approved", approved_by: member.id }).eq("id", id).select().single();
+  if (error) throw error;
+  await logAction({ event_key: "finance.record.approved", action: "approve", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
+  await emitEvent({ event_key: "finance.record.approved", module: "finance", payload: { id } });
+  revalidatePath("/finance/reimbursements");
+  return data as FinanceRecord;
+}
+
+export async function rejectFinanceRecord(id: string, reason?: string) {
+  if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: true };
+
+  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  if (readError) throw readError;
+  if (before.approval_request_id) await rejectApproval(before.approval_request_id);
+
+  const metadata = { ...(before.metadata ?? {}), reject_reason: reason ?? "" };
+  const { data, error } = await supabase.from("finance_records").update({ status: "rejected", metadata }).eq("id", id).select().single();
+  if (error) throw error;
+  await logAction({ event_key: "finance.record.rejected", action: "reject", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
+  await emitEvent({ event_key: "finance.record.rejected", module: "finance", payload: { id, reason } });
+  revalidatePath("/finance/reimbursements");
+  return data as FinanceRecord;
+}

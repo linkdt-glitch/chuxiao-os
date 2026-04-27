@@ -157,7 +157,7 @@ export type CompanyFile = {
 export type AIProvider = {
   id: string;
   organization_id: string;
-  provider_name: "openai" | "anthropic" | "google" | "local";
+  provider_name: "openai" | "anthropic" | "google" | "local" | "deepseek";
   label: string;
   base_url?: string | null;
   model_name: string;

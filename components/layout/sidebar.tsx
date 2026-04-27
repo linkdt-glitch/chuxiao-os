@@ -32,8 +32,8 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex min-w-0 items-center gap-3">
           <div className="brand-glow flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-950">
             <Image
-              src="/brand/kairosmini-mark.png"
-              alt="Kairosmini"
+              src="/brand/chuxiao-mark.png"
+              alt="初晓 OS"
               width={44}
               height={44}
               className="h-full w-full object-cover object-top"
@@ -41,7 +41,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
           </div>
           <div className="min-w-0">
             <div className="truncate bg-gradient-to-r from-slate-950 via-cyan-700 to-teal-500 bg-clip-text text-sm font-semibold text-transparent">
-              Kairosmini OS
+              初晓 OS 系统
             </div>
             <div className="text-xs text-muted-foreground">AI 自进化组织系统</div>
           </div>

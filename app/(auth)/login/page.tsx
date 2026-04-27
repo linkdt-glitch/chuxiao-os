@@ -8,18 +8,18 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md overflow-hidden">
         <CardHeader className="items-center text-center">
-          <div className="brand-glow mb-2 flex h-36 w-full max-w-xs items-center justify-center overflow-hidden rounded-lg bg-white/78 p-3">
+          <div className="brand-glow mb-2 flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-slate-950/95">
             <Image
-              src="/brand/kairosmini-logo.png"
-              alt="Kairosmini"
-              width={260}
-              height={180}
+              src="/brand/chuxiao-mark.png"
+              alt="初晓 OS"
+              width={96}
+              height={96}
               priority
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           </div>
-          <CardTitle>Kairosmini OS</CardTitle>
-          <CardDescription>登录 AI Company OS；邮箱登录后进入组织工作台。</CardDescription>
+          <CardTitle>初晓 OS 系统</CardTitle>
+          <CardDescription>登录初晓 OS；邮箱登录后进入组织工作台。</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

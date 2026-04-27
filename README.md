@@ -61,7 +61,7 @@ SILICONFLOW_API_KEY=
 
 1. 创建 Supabase 项目。
 2. 按文件名顺序执行 `supabase/migrations/*.sql`。
-3. 执行 `supabase/seed.sql` 初始化示例组织和模块。
+3. 生产环境不要执行 `supabase/seed.sql`，它只用于本地演示数据。
 4. 最新增量 migration 会创建私有 Storage bucket：`company-assets` 和对象级 RLS。
 5. 在 Supabase Auth 中启用 Email OTP / Magic Link。
 6. 将回调地址加入 Auth Redirect URLs：`http://localhost:3000/auth/callback` 和生产域名 `/auth/callback`。

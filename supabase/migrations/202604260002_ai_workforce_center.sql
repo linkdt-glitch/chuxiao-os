@@ -360,43 +360,48 @@ join public.permissions p on p.key in (
 where r.key = 'agent'
 on conflict (role_id, permission_id) do nothing;
 
-insert into public.agents (id, organization_id, name, description, owner_user_id, permission_level, allowed_modules, allowed_tools, config, status)
-values
-  ('50000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000001', '项目助理 Agent', '总结任务、生成周报、识别延期风险。', '00000000-0000-4000-8000-000000000003', 'L2', '["projects"]'::jsonb, '["summarize","draft_weekly_report","identify_risks"]'::jsonb, '{"require_human_confirm":true}'::jsonb, 'active'),
-  ('50000000-0000-4000-8000-000000000102', '10000000-0000-4000-8000-000000000001', 'Prompt 优化 Agent', '分析 Prompt 使用效果并提出优化建议。', '00000000-0000-4000-8000-000000000003', 'L1', '["ai_workforce"]'::jsonb, '["analyze_feedback","suggest_prompt_changes"]'::jsonb, '{"require_human_confirm":false}'::jsonb, 'active')
-on conflict (id) do nothing;
+do $$
+begin
+  if exists (select 1 from public.organizations where id = '10000000-0000-4000-8000-000000000001') then
+    insert into public.agents (id, organization_id, name, description, owner_user_id, permission_level, allowed_modules, allowed_tools, config, status)
+    values
+      ('50000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000001', '项目助理 Agent', '总结任务、生成周报、识别延期风险。', '00000000-0000-4000-8000-000000000003', 'L2', '["projects"]'::jsonb, '["summarize","draft_weekly_report","identify_risks"]'::jsonb, '{"require_human_confirm":true}'::jsonb, 'active'),
+      ('50000000-0000-4000-8000-000000000102', '10000000-0000-4000-8000-000000000001', 'Prompt 优化 Agent', '分析 Prompt 使用效果并提出优化建议。', '00000000-0000-4000-8000-000000000003', 'L1', '["ai_workforce"]'::jsonb, '["analyze_feedback","suggest_prompt_changes"]'::jsonb, '{"require_human_confirm":false}'::jsonb, 'active')
+    on conflict (id) do nothing;
 
-update public.agents
-set permission_level = 'L1',
-    allowed_modules = '["finance"]'::jsonb,
-    description = '分析收入、支出、利润和异常。'
-where id = '50000000-0000-4000-8000-000000000001';
+    update public.agents
+    set permission_level = 'L1',
+        allowed_modules = '["finance"]'::jsonb,
+        description = '分析收入、支出、利润和异常。'
+    where id = '50000000-0000-4000-8000-000000000001';
 
-insert into public.prompt_templates (id, organization_id, name, description, scenario, module, tags, input_variables, output_format, quality_criteria, current_version, status, owner_id)
-values
-  ('a1000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '财务异常分析 Prompt', '用于分析收入、支出、利润和异常波动。', '财务月度分析', 'finance', array['finance','analysis'], '[{"name":"period","type":"string"},{"name":"records","type":"array"}]'::jsonb, '结构化摘要、异常原因、建议动作', '结论可追溯；不得编造金额；风险动作只给建议。', '1.0', 'published', '00000000-0000-4000-8000-000000000003'),
-  ('a1000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '项目周报生成 Prompt', '汇总项目进度、风险和下周计划。', '项目周报', 'projects', array['projects','weekly'], '[{"name":"project","type":"string"},{"name":"tasks","type":"array"}]'::jsonb, '本周完成、风险、下周计划', '表达清晰；风险要有责任人与截止时间。', '1.0', 'published', '00000000-0000-4000-8000-000000000003'),
-  ('a1000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '任务拆解 Prompt', '把目标拆成可执行任务建议。', '任务拆解', 'projects', array['projects','tasks'], '[{"name":"goal","type":"string"},{"name":"constraints","type":"string"}]'::jsonb, '任务列表、优先级、依赖关系', '任务需可执行；不得直接创建正式任务。', '1.0', 'draft', '00000000-0000-4000-8000-000000000003'),
-  ('a1000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Prompt 优化建议 Prompt', '根据反馈和运行结果提出 Prompt 优化建议。', 'Prompt 质量优化', 'ai_workforce', array['prompt','improvement'], '[{"name":"prompt","type":"string"},{"name":"feedback","type":"array"}]'::jsonb, '问题诊断、修改建议、验证方法', '建议要具体；必须保留风险边界。', '1.0', 'published', '00000000-0000-4000-8000-000000000003')
-on conflict (id) do nothing;
+    insert into public.prompt_templates (id, organization_id, name, description, scenario, module, tags, input_variables, output_format, quality_criteria, current_version, status, owner_id)
+    values
+      ('a1000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '财务异常分析 Prompt', '用于分析收入、支出、利润和异常波动。', '财务月度分析', 'finance', array['finance','analysis'], '[{"name":"period","type":"string"},{"name":"records","type":"array"}]'::jsonb, '结构化摘要、异常原因、建议动作', '结论可追溯；不得编造金额；风险动作只给建议。', '1.0', 'published', '00000000-0000-4000-8000-000000000003'),
+      ('a1000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '项目周报生成 Prompt', '汇总项目进度、风险和下周计划。', '项目周报', 'projects', array['projects','weekly'], '[{"name":"project","type":"string"},{"name":"tasks","type":"array"}]'::jsonb, '本周完成、风险、下周计划', '表达清晰；风险要有责任人与截止时间。', '1.0', 'published', '00000000-0000-4000-8000-000000000003'),
+      ('a1000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '任务拆解 Prompt', '把目标拆成可执行任务建议。', '任务拆解', 'projects', array['projects','tasks'], '[{"name":"goal","type":"string"},{"name":"constraints","type":"string"}]'::jsonb, '任务列表、优先级、依赖关系', '任务需可执行；不得直接创建正式任务。', '1.0', 'draft', '00000000-0000-4000-8000-000000000003'),
+      ('a1000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Prompt 优化建议 Prompt', '根据反馈和运行结果提出 Prompt 优化建议。', 'Prompt 质量优化', 'ai_workforce', array['prompt','improvement'], '[{"name":"prompt","type":"string"},{"name":"feedback","type":"array"}]'::jsonb, '问题诊断、修改建议、验证方法', '建议要具体；必须保留风险边界。', '1.0', 'published', '00000000-0000-4000-8000-000000000003')
+    on conflict (id) do nothing;
 
-insert into public.prompt_versions (id, organization_id, prompt_template_id, version, content, change_note)
-values
-  ('a2000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', '1.0', '你是财务分析 Agent。基于输入 period 和 records，识别收入、支出、利润异常，只输出建议，不修改数据。', '初始版本'),
-  ('a2000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000002', '1.0', '你是项目助理 Agent。基于项目和任务列表生成周报，标记延期风险和需要人类确认的事项。', '初始版本'),
-  ('a2000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000003', '1.0', '你是任务拆解助手。把目标拆解为任务建议，输出标题、说明、优先级和依赖，不直接创建正式任务。', '初始版本'),
-  ('a2000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000004', '1.0', '你是 Prompt 优化 Agent。根据 Prompt 内容、测试输出和反馈评分，提出可验证的优化建议。', '初始版本')
-on conflict (prompt_template_id, version) do nothing;
+    insert into public.prompt_versions (id, organization_id, prompt_template_id, version, content, change_note)
+    values
+      ('a2000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', '1.0', '你是财务分析 Agent。基于输入 period 和 records，识别收入、支出、利润异常，只输出建议，不修改数据。', '初始版本'),
+      ('a2000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000002', '1.0', '你是项目助理 Agent。基于项目和任务列表生成周报，标记延期风险和需要人类确认的事项。', '初始版本'),
+      ('a2000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000003', '1.0', '你是任务拆解助手。把目标拆解为任务建议，输出标题、说明、优先级和依赖，不直接创建正式任务。', '初始版本'),
+      ('a2000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000004', '1.0', '你是 Prompt 优化 Agent。根据 Prompt 内容、测试输出和反馈评分，提出可验证的优化建议。', '初始版本')
+    on conflict (prompt_template_id, version) do nothing;
 
-insert into public.agent_prompt_bindings (organization_id, agent_id, prompt_template_id, prompt_version_id, is_active)
-values
-  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000001', true),
-  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', 'a2000000-0000-4000-8000-000000000002', true),
-  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000102', 'a1000000-0000-4000-8000-000000000004', 'a2000000-0000-4000-8000-000000000004', true)
-on conflict (agent_id, prompt_template_id, prompt_version_id) do nothing;
+    insert into public.agent_prompt_bindings (organization_id, agent_id, prompt_template_id, prompt_version_id, is_active)
+    values
+      ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000001', true),
+      ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', 'a2000000-0000-4000-8000-000000000002', true),
+      ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000102', 'a1000000-0000-4000-8000-000000000004', 'a2000000-0000-4000-8000-000000000004', true)
+    on conflict (agent_id, prompt_template_id, prompt_version_id) do nothing;
 
-insert into public.ai_confirmation_requests (id, organization_id, agent_id, prompt_template_id, requester_id, requester_type, related_module, related_record_type, related_record_id, action_type, risk_level, title, description, input_data, proposed_output, status)
-values
-  ('a3000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000101', 'agent', 'projects', 'task_suggestion', 'seed-task-suggestion-001', 'create_tasks', 'medium', 'Agent 建议创建 3 个任务', '项目助理 Agent 基于延期风险建议创建 3 个内部任务。', '{"project":"官网改版"}'::jsonb, '{"tasks":["补齐验收标准","确认设计稿冻结时间","安排上线前回归测试"]}'::jsonb, 'pending'),
-  ('a3000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000101', 'agent', 'marketing', 'external_content', 'seed-content-001', 'publish_external_content', 'high', 'Agent 建议发布一段对外内容草稿', '对外发布前必须由人类确认，高风险可进入审批中心。', '{"channel":"公众号"}'::jsonb, '{"draft":"本周我们完成了智能劳动力中心 MVP 的核心能力升级。"}'::jsonb, 'pending')
-on conflict (id) do nothing;
+    insert into public.ai_confirmation_requests (id, organization_id, agent_id, prompt_template_id, requester_id, requester_type, related_module, related_record_type, related_record_id, action_type, risk_level, title, description, input_data, proposed_output, status)
+    values
+      ('a3000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000101', 'agent', 'projects', 'task_suggestion', 'seed-task-suggestion-001', 'create_tasks', 'medium', 'Agent 建议创建 3 个任务', '项目助理 Agent 基于延期风险建议创建 3 个内部任务。', '{"project":"官网改版"}'::jsonb, '{"tasks":["补齐验收标准","确认设计稿冻结时间","安排上线前回归测试"]}'::jsonb, 'pending'),
+      ('a3000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000101', 'agent', 'marketing', 'external_content', 'seed-content-001', 'publish_external_content', 'high', 'Agent 建议发布一段对外内容草稿', '对外发布前必须由人类确认，高风险可进入审批中心。', '{"channel":"公众号"}'::jsonb, '{"draft":"本周我们完成了智能劳动力中心 MVP 的核心能力升级。"}'::jsonb, 'pending')
+    on conflict (id) do nothing;
+  end if;
+end $$;

@@ -45,9 +45,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_ENABLE_DEMO_MODE=false
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` 仅用于服务端首次登录后的组织初始化，不要暴露到浏览器。
+生产环境默认不要开启 demo 模式；只有临时演示时才把 `NEXT_PUBLIC_ENABLE_DEMO_MODE` 设为 `true`。
 
 ## Supabase 配置
 

@@ -1,6 +1,22 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoMembers, demoOrganization, demoUser } from "@/lib/data/demo";
 
+export function isDemoModeEnabled() {
+  return (
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true" ||
+    process.env.ENABLE_DEMO_MODE === "true" ||
+    process.env.NODE_ENV !== "production"
+  );
+}
+
+export async function getSessionUser() {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data } = await supabase.auth.getUser();
+  return data.user ?? null;
+}
+
 export async function getCurrentUser() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoUser;
@@ -37,7 +53,9 @@ export async function getCurrentOrganization() {
     .single();
 
   const organization = data?.organizations;
-  return Array.isArray(organization) ? organization[0] : organization ?? demoOrganization;
+  return Array.isArray(organization)
+    ? organization[0]
+    : organization ?? demoOrganization;
 }
 
 export async function getCurrentMember() {

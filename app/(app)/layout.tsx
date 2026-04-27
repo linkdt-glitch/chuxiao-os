@@ -1,9 +1,23 @@
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { getCurrentMember, getCurrentOrganization, getCurrentUser } from "@/lib/auth";
+import {
+  getCurrentMember,
+  getCurrentOrganization,
+  getCurrentUser,
+  getSessionUser,
+  isDemoModeEnabled
+} from "@/lib/auth";
+import { hasSupabaseEnv } from "@/lib/supabase/server";
 import { getNavigationModules } from "@/lib/modules";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  if (!isDemoModeEnabled()) {
+    if (!hasSupabaseEnv()) redirect("/login?error=missing_supabase_env");
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) redirect("/login");
+  }
+
   const [organization, member, user, modules] = await Promise.all([
     getCurrentOrganization(),
     getCurrentMember(),

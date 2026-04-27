@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar modules={modules} />
       <div className="lg:pl-72">
         <Topbar organization={organization} member={member} user={user} />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-7 lg:px-8">{children}</main>
       </div>
     </div>
   );

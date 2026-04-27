@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 40% 99%;
-  --foreground: 222 28% 11%;
+  --background: 210 42% 98%;
+  --foreground: 220 28% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 222 28% 11%;
-  --primary: 218 72% 32%;
+  --card-foreground: 220 28% 10%;
+  --primary: 198 86% 38%;
   --primary-foreground: 0 0% 98%;
-  --secondary: 210 45% 96%;
-  --secondary-foreground: 222 28% 16%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 218 14% 44%;
-  --accent: 188 76% 42%;
+  --secondary: 210 34% 96%;
+  --secondary-foreground: 220 24% 15%;
+  --muted: 210 34% 95%;
+  --muted-foreground: 216 12% 44%;
+  --accent: 180 78% 39%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 214 30% 88%;
-  --input: 214 30% 88%;
-  --ring: 188 76% 42%;
+  --border: 215 28% 87%;
+  --input: 215 28% 87%;
+  --ring: 187 76% 42%;
   --radius: 8px;
 }
 
@@ -29,8 +29,9 @@
 
 body {
   @apply bg-background text-foreground antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   background:
-    linear-gradient(135deg, rgba(236, 248, 255, 0.88) 0%, rgba(255, 255, 255, 0.96) 34%, rgba(244, 248, 255, 0.92) 68%, rgba(250, 253, 248, 0.9) 100%);
+    linear-gradient(145deg, rgba(239, 251, 255, 0.92) 0%, rgba(255, 255, 255, 0.98) 36%, rgba(244, 248, 255, 0.94) 68%, rgba(240, 253, 250, 0.9) 100%);
   min-height: 100vh;
 }
 
@@ -40,12 +41,27 @@ body {
 
 .surface-gradient {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(250, 253, 255, 0.84)),
-    linear-gradient(135deg, rgba(226, 246, 255, 0.5), rgba(239, 246, 255, 0.44) 48%, rgba(243, 252, 247, 0.42));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 252, 255, 0.7)),
+    linear-gradient(135deg, rgba(219, 246, 255, 0.46), rgba(240, 245, 255, 0.38) 50%, rgba(235, 253, 250, 0.42));
+  backdrop-filter: blur(24px) saturate(1.35);
 }
 
 .panel-gradient {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 252, 255, 0.78)),
-    linear-gradient(135deg, rgba(219, 244, 255, 0.36), rgba(237, 245, 255, 0.24) 54%, rgba(241, 252, 247, 0.28));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(249, 253, 255, 0.72)),
+    linear-gradient(135deg, rgba(223, 247, 255, 0.34), rgba(238, 245, 255, 0.28) 54%, rgba(237, 253, 250, 0.3));
+  backdrop-filter: blur(18px) saturate(1.22);
+}
+
+.mac-window {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 20px 55px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.86) inset;
+}
+
+.brand-glow {
+  box-shadow:
+    0 16px 38px rgba(15, 118, 178, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.82) inset;
 }

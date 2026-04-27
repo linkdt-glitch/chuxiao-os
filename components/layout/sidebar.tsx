@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,14 +27,27 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
   );
 
   return (
-    <aside className="surface-gradient fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-white/70 shadow-[18px_0_40px_rgba(15,23,42,0.05)] lg:block">
-      <div className="flex h-16 items-center border-b border-white/70 px-5">
-        <div>
-          <div className="bg-gradient-to-r from-sky-700 via-blue-700 to-indigo-700 bg-clip-text text-sm font-semibold text-transparent">AI Company OS</div>
-          <div className="text-xs text-muted-foreground">自进化组织系统</div>
+    <aside className="surface-gradient fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-white/70 shadow-[18px_0_45px_rgba(15,23,42,0.06)] lg:block">
+      <div className="flex h-20 items-center border-b border-white/70 px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="brand-glow flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-950">
+            <Image
+              src="/brand/kairosmini-mark.png"
+              alt="Kairosmini"
+              width={44}
+              height={44}
+              className="h-full w-full object-cover object-top"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate bg-gradient-to-r from-slate-950 via-cyan-700 to-teal-500 bg-clip-text text-sm font-semibold text-transparent">
+              Kairosmini OS
+            </div>
+            <div className="text-xs text-muted-foreground">AI 自进化组织系统</div>
+          </div>
         </div>
       </div>
-      <nav className="h-[calc(100vh-4rem)] overflow-y-auto p-3 scrollbar-thin">
+      <nav className="h-[calc(100vh-5rem)] overflow-y-auto p-3 scrollbar-thin">
         {sections.map((section) =>
           section.modules.length ? (
             <div key={section.title} className="mb-5">
@@ -77,8 +91,8 @@ function NavSection({
             className={cn(
               "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all",
               active
-                ? "bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white shadow-sm"
-                : "text-muted-foreground hover:bg-white/70 hover:text-foreground hover:shadow-sm",
+                ? "bg-white/82 text-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.07)] ring-1 ring-white/80"
+                : "text-muted-foreground hover:bg-white/62 hover:text-foreground hover:shadow-sm",
               disabled && "cursor-not-allowed opacity-60 hover:bg-transparent hover:text-muted-foreground hover:shadow-none"
             )}
           >

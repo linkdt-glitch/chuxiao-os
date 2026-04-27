@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isEmailAllowedForLogin } from "@/lib/auth/access";
 
 const defaultRoles = [
   ["owner", "Owner", "拥有全部权限，不可删除。", 100],
@@ -12,6 +13,7 @@ const defaultRoles = [
 export async function ensureUserWorkspace(user: User) {
   const admin = createSupabaseAdminClient();
   if (!admin || !user.email) return;
+  if (!(await isEmailAllowedForLogin(user.email))) return;
 
   const fullName = String(user.user_metadata?.full_name ?? user.email.split("@")[0]);
   const orgName = String(user.user_metadata?.organization_name ?? `${fullName} 的组织`);

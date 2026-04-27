@@ -116,6 +116,7 @@ export async function uploadTaskFileAction(formData: FormData) {
   const fileName = typedFile?.name ?? value(formData, "file_name") ?? "任务附件";
   await createTaskFile({
     task_id: taskId,
+    file: typedFile ?? undefined,
     file_name: fileName,
     file_url: fileUrl ?? null,
     mime_type: typedFile?.type || "application/octet-stream",

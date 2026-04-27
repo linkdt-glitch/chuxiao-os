@@ -362,6 +362,7 @@ export async function getTaskFiles(taskId: string) {
 
 export async function createTaskFile(input: {
   task_id: string;
+  file?: File;
   file_name: string;
   file_url?: string | null;
   size_bytes?: number;
@@ -373,10 +374,13 @@ export async function createTaskFile(input: {
   if (!supabase) return { ok: true };
 
   const createdFile = await uploadFile({
+    file: input.file,
     file_name: input.file_name,
     storage_path: `projects/tasks/${input.task_id}/${Date.now()}-${input.file_name}`,
     mime_type: input.mime_type || "application/octet-stream",
-    size_bytes: input.size_bytes ?? 0
+    size_bytes: input.size_bytes ?? 0,
+    asset_type: "project_doc",
+    metadata: { asset_type: "project_doc", module: "projects", task_id: input.task_id }
   });
   const fileId = "id" in createdFile ? createdFile.id : null;
   if (fileId) {

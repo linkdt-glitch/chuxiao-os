@@ -46,17 +46,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_ENABLE_DEMO_MODE=false
+AUTH_REQUIRE_INVITE=false
+AUTH_ALLOWED_EMAILS=founder@company.com,admin@company.com
+AUTH_ALLOWED_EMAIL_DOMAINS=company.com
+DEEPSEEK_API_KEY=
+SILICONFLOW_API_KEY=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` 仅用于服务端首次登录后的组织初始化，不要暴露到浏览器。
 生产环境默认不要开启 demo 模式；只有临时演示时才把 `NEXT_PUBLIC_ENABLE_DEMO_MODE` 设为 `true`。
+上线后建议把 `AUTH_REQUIRE_INVITE` 设为 `true`，再用 `AUTH_ALLOWED_EMAILS` 或 `AUTH_ALLOWED_EMAIL_DOMAINS` 控制谁可以登录/注册。
 
 ## Supabase 配置
 
 1. 创建 Supabase 项目。
-2. 执行 `supabase/migrations/202604250001_ai_company_os_base.sql`。
+2. 按文件名顺序执行 `supabase/migrations/*.sql`。
 3. 执行 `supabase/seed.sql` 初始化示例组织和模块。
-4. 创建 Storage bucket：`company-assets`。
+4. 最新增量 migration 会创建私有 Storage bucket：`company-assets` 和对象级 RLS。
 5. 在 Supabase Auth 中启用 Email OTP / Magic Link。
 6. 将回调地址加入 Auth Redirect URLs：`http://localhost:3000/auth/callback` 和生产域名 `/auth/callback`。
 
@@ -90,8 +96,8 @@ NEXT_PUBLIC_ENABLE_DEMO_MODE=false
 - 审批中心：创建审批表单、审批列表、批准/驳回确认入口。
 - 操作日志：按模块、操作者、动作筛选入口。
 - 事件中心：事件列表、payload、状态、模块筛选入口。
-- 文件中心：上传入口、文件列表、权限、删除确认。
-- AI 设置：Provider 抽象、安全 API Key 输入、调用日志。
+- 文件中心：真实上传到 Supabase Storage 私有桶、文件列表、下载、权限、删除确认。
+- AI 设置：Provider 抽象、DeepSeek / SiliconFlow 启停切换、服务端环境变量保存 API Key、调用日志。
 - Agent 档案：权限等级 L1-L5、负责人、允许模块、运行日志。
 - 系统设置：组织设置、安全设置、审批规则、模块设置入口。
 - Supabase migration：21 张核心表、索引、外键、updated_at、RLS。

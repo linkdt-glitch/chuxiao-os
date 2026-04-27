@@ -1,6 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { demoProviders } from "@/lib/data/demo";
+import { logAction } from "@/lib/audit";
+import { emitEvent } from "@/lib/events";
+import { requirePermission } from "@/lib/permissions";
 import type { AIProvider } from "@/lib/types/core";
 
 type ChatCompletionResponse = {
@@ -26,6 +29,97 @@ export async function getActiveProvider() {
     .single();
 
   return data ?? demoProviders[0];
+}
+
+export async function activateAIProvider(providerId: string) {
+  await requirePermission("ai.manage");
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) return { ok: true };
+
+  const { data: provider, error: providerError } = await supabase
+    .from("ai_providers")
+    .select("id, provider_name, label, is_active")
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .single();
+
+  if (providerError) throw providerError;
+
+  const { error: disableError } = await supabase
+    .from("ai_providers")
+    .update({ is_active: false })
+    .eq("organization_id", organization.id);
+  if (disableError) throw disableError;
+
+  const { data, error } = await supabase
+    .from("ai_providers")
+    .update({ is_active: true })
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .select("id, provider_name, label, is_active")
+    .single();
+
+  if (error) throw error;
+
+  await logAction({
+    event_key: "ai.provider.activated",
+    action: "update",
+    module: "ai_settings",
+    related_record_type: "ai_provider",
+    related_record_id: providerId,
+    before_data: provider,
+    after_data: data
+  });
+  await emitEvent({
+    event_key: "ai.provider.activated",
+    module: "ai_settings",
+    payload: { provider_id: providerId, provider_name: data.provider_name }
+  });
+
+  return data;
+}
+
+export async function disableAIProvider(providerId: string) {
+  await requirePermission("ai.manage");
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) return { ok: true };
+
+  const { data: provider, error: providerError } = await supabase
+    .from("ai_providers")
+    .select("id, provider_name, label, is_active")
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .single();
+  if (providerError) throw providerError;
+
+  const { data, error } = await supabase
+    .from("ai_providers")
+    .update({ is_active: false })
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .select("id, provider_name, label, is_active")
+    .single();
+
+  if (error) throw error;
+
+  await logAction({
+    event_key: "ai.provider.disabled",
+    action: "update",
+    module: "ai_settings",
+    related_record_type: "ai_provider",
+    related_record_id: providerId,
+    before_data: provider,
+    after_data: data
+  });
+  await emitEvent({
+    event_key: "ai.provider.disabled",
+    module: "ai_settings",
+    payload: { provider_id: providerId, provider_name: data.provider_name }
+  });
+
+  return data;
 }
 
 export async function logAIInvocation(input: {

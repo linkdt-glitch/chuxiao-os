@@ -23,10 +23,13 @@ async function attachReceiptFiles(formData: FormData, recordId?: string) {
   const files = formData.getAll("receipt_files").filter((item): item is File => item instanceof File && item.size > 0);
   for (const file of files) {
     const created = await uploadFile({
+      file,
       file_name: file.name,
       storage_path: `finance/receipts/${recordId}/${Date.now()}-${file.name}`,
       mime_type: file.type || "application/octet-stream",
-      size_bytes: file.size
+      size_bytes: file.size,
+      asset_type: "receipt",
+      metadata: { asset_type: "receipt", module: "finance" }
     });
     if ("id" in created) {
       await linkFileToRecord({

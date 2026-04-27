@@ -3,7 +3,19 @@ import { Building2, ShieldCheck } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function LoginPage() {
+const errorMessages: Record<string, string> = {
+  not_invited: "这个邮箱暂未加入初晓 OS 的准入名单。",
+  missing_supabase_env: "生产环境还没有配置 Supabase 环境变量，请先完成部署环境设置。"
+};
+
+export default async function LoginPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const initialMessage = params?.error ? errorMessages[params.error] ?? params.error : undefined;
+
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md overflow-hidden">
@@ -22,7 +34,7 @@ export default function LoginPage() {
           <CardDescription>登录初晓 OS；邮箱登录后进入组织工作台。</CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm initialMessage={initialMessage} />
           <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />

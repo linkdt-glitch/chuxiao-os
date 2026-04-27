@@ -1,14 +1,12 @@
-import { KeyRound, Plus } from "lucide-react";
+import { KeyRound, ServerCog } from "lucide-react";
+import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/ui/confirm-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
+import { activateProviderAction, disableProviderAction } from "./actions";
 
 export default async function AISettingsPage() {
   const { providers, logs } = await getAISettingsData();
@@ -22,31 +20,23 @@ export default async function AISettingsPage() {
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>添加 Provider</CardTitle>
+            <CardTitle>Provider 安全配置</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="provider">Provider</Label>
-                <Input id="provider" placeholder="openai / anthropic / google / local" />
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            <div className="rounded-lg border bg-white/70 p-4">
+              <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
+                <ServerCog className="h-4 w-4" />
+                API Key 只放在服务端环境变量
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="model">模型名称</Label>
-                <Input id="model" placeholder="gpt-4.1" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="baseUrl">base_url</Label>
-                <Input id="baseUrl" placeholder="https://api.openai.com/v1" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key</Label>
-                <Input id="apiKey" type="password" placeholder="sk-..." />
-              </div>
-              <Button type="submit" className="w-full">
-                <Plus className="h-4 w-4" />
-                保存 Provider
-              </Button>
-            </form>
+              <p>当前页面只负责选择启用哪个 Provider，不在浏览器里保存或展示密钥。</p>
+            </div>
+            <div className="space-y-2 rounded-lg border bg-white/70 p-4 font-mono text-xs">
+              <div>DEEPSEEK_API_KEY=...</div>
+              <div>SILICONFLOW_API_KEY=...</div>
+              <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
+              <div>SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3</div>
+            </div>
+            <p>切换 Provider 会写入审计日志和系统事件，后续 AI 调用会自动使用当前 active Provider。</p>
           </CardContent>
         </Card>
         <Card>
@@ -77,7 +67,15 @@ export default async function AISettingsPage() {
                     <TableCell>{provider.base_url}</TableCell>
                     <TableCell><StatusBadge value={provider.is_active ? "active" : "disabled"} /></TableCell>
                     <TableCell className="text-right">
-                      <ConfirmButton label={provider.is_active ? "停用" : "启用"} confirmText="切换 AI Provider 会影响后续 AI 调用，确认继续？" />
+                      <form action={provider.is_active ? disableProviderAction : activateProviderAction}>
+                        <input type="hidden" name="provider_id" value={provider.id} />
+                        <ConfirmSubmitButton
+                          confirmText="切换 AI Provider 会影响后续 AI 调用，确认继续？"
+                          variant={provider.is_active ? "secondary" : "outline"}
+                        >
+                          {provider.is_active ? "停用" : "启用"}
+                        </ConfirmSubmitButton>
+                      </form>
                     </TableCell>
                   </TableRow>
                 ))}

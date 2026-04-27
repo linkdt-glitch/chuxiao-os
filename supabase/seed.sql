@@ -171,7 +171,8 @@ values
   ('90000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'openai', 'OpenAI 占位', null, 'https://api.openai.com/v1', 'gpt-4.1', true),
   ('90000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'anthropic', 'Anthropic 占位', null, 'https://api.anthropic.com', 'claude-3.5-sonnet', false),
   ('90000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'google', 'Google 占位', null, 'https://generativelanguage.googleapis.com', 'gemini-1.5-pro', false),
-  ('90000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'deepseek', 'DeepSeek V4 Flash', null, 'https://api.deepseek.com', 'deepseek-v4-flash', false)
+  ('90000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'deepseek', 'DeepSeek V4 Flash', null, 'https://api.deepseek.com', 'deepseek-v4-flash', false),
+  ('90000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', 'siliconflow', 'SiliconFlow DeepSeek V3', null, 'https://api.siliconflow.cn/v1', 'deepseek-ai/DeepSeek-V3', false)
 on conflict (id) do nothing;
 
 insert into public.ai_invocation_logs (organization_id, provider_id, invoked_by, invoked_by_type, module, prompt_preview, input_tokens, output_tokens, cost_estimate, status)

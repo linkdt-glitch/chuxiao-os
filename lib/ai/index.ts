@@ -66,35 +66,44 @@ export async function logAIInvocation(input: {
   return { ok: true, id: data?.id as string | undefined };
 }
 
-function getDeepSeekApiKey() {
-  return process.env.DEEPSEEK_API_KEY ?? process.env.SPEEK_V4_API_KEY ?? "";
+type OpenAICompatibleProviderName = "deepseek" | "siliconflow";
+
+function getProviderConfig(provider: AIProvider) {
+  if (provider.provider_name === "siliconflow") {
+    return {
+      displayName: "SiliconFlow",
+      apiKey: process.env.SILICONFLOW_API_KEY ?? "",
+      baseUrl: provider.base_url ?? process.env.SILICONFLOW_BASE_URL ?? "https://api.siliconflow.cn/v1",
+      model: provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3",
+      missingKeyMessage: "Missing SILICONFLOW_API_KEY"
+    };
+  }
+
+  return {
+    displayName: "DeepSeek",
+    apiKey: process.env.DEEPSEEK_API_KEY ?? process.env.SPEEK_V4_API_KEY ?? "",
+    baseUrl: provider.base_url ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
+    model: provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
+    missingKeyMessage: "Missing DEEPSEEK_API_KEY"
+  };
 }
 
-function getDeepSeekBaseUrl(provider: AIProvider) {
-  return (provider.base_url ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/+$/, "");
-}
+async function invokeOpenAICompatible(input: { provider: AIProvider & { provider_name: OpenAICompatibleProviderName }; module: string; prompt: string }) {
+  const config = getProviderConfig(input.provider);
+  const baseUrl = config.baseUrl.replace(/\/+$/, "");
 
-function getDeepSeekModel(provider: AIProvider) {
-  return provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
-}
-
-async function invokeDeepSeek(input: { provider: AIProvider; module: string; prompt: string }) {
-  const apiKey = getDeepSeekApiKey();
-  const model = getDeepSeekModel(input.provider);
-  const baseUrl = getDeepSeekBaseUrl(input.provider);
-
-  if (!apiKey) {
+  if (!config.apiKey) {
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
       prompt_preview: input.prompt.slice(0, 500),
       status: "failed",
-      error_message: "Missing DEEPSEEK_API_KEY"
+      error_message: config.missingKeyMessage
     });
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
-      text: "DeepSeek API Key 未配置。请在服务端环境变量中设置 DEEPSEEK_API_KEY。"
+      text: `${config.displayName} API Key 未配置。请在服务端环境变量中设置对应 API Key。`
     };
   }
 
@@ -102,11 +111,11 @@ async function invokeDeepSeek(input: { provider: AIProvider; module: string; pro
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model,
+        model: config.model,
         messages: [
           {
             role: "system",
@@ -123,7 +132,7 @@ async function invokeDeepSeek(input: { provider: AIProvider; module: string; pro
     };
 
     if (!response.ok) {
-      const message = payload.error?.message ?? `DeepSeek request failed: ${response.status}`;
+      const message = payload.error?.message ?? `${config.displayName} request failed: ${response.status}`;
       const invocation = await logAIInvocation({
         provider_id: input.provider.id,
         module: input.module,
@@ -134,7 +143,7 @@ async function invokeDeepSeek(input: { provider: AIProvider; module: string; pro
       return {
         provider: input.provider,
         invocationLogId: "id" in invocation ? invocation.id : undefined,
-        text: `DeepSeek 调用失败：${message}`
+        text: `${config.displayName} 调用失败：${message}`
       };
     }
 
@@ -154,7 +163,7 @@ async function invokeDeepSeek(input: { provider: AIProvider; module: string; pro
       text
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown DeepSeek error";
+    const message = error instanceof Error ? error.message : `Unknown ${config.displayName} error`;
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
@@ -165,15 +174,19 @@ async function invokeDeepSeek(input: { provider: AIProvider; module: string; pro
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
-      text: `DeepSeek 调用失败：${message}`
+      text: `${config.displayName} 调用失败：${message}`
     };
   }
 }
 
 export async function invokeAI(input: { module: string; prompt: string }) {
   const provider = await getActiveProvider();
-  if (provider.provider_name === "deepseek") {
-    return invokeDeepSeek({ provider: provider as AIProvider, module: input.module, prompt: input.prompt });
+  if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
+    return invokeOpenAICompatible({
+      provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
+      module: input.module,
+      prompt: input.prompt
+    });
   }
 
   const invocation = await logAIInvocation({

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ai-company-os
+    name: chuxiao-os
     runtime: node
     plan: starter
     buildCommand: npm ci && npm run build
@@ -19,7 +19,7 @@ services:
       - key: NEXT_PUBLIC_ENABLE_DEMO_MODE
         value: false
       - key: AUTH_REQUIRE_INVITE
-        value: false
+        value: true
       - key: AUTH_ALLOWED_EMAILS
         sync: false
       - key: AUTH_ALLOWED_EMAIL_DOMAINS

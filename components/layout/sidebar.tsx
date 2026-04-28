@@ -32,7 +32,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex min-w-0 items-center gap-3">
           <div className="brand-mark-frame flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl">
             <Image
-              src="/brand/kairosmini-mark.png"
+              src="/brand/kairosmini-mark-compact.png"
               alt="初晓 OS"
               width={44}
               height={44}

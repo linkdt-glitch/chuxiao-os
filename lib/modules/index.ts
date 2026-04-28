@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoModules, demoOrganizationModules } from "@/lib/data/demo";
-import { getCurrentOrganization } from "@/lib/auth";
-import { canAccessModule } from "@/lib/permissions";
+import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
+import { getRolePermissionKeys } from "@/lib/permissions";
 
 export async function getEnabledModules() {
   const supabase = await createSupabaseServerClient();
@@ -21,7 +21,10 @@ export async function getEnabledModules() {
 
 export async function getNavigationModules() {
   const supabase = await createSupabaseServerClient();
-  const organization = await getCurrentOrganization();
+  const [organization, member] = await Promise.all([
+    getCurrentOrganization(),
+    getCurrentMember()
+  ]);
   let modules = demoModules;
 
   if (supabase) {
@@ -37,18 +40,22 @@ export async function getNavigationModules() {
     }
   }
 
-  const visible = await Promise.all(
-    modules.map(async (module) => ({
-      ...module,
-      canAccess: await canAccessModule(module.required_permission),
+  const roleKey = member.role?.key ?? "member";
+  const permissionKeys = getRolePermissionKeys(roleKey);
+
+  const visible = modules.map((module) => ({
+    ...module,
+    canAccess:
+      module.required_permission.endsWith(".read") ||
+      permissionKeys.includes("*") ||
+      permissionKeys.includes(module.required_permission),
       isEnabled:
-        module.status === "coming_soon" ||
-        Boolean((module as { isEnabled?: boolean }).isEnabled) ||
-        demoOrganizationModules.some(
-          (item) => item.module_id === module.id && item.is_enabled
-        )
-    }))
-  );
+      module.status === "coming_soon" ||
+      Boolean((module as { isEnabled?: boolean }).isEnabled) ||
+      demoOrganizationModules.some(
+        (item) => item.module_id === module.id && item.is_enabled
+      )
+  }));
 
   return visible.filter((module) => module.canAccess && module.isEnabled);
 }

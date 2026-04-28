@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isEmailAllowedForLogin } from "@/lib/auth/access";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseEnvIssue } from "@/lib/supabase/env";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -29,7 +30,10 @@ export async function POST(request: Request) {
 
     const supabase = await createSupabaseServerClient();
     if (!supabase) {
-      return NextResponse.json({ message: "当前未配置 Supabase 环境变量，应用会使用内置 demo 数据运行。" });
+      return NextResponse.json(
+        { error: getSupabaseEnvIssue() ?? "当前未配置 Supabase 环境变量。" },
+        { status: 500 }
+      );
     }
 
     const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;

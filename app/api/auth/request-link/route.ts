@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const origin = resolveAppOrigin(new URL(request.url).origin);
+    const origin = resolveAppOrigin(new URL(request.url).origin, request.headers);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {

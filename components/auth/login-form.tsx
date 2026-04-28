@@ -1,20 +1,41 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requestLoginLink, type LoginActionState } from "@/app/(auth)/login/actions";
-
-const initialState: LoginActionState = {};
 
 export function LoginForm({ initialMessage }: { initialMessage?: string }) {
-  const [state, formAction, pending] = useActionState(requestLoginLink, initialState);
-  const message = state.error ?? state.message ?? initialMessage;
+  const [message, setMessage] = useState(initialMessage ?? "");
+  const [isError, setIsError] = useState(Boolean(initialMessage));
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setIsError(false);
+    setMessage("");
+
+    const formData = new FormData(event.currentTarget);
+    const response = await fetch("/api/auth/request-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: formData.get("email"),
+        full_name: formData.get("full_name"),
+        organization_name: formData.get("organization_name")
+      })
+    });
+    const payload = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
+
+    setPending(false);
+    setIsError(!response.ok || Boolean(payload.error));
+    setMessage(payload.error ?? payload.message ?? "请求已提交。");
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">邮箱</Label>
         <Input id="email" name="email" type="email" placeholder="founder@company.com" required />
@@ -32,7 +53,7 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
         {pending ? "发送中..." : "发送登录链接"}
       </Button>
       {message ? (
-        <p className={state.error ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
+        <p className={isError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
           {message}
         </p>
       ) : null}

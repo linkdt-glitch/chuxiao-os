@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, BrainCircuit, CheckSquare, FileText, PlayCircle, Plus, Sparkles } from "lucide-react";
+import { Bot, BrainCircuit, CheckSquare, FileText, MessageSquareText, PlayCircle, Plus, Sparkles } from "lucide-react";
 import { PermissionLevelBadge } from "@/components/ai-workforce/badges";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ export default async function AIWorkforcePage() {
         description="管理 AI 员工、Prompt、AI 调用、权限等级、运行记录和人工确认。让 AI 成为可管理、可评估、可进化、可控风险的数字同事。"
         action={
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话</Link></Button>
             <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建 Prompt</Link></Button>
             <Button asChild><Link href="/ai-workforce/agents/new"><Plus className="h-4 w-4" />创建 Agent</Link></Button>
           </div>
@@ -92,6 +93,7 @@ export default async function AIWorkforcePage() {
               <CardTitle>快捷入口</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
+              <Button asChild><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话助手</Link></Button>
               <Button asChild><Link href="/ai-workforce/agents/new"><Bot className="h-4 w-4" />创建 Agent</Link></Button>
               <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建 Prompt</Link></Button>
               <Button asChild variant="outline"><Link href="/ai-workforce/confirmations"><CheckSquare className="h-4 w-4" />人工确认</Link></Button>

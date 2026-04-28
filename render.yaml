@@ -24,6 +24,14 @@ services:
         sync: false
       - key: AUTH_ALLOWED_EMAIL_DOMAINS
         sync: false
+      - key: BOOTSTRAP_OWNER_EMAIL
+        sync: false
+      - key: BOOTSTRAP_OWNER_PASSWORD
+        sync: false
+      - key: BOOTSTRAP_OWNER_NAME
+        sync: false
+      - key: BOOTSTRAP_ORGANIZATION_NAME
+        sync: false
       - key: DEEPSEEK_API_KEY
         sync: false
       - key: DEEPSEEK_BASE_URL

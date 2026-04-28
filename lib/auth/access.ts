@@ -14,6 +14,7 @@ function parseList(value?: string) {
 export function isEmailAllowedByConfig(email: string) {
   const normalized = normalizeEmail(email);
   if (!normalized || !normalized.includes("@")) return false;
+  if (normalized === normalizeEmail(process.env.BOOTSTRAP_OWNER_EMAIL ?? "")) return true;
 
   const allowedEmails = parseList(process.env.AUTH_ALLOWED_EMAILS);
   const allowedDomains = parseList(process.env.AUTH_ALLOWED_EMAIL_DOMAINS).map((domain) =>

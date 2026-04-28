@@ -15,8 +15,9 @@ export async function getFinanceSummary() {
     getFinanceAccounts()
   ]);
 
-  const income = records.filter((record) => record.record_type === "income" && record.status !== "rejected").reduce((sum, record) => sum + Number(record.amount), 0);
-  const expense = records.filter((record) => ["expense", "reimbursement"].includes(record.record_type) && record.status !== "rejected").reduce((sum, record) => sum + Number(record.amount), 0);
+  const bookedRecords = records.filter((record) => ["approved", "paid"].includes(record.status));
+  const income = bookedRecords.filter((record) => record.record_type === "income").reduce((sum, record) => sum + Number(record.amount), 0);
+  const expense = bookedRecords.filter((record) => ["expense", "reimbursement"].includes(record.record_type)).reduce((sum, record) => sum + Number(record.amount), 0);
   const pendingReimbursements = records.filter((record) => record.status === "pending_approval" && (record.record_type === "reimbursement" || record.reimbursement_required)).length;
   const cashBalance = accounts.filter((account) => account.currency === "CNY").reduce((sum, account) => sum + Number(account.current_balance), 0);
 
@@ -44,7 +45,7 @@ export async function getMonthlyIncomeExpense(months = 6) {
   records.forEach((record) => {
     const month = record.occurred_at.slice(0, 7);
     const bucket = buckets.get(month);
-    if (!bucket || record.status === "rejected") return;
+    if (!bucket || !["approved", "paid"].includes(record.status)) return;
     if (record.record_type === "income") bucket.income += Number(record.amount);
     if (["expense", "reimbursement"].includes(record.record_type)) bucket.expense += Number(record.amount);
   });
@@ -55,7 +56,7 @@ export async function getMonthlyIncomeExpense(months = 6) {
 export async function getCategoryExpenseBreakdown() {
   const records = await getFinanceRecords({ record_type: "expense" });
   const map = new Map<string, number>();
-  records.forEach((record) => {
+  records.filter((record) => ["approved", "paid"].includes(record.status)).forEach((record) => {
     const name = record.category?.name ?? "未分类";
     map.set(name, (map.get(name) ?? 0) + Number(record.amount));
   });

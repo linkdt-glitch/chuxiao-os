@@ -20,7 +20,7 @@ function bool(formData: FormData, key: string) {
 
 async function attachReceiptFiles(formData: FormData, recordId?: string) {
   if (!recordId) return;
-  const files = formData.getAll("receipt_files").filter((item): item is File => item instanceof File && item.size > 0);
+  const files = receiptFiles(formData);
   for (const file of files) {
     const created = await uploadFile({
       file,
@@ -39,6 +39,40 @@ async function attachReceiptFiles(formData: FormData, recordId?: string) {
         record_id: recordId
       });
     }
+  }
+}
+
+function receiptFiles(formData: FormData) {
+  return formData.getAll("receipt_files").filter((item): item is File => item instanceof File && item.size > 0);
+}
+
+async function uploadPendingReceiptFiles(files: File[]) {
+  const fileIds: string[] = [];
+  for (const file of files) {
+    const created = await uploadFile({
+      file,
+      file_name: file.name || "receipt",
+      storage_path: `finance/receipts/pending/${Date.now()}-${file.name || "receipt"}`,
+      mime_type: file.type || "application/octet-stream",
+      size_bytes: file.size,
+      asset_type: "receipt",
+      metadata: { asset_type: "receipt", module: "finance", status: "pending_ai_parse" }
+    });
+    if ("id" in created) fileIds.push(created.id);
+  }
+  return fileIds;
+}
+
+async function linkPendingReceiptFiles(formData: FormData, recordId?: string) {
+  if (!recordId) return;
+  const fileIds = formData.getAll("pending_file_id").filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  for (const fileId of fileIds) {
+    await linkFileToRecord({
+      file_id: fileId,
+      module: "finance",
+      record_type: "finance_record",
+      record_id: recordId
+    });
   }
 }
 
@@ -110,40 +144,53 @@ export async function createFinanceAccountAction(formData: FormData) {
 export type AIParseState = {
   parseLogId?: string;
   parsed?: ParsedFinanceRecord;
+  pendingFileIds?: string[];
   error?: string;
   success?: string;
 };
 
 export async function parseFinanceTextAction(_: AIParseState, formData: FormData): Promise<AIParseState> {
   const rawText = value(formData, "raw_text");
-  if (!rawText) return { error: "请输入一句话记账内容。" };
-  const result = await parseFinanceText(rawText);
-  return { parseLogId: result.id, parsed: result.parsed };
+  const files = receiptFiles(formData);
+  if (!rawText && !files.length) return { error: "请输入一句话记账内容，或拍照上传一张票据。" };
+  try {
+    const result = await parseFinanceText(rawText ?? "", files);
+    const pendingFileIds = await uploadPendingReceiptFiles(files);
+    return { parseLogId: result.id, parsed: result.parsed, pendingFileIds };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "AI 解析失败，请稍后重试。" };
+  }
 }
 
 export async function confirmParsedFinanceRecordAction(_: AIParseState, formData: FormData): Promise<AIParseState> {
   const parseLogId = value(formData, "parse_log_id");
   if (!parseLogId) return { error: "缺少 AI 解析记录。" };
   const intent = value(formData, "intent");
-  const record = await confirmParsedFinanceRecord(parseLogId, {
-    record_type: (value(formData, "record_type") ?? "expense") as FinanceRecordType,
-    amount: Number(value(formData, "amount") ?? 0),
-    currency: value(formData, "currency") ?? "CNY",
-    occurred_at: value(formData, "occurred_at"),
-    category_id: value(formData, "category_id") ?? null,
-    subcategory_id: value(formData, "subcategory_id") ?? null,
-    account_id: value(formData, "account_id") ?? null,
-    payment_method: value(formData, "payment_method") ?? null,
-    counterparty_name: value(formData, "counterparty_name") ?? null,
-    description: value(formData, "description") ?? "财务记录",
-    quantity: Number(value(formData, "quantity") ?? 1),
-    project_name: value(formData, "project_name") ?? null,
-    reimbursement_required: bool(formData, "reimbursement_required"),
-    submit_for_approval: intent === "draft" ? false : bool(formData, "submit_for_approval"),
-    metadata: { notes: value(formData, "notes") ?? "" }
-  });
-  await attachReceiptFiles(formData, "id" in record ? record.id : undefined);
-  return { success: "已确认并创建财务记录。" };
+  try {
+    const record = await confirmParsedFinanceRecord(parseLogId, {
+      record_type: (value(formData, "record_type") ?? "expense") as FinanceRecordType,
+      amount: Number(value(formData, "amount") ?? 0),
+      currency: value(formData, "currency") ?? "CNY",
+      occurred_at: value(formData, "occurred_at"),
+      category_id: value(formData, "category_id") ?? null,
+      subcategory_id: value(formData, "subcategory_id") ?? null,
+      account_id: value(formData, "account_id") ?? null,
+      payment_method: value(formData, "payment_method") ?? null,
+      counterparty_name: value(formData, "counterparty_name") ?? null,
+      description: value(formData, "description") ?? "财务记录",
+      quantity: Number(value(formData, "quantity") ?? 1),
+      project_name: value(formData, "project_name") ?? null,
+      reimbursement_required: bool(formData, "reimbursement_required"),
+      submit_for_approval: intent === "draft" ? false : bool(formData, "submit_for_approval"),
+      metadata: { notes: value(formData, "notes") ?? "" }
+    });
+    const recordId = "id" in record ? record.id : undefined;
+    await linkPendingReceiptFiles(formData, recordId);
+    await attachReceiptFiles(formData, recordId);
+    return { success: "已确认并创建财务记录。" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "保存失败，请检查金额、说明和必填字段。" };
+  }
 }
 
 export async function parsedToRecordInputAction(parsed: ParsedFinanceRecord) {

@@ -147,7 +147,12 @@ as $$
     limit 1
   )
   select coalesce(
-    exists (select 1 from current_member where role_key in ('owner', 'admin', 'finance_lead')),
+    exists (
+      select 1
+      from current_member
+      where role_key in ('owner', 'admin')
+        or (role_key = 'finance_lead' and permission_key like 'finance.%')
+    ),
     false
   )
   or coalesce(

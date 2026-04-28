@@ -15,6 +15,12 @@ type ChatCompletionResponse = {
   };
 };
 
+export type AIImageInput = {
+  mime_type: string;
+  data_base64: string;
+  file_name?: string;
+};
+
 export async function getActiveProvider() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -182,15 +188,35 @@ function getProviderConfig(provider: AIProvider) {
   };
 }
 
-async function invokeOpenAICompatible(input: { provider: AIProvider & { provider_name: OpenAICompatibleProviderName }; module: string; prompt: string }) {
+function buildUserContent(prompt: string, images?: AIImageInput[]) {
+  if (!images?.length) return prompt;
+
+  return [
+    { type: "text", text: prompt },
+    ...images.map((image) => ({
+      type: "image_url",
+      image_url: {
+        url: `data:${image.mime_type};base64,${image.data_base64}`
+      }
+    }))
+  ];
+}
+
+async function invokeOpenAICompatible(input: {
+  provider: AIProvider & { provider_name: OpenAICompatibleProviderName };
+  module: string;
+  prompt: string;
+  images?: AIImageInput[];
+}) {
   const config = getProviderConfig(input.provider);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");
+  const promptPreview = input.images?.length ? `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]` : input.prompt;
 
   if (!config.apiKey) {
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
-      prompt_preview: input.prompt.slice(0, 500),
+      prompt_preview: promptPreview.slice(0, 500),
       status: "failed",
       error_message: config.missingKeyMessage
     });
@@ -215,7 +241,7 @@ async function invokeOpenAICompatible(input: { provider: AIProvider & { provider
             role: "system",
             content: "You are the AI engine inside 初晓 OS 系统. Return concise, structured, business-safe answers."
           },
-          { role: "user", content: input.prompt }
+          { role: "user", content: buildUserContent(input.prompt, input.images) }
         ],
         temperature: 0.2
       })
@@ -230,7 +256,7 @@ async function invokeOpenAICompatible(input: { provider: AIProvider & { provider
       const invocation = await logAIInvocation({
         provider_id: input.provider.id,
         module: input.module,
-        prompt_preview: input.prompt.slice(0, 500),
+        prompt_preview: promptPreview.slice(0, 500),
         status: "failed",
         error_message: message
       });
@@ -245,7 +271,7 @@ async function invokeOpenAICompatible(input: { provider: AIProvider & { provider
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
-      prompt_preview: input.prompt.slice(0, 500),
+      prompt_preview: promptPreview.slice(0, 500),
       input_tokens: payload.usage?.prompt_tokens ?? 0,
       output_tokens: payload.usage?.completion_tokens ?? 0,
       status: "success"
@@ -261,7 +287,7 @@ async function invokeOpenAICompatible(input: { provider: AIProvider & { provider
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
-      prompt_preview: input.prompt.slice(0, 500),
+      prompt_preview: promptPreview.slice(0, 500),
       status: "failed",
       error_message: message
     });
@@ -293,5 +319,30 @@ export async function invokeAI(input: { module: string; prompt: string }) {
     provider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
     text: "AI Provider interface reserved. Real model execution can be plugged in here."
+  };
+}
+
+export async function invokeAIWithImages(input: { module: string; prompt: string; images: AIImageInput[] }) {
+  const provider = await getActiveProvider();
+  if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
+    return invokeOpenAICompatible({
+      provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
+      module: input.module,
+      prompt: input.prompt,
+      images: input.images
+    });
+  }
+
+  const invocation = await logAIInvocation({
+    provider_id: provider.id,
+    module: input.module,
+    prompt_preview: `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]`.slice(0, 500),
+    status: "failed",
+    error_message: "当前 AI Provider 尚未接入图片识别。"
+  });
+  return {
+    provider,
+    invocationLogId: "id" in invocation ? invocation.id : undefined,
+    text: "当前 AI Provider 尚未接入图片识别。请补充文字描述后再解析。"
   };
 }

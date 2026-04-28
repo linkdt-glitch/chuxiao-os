@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { invokeAI } from "@/lib/ai";
 import { requirePermission } from "@/lib/permissions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const RATE_LIMIT_PER_MINUTE = 10;
 
 type ChatMessage = {
   role?: unknown;
@@ -45,6 +48,20 @@ export async function POST(request: Request) {
 
     await requirePermission("ai_workforce.view");
 
+    // 速率限制：每用户每分钟最多 RATE_LIMIT_PER_MINUTE 次
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+      const { count } = await supabase
+        .from("ai_invocation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("invoked_by", user.id)
+        .gte("created_at", oneMinuteAgo);
+      if ((count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
+        return NextResponse.json({ error: "调用过于频繁，请稍后再试。" }, { status: 429 });
+      }
+    }
+
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const messages = normalizeMessages(body.messages);
 
@@ -55,11 +72,7 @@ export async function POST(request: Request) {
     const result = await invokeAI({ module: "ai_chat", prompt: buildPrompt(messages) });
 
     return NextResponse.json({
-      provider: {
-        label: result.provider.label,
-        provider_name: result.provider.provider_name,
-        model_name: result.provider.model_name
-      },
+      provider: { label: result.provider.label },
       invocationLogId: result.invocationLogId,
       message: {
         role: "assistant",

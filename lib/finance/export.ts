@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { getFinanceRecords } from "@/lib/finance/records";
 import { canExportFinance } from "@/lib/finance/permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -105,6 +106,7 @@ async function recordExport(input: {
   exportType: FinanceExportType;
   title: string;
   fileName: string;
+  fileId?: string | null;
   dateFrom?: string;
   dateTo?: string;
   records: FinanceRecord[];
@@ -122,6 +124,7 @@ async function recordExport(input: {
         export_type: input.exportType,
         title: input.title,
         file_name: input.fileName,
+        file_id: input.fileId ?? null,
         date_from: input.dateFrom,
         date_to: input.dateTo,
         filters: {},
@@ -133,6 +136,14 @@ async function recordExport(input: {
       .select()
       .single();
     if (error) throw error;
+    if (input.fileId) {
+      await linkFileToRecord({
+        file_id: input.fileId,
+        module: "finance",
+        record_type: "finance_export",
+        record_id: data.id
+      });
+    }
     await logAction({ event_key: "finance.exported", action: "export", module: "finance", related_record_type: "finance_export", related_record_id: data.id, after_data: data });
     await emitEvent({ event_key: "finance.exported", module: "finance", payload: { id: data.id, type: input.exportType, count: input.records.length } });
   }
@@ -156,7 +167,29 @@ export async function exportFinanceRecordsExcel(filters?: {
   const baseName = exportType === "income" ? "公司收入一览表" : exportType === "expense" ? "公司支出一览表" : "公司流水一览表";
   const fileName = `${baseName}_${month}.xlsx`;
   const buffer = await buildWorkbook({ title, records, exportedBy: member.display_name, exportType });
-  await recordExport({ exportType, title, fileName, dateFrom: filters?.date_from, dateTo: filters?.date_to, records });
+  const archived = await uploadFile({
+    body: buffer,
+    file_name: fileName,
+    storage_path: `finance/exports/${new Date().toISOString().slice(0, 10)}/${Date.now()}-${fileName}`,
+    mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    size_bytes: buffer.byteLength,
+    asset_type: "finance_export",
+    metadata: {
+      asset_type: "finance_export",
+      export_type: exportType,
+      date_from: filters?.date_from ?? null,
+      date_to: filters?.date_to ?? null
+    }
+  });
+  await recordExport({
+    exportType,
+    title,
+    fileName,
+    fileId: "id" in archived ? archived.id : null,
+    dateFrom: filters?.date_from,
+    dateTo: filters?.date_to,
+    records
+  });
   return { buffer, fileName };
 }
 

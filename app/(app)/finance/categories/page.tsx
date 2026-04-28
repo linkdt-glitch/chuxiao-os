@@ -12,11 +12,11 @@ export default async function FinanceCategoriesPage() {
 
   return (
     <>
-      <PageHeader title="财务类目" description="维护收入与支出类目，默认类目可直接用于 AI 解析和手动记账。" />
+      <PageHeader title="财务类目" description="核心类目保持长期稳定；平台、国家、店铺、供应商和项目不要做成类目。" />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>新增类目</CardTitle>
+            <CardTitle>少量补充</CardTitle>
           </CardHeader>
           <CardContent>
             <form action={createFinanceCategoryAction} className="space-y-4">
@@ -43,22 +43,21 @@ export default async function FinanceCategoriesPage() {
                 <Label>编码</Label>
                 <Input name="code" />
               </div>
-              <Button type="submit" className="w-full">创建类目</Button>
+              <Button type="submit" className="w-full">添加</Button>
             </form>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>类目列表</CardTitle>
+            <CardTitle>核心类目</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="grid gap-3 md:grid-cols-2">
             {categories.map((category) => (
               <div key={category.id} className="rounded-md border p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="font-medium">{category.name}</div>
                   <div className="flex gap-2">
-                    <Badge variant={category.type === "income" ? "success" : "secondary"}>{category.type}</Badge>
-                    {category.is_system ? <Badge variant="info">system</Badge> : null}
+                    <Badge variant={category.type === "income" ? "success" : "secondary"}>{category.type === "income" ? "收入" : category.type === "expense" ? "支出" : "通用"}</Badge>
                   </div>
                 </div>
                 {category.children?.length ? (

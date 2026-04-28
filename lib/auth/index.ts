@@ -4,8 +4,7 @@ import { demoMembers, demoOrganization, demoUser } from "@/lib/data/demo";
 export function isDemoModeEnabled() {
   return (
     process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true" ||
-    process.env.ENABLE_DEMO_MODE === "true" ||
-    process.env.NODE_ENV !== "production"
+    process.env.ENABLE_DEMO_MODE === "true"
   );
 }
 

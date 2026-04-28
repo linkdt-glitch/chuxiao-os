@@ -83,7 +83,10 @@ export async function createHumanMemberAction(formData: FormData) {
 
   if (!email || !email.includes("@")) throw new Error("请输入正确的成员邮箱。");
   if (!display_name) throw new Error("请输入成员姓名。");
-  if (!password || password.length < 8) throw new Error("初始密码至少需要 8 位。");
+  if (!password || password.length < 12) throw new Error("初始密码至少需要 12 位。");
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    throw new Error("初始密码需同时包含字母和数字。");
+  }
   if (!["admin", "manager", "member"].includes(role_key)) {
     throw new Error("第一版仅支持添加 Admin / Manager / Member 三类人类成员。");
   }

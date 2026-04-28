@@ -20,6 +20,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { getMembers } from "@/lib/data/queries";
 import { getProject, getTask, getTaskComments, getTaskFiles } from "@/lib/projects";
 
+function taskFileHref(file: { file_id?: string | null; file_url?: string | null }) {
+  return file.file_id ? `/api/files/${file.file_id}` : file.file_url;
+}
+
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string; task_id: string }> }) {
   const { id, task_id: taskId } = await params;
   const [project, task, members, comments, files] = await Promise.all([
@@ -102,52 +106,59 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               <CardTitle>更新任务</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={updateTaskAction} className="space-y-3">
-                <input type="hidden" name="id" value={task.id} />
-                <input type="hidden" name="project_id" value={id} />
-                <div className="space-y-2">
-                  <Label>任务名称</Label>
-                  <Input name="name" defaultValue={task.name} />
+              {task.status === "archived" ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  该任务已归档，任务信息已锁定。如需重新处理，请创建新任务或由管理员在数据库层恢复状态。
                 </div>
-                <div className="space-y-2">
-                  <Label>负责人</Label>
-                  <select name="assigned_to" defaultValue={task.assigned_to ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                    {members.map((member) => (
-                      <option key={member.id} value={member.id}>{member.display_name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+              ) : (
+                <form action={updateTaskAction} className="space-y-3">
+                  <input type="hidden" name="id" value={task.id} />
+                  <input type="hidden" name="project_id" value={id} />
                   <div className="space-y-2">
-                    <Label>状态</Label>
-                    <select name="status" defaultValue={task.status} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                      <option value="to_do">待办</option>
-                      <option value="in_progress">进行中</option>
-                      <option value="completed">已完成</option>
-                      <option value="archived">已归档</option>
+                    <Label>任务名称</Label>
+                    <Input name="name" defaultValue={task.name} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>负责人</Label>
+                    <select name="assigned_to" defaultValue={task.assigned_to ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                      {members.map((member) => (
+                        <option key={member.id} value={member.id}>{member.display_name}</option>
+                      ))}
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>进度</Label>
-                    <Input name="progress" type="number" min="0" max="100" defaultValue={task.progress} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>状态</Label>
+                      <select name="status" defaultValue={task.status} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                        <option value="to_do">待办</option>
+                        <option value="in_progress">进行中</option>
+                        <option value="completed">已完成</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>进度</Label>
+                      <Input name="progress" type="number" min="0" max="100" defaultValue={task.progress} />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>截止日期</Label>
-                  <Input name="due_date" type="date" defaultValue={task.due_date?.slice(0, 10) ?? ""} />
-                </div>
-                <div className="space-y-2">
-                  <Label>描述</Label>
-                  <Textarea name="description" rows={3} defaultValue={task.description ?? ""} />
-                </div>
-                <Button type="submit" className="w-full">保存任务</Button>
-              </form>
-              <form action={archiveTaskAction} className="mt-3">
-                <input type="hidden" name="id" value={task.id} />
-                <ConfirmSubmitButton confirmText="确认归档该任务？系统会同步创建一条任务归档审批记录。" variant="destructive">
-                  <Archive className="h-4 w-4" />归档任务
-                </ConfirmSubmitButton>
-              </form>
+                  <div className="space-y-2">
+                    <Label>截止日期</Label>
+                    <Input name="due_date" type="date" defaultValue={task.due_date?.slice(0, 10) ?? ""} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>描述</Label>
+                    <Textarea name="description" rows={3} defaultValue={task.description ?? ""} />
+                  </div>
+                  <Button type="submit" className="w-full">保存任务</Button>
+                </form>
+              )}
+              {task.status !== "archived" ? (
+                <form action={archiveTaskAction} className="mt-3">
+                  <input type="hidden" name="id" value={task.id} />
+                  <ConfirmSubmitButton confirmText="确认提交任务归档审批？审批通过后任务才会正式归档。" variant="destructive">
+                    <Archive className="h-4 w-4" />归档任务
+                  </ConfirmSubmitButton>
+                </form>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -169,7 +180,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                   <div key={file.id} className="rounded-md border p-3 text-sm">
                     <div className="font-medium">{file.file_name}</div>
                     <div className="mt-1 text-xs text-muted-foreground">{file.uploader?.display_name ?? "-"} · {formatDate(file.created_at)}</div>
-                    {file.file_url ? <Button asChild variant="outline" size="sm" className="mt-3"><a href={file.file_url}>下载</a></Button> : null}
+                    {taskFileHref(file) ? <Button asChild variant="outline" size="sm" className="mt-3"><a href={taskFileHref(file) ?? "#"}>下载</a></Button> : null}
                   </div>
                 )) : <div className="text-sm text-muted-foreground">暂无附件。</div>}
               </div>

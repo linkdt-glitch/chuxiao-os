@@ -100,20 +100,6 @@ async function nextRecordNo() {
   return `FIN-${month}-${String((count ?? 0) + 1).padStart(4, "0")}`;
 }
 
-async function applyAccountMovement(record: Pick<FinanceRecord, "account_id" | "record_type" | "amount">) {
-  if (!record.account_id) return;
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return;
-
-  const delta = record.record_type === "income" || record.record_type === "refund" ? Number(record.amount) : -Number(record.amount);
-  const { data: account } = await supabase.from("finance_accounts").select("current_balance").eq("id", record.account_id).single();
-  if (!account) return;
-  await supabase
-    .from("finance_accounts")
-    .update({ current_balance: Number(account.current_balance) + delta })
-    .eq("id", record.account_id);
-}
-
 export async function getFinanceRecords(filters?: {
   record_type?: FinanceRecordType | "all";
   status?: FinanceRecordStatus | "all";
@@ -158,6 +144,12 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   const member = await getCurrentMember();
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    throw new Error("财务记录金额必须大于 0。");
+  }
+  if (!input.description.trim()) {
+    throw new Error("财务记录说明不能为空。");
+  }
   const status: FinanceRecordStatus = input.submit_for_approval || input.status === "pending_approval" ? "pending_approval" : input.status ?? "draft";
 
   const payload = {
@@ -166,7 +158,7 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
     record_type: input.record_type,
     status,
     amount: input.amount,
-    currency: input.currency || "CNY",
+    currency: (input.currency || "CNY").toUpperCase(),
     occurred_at: input.occurred_at || new Date().toISOString().slice(0, 10),
     category_id: input.category_id || null,
     subcategory_id: input.subcategory_id || null,
@@ -207,18 +199,48 @@ export async function updateFinanceRecord(id: string, input: Partial<FinanceReco
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: true };
 
+  if (input.status === "paid") {
+    return markFinanceRecordPaid(id);
+  }
+
   const { data: before } = await supabase.from("finance_records").select("*").eq("id", id).single();
   const { data, error } = await supabase.from("finance_records").update(input).eq("id", id).select().single();
   if (error) throw error;
 
   await logAction({ event_key: "finance.record.updated", action: "update", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
   await emitEvent({ event_key: "finance.record.updated", module: "finance", payload: { id } });
-  if (input.status === "paid" && before.status !== "paid") {
-    await applyAccountMovement(data as FinanceRecord);
-    await logAction({ event_key: "finance.record.paid", action: "paid", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
-    await emitEvent({ event_key: "finance.record.paid", module: "finance", payload: { id, amount: data.amount } });
-  }
   revalidatePath("/finance/records");
+  return data as FinanceRecord;
+}
+
+export async function markFinanceRecordPaid(id: string) {
+  if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
+  const supabase = await createSupabaseServerClient();
+  const member = await getCurrentMember();
+  if (!supabase) return { ok: true };
+
+  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  if (readError) throw readError;
+
+  const { data, error } = await supabase.rpc("finance_settle_record", {
+    target_record_id: id,
+    actor_member_id: member.id
+  });
+  if (error) throw error;
+
+  await logAction({
+    event_key: "finance.record.paid",
+    action: "paid",
+    module: "finance",
+    related_record_type: "finance_record",
+    related_record_id: id,
+    before_data: before,
+    after_data: data as Record<string, unknown>
+  });
+  await emitEvent({ event_key: "finance.record.paid", module: "finance", payload: { id, amount: (data as FinanceRecord).amount } });
+  revalidatePath("/finance");
+  revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
   return data as FinanceRecord;
 }
 

@@ -12,7 +12,7 @@ export default function ErrorPage({
   return (
     <div className="rounded-lg border bg-card p-6">
       <h2 className="text-base font-semibold">页面加载失败</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">页面遇到了一个错误，请刷新重试。如问题持续，请联系管理员。</p>
       <Button className="mt-4" onClick={reset}>
         重试
       </Button>

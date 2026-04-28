@@ -31,6 +31,23 @@ export async function POST(request: Request) {
     }
 
     const admin = createSupabaseAdminClient();
+
+    // 若 owner 角色成员已存在，禁止重复初始化
+    if (admin) {
+      const { data: existingOwner } = await admin
+        .from("organization_members")
+        .select("id")
+        .eq("member_type", "human")
+        .in("status", ["active"])
+        .limit(1)
+        .maybeSingle();
+      if (existingOwner) {
+        return NextResponse.json(
+          { error: "系统已完成初始化，Bootstrap 端点已关闭。请直接登录。", redirectTo: "/login" },
+          { status: 403 }
+        );
+      }
+    }
     const supabase = await createSupabaseServerClient();
     if (!admin || !supabase) {
       return NextResponse.json(

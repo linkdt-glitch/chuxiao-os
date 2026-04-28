@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { logAction } from "@/lib/audit";
 import { getCurrentOrganization, getCurrentUser } from "@/lib/auth";
 import { emitEvent } from "@/lib/events";
@@ -6,8 +7,29 @@ import { createFinanceRecord } from "@/lib/finance/records";
 import { getFinanceAccounts } from "@/lib/finance/accounts";
 import { getFinanceCategories } from "@/lib/finance/categories";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { invokeAI } from "@/lib/ai";
+import { invokeAI, invokeAIWithImages, type AIImageInput } from "@/lib/ai";
 import type { FinanceRecordInput, ParsedFinanceRecord } from "@/lib/finance/types";
+
+const parsedFinanceSchema = z.object({
+  record_type: z.enum(["income", "expense", "reimbursement", "transfer", "refund", "adjustment"]),
+  amount: z.coerce.number().nonnegative().nullable(),
+  currency: z.string().min(3).default("CNY"),
+  occurred_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  category_name: z.string().optional(),
+  subcategory_name: z.string().optional(),
+  account_name: z.string().optional(),
+  payment_method: z.string().optional(),
+  counterparty_name: z.string().optional(),
+  project_name: z.string().optional(),
+  description: z.string().min(1),
+  quantity: z.coerce.number().positive().default(1),
+  reimbursement_required: z.boolean().default(false),
+  need_approval: z.boolean().default(false),
+  risk_level: z.enum(["low", "medium", "high", "critical"]).default("low"),
+  confidence: z.coerce.number().min(0).max(1).default(0.7),
+  missing_fields: z.array(z.string()).default([]),
+  notes: z.string().optional()
+});
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -34,17 +56,39 @@ function inferParsedText(text: string): ParsedFinanceRecord {
   const isIncome = /收入|收款|到账|销售|客户付款|回款/.test(text);
   const reimbursement = /报销|垫付/.test(text);
   const recordType = reimbursement ? "reimbursement" : isIncome ? "income" : "expense";
-  const category = /打样|样品/.test(text)
-    ? { parent: "产品成本", child: "打样费" }
-    : /广告|推广|投流/.test(text)
-      ? { parent: "广告推广", child: "平台广告" }
-      : /运费|物流|快递/.test(text)
-        ? { parent: "物流仓储", child: "运费" }
-        : /AI|SaaS|软件|云/.test(text)
-          ? { parent: "软件与 AI 成本", child: "AI 工具" }
-          : isIncome
-            ? { parent: "销售收入", child: undefined }
-            : { parent: "其他支出", child: undefined };
+  const category = /订阅|软件收入|技术服务|咨询|实施|开发服务/.test(text)
+    ? { parent: "服务与订阅收入", child: undefined }
+    : /退款|退货|折扣|赔付|销售调整/.test(text)
+      ? { parent: "退款与销售调整", child: undefined }
+      : isIncome
+        ? { parent: "商品销售收入", child: undefined }
+        : /采购|生产|打样|样品|包装|质检|头程/.test(text)
+          ? { parent: "商品成本", child: /采购|生产/.test(text) ? "采购 / 生产" : "包装 / 质检 / 打样" }
+          : /运费|物流|快递|仓储|海外仓|FBA|清关|关税|尾程/.test(text)
+            ? { parent: "物流仓储", child: undefined }
+            : /Amazon|亚马逊|Shopify|TikTok|平台|佣金|履约费|渠道|店铺/.test(text)
+              ? { parent: "平台与渠道费用", child: undefined }
+              : /广告|推广|投流|Google|Meta|Facebook|TikTok|红人|达人|affiliate|素材|内容/.test(text)
+                ? { parent: "广告与增长", child: undefined }
+                : /Stripe|PayPal|支付|手续费|汇兑|换汇|利息|银行费/.test(text)
+                  ? { parent: "支付与金融费用", child: undefined }
+                  : /AI|OpenAI|DeepSeek|SaaS|软件|云|服务器|API|存储|数据/.test(text)
+                    ? { parent: "软件、AI 与云服务", child: undefined }
+                    : /工资|社保|福利|奖金|招聘|外包|顾问|客服/.test(text)
+                      ? { parent: "人工与外包", child: undefined }
+                      : /研发|产品|设计|测试|认证|专利|商标|模具/.test(text)
+                        ? { parent: "研发与产品", child: undefined }
+                        : /会计|法律|律师|税务|合规|审计|注册|年审/.test(text)
+                          ? { parent: "专业服务与合规", child: undefined }
+                          : /差旅|交通|住宿|餐饮|展会|招待/.test(text)
+                            ? { parent: "差旅与招待", child: undefined }
+                            : /VAT|GST|销售税|所得税|税费|政府规费/.test(text)
+                              ? { parent: "税费", child: undefined }
+                              : /电脑|设备|家具|折旧|摊销|资产/.test(text)
+                                ? { parent: "资产与折旧", child: undefined }
+                                : /报废|货损|坏账|盘点|异常|赔偿|调整/.test(text)
+                                  ? { parent: "异常损失与调整", child: undefined }
+                                  : { parent: "办公与行政", child: undefined };
   const account = /微信/.test(text) ? "微信支付" : /支付宝/.test(text) ? "支付宝" : /PayPal/i.test(text) ? "PayPal" : /Stripe/i.test(text) ? "Stripe" : /银行|转账/.test(text) ? "公司银行账户" : undefined;
   const currency = /美元|USD|usd/.test(text) ? "USD" : "CNY";
   const missing = [];
@@ -73,16 +117,97 @@ function inferParsedText(text: string): ParsedFinanceRecord {
   };
 }
 
-export async function parseFinanceText(rawText: string) {
+function extractJsonObject(text: string) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+  const candidate = fenced ?? text;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(candidate.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+const VISION_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_VISION_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_VISION_FILES = 3;
+
+function isReadableFile(file: File) {
+  return file.size > 0 && VISION_MIME_TYPES.has(file.type) && file.size <= MAX_VISION_FILE_SIZE;
+}
+
+async function filesToAIImages(files: File[] = []): Promise<AIImageInput[]> {
+  const readable = files.filter(isReadableFile).slice(0, MAX_VISION_FILES);
+  return Promise.all(readable.map(async (file) => ({
+    mime_type: file.type,
+    data_base64: Buffer.from(await file.arrayBuffer()).toString("base64"),
+    file_name: file.name
+  })));
+}
+
+function describeFiles(files: File[] = []) {
+  return files
+    .filter((file) => file.size > 0)
+    .map((file) => `${file.name || "未命名票据"} (${file.type || "unknown"}, ${(file.size / 1024).toFixed(0)}KB)`);
+}
+
+function normalizeParsedResult(input: unknown, fallback: ParsedFinanceRecord): ParsedFinanceRecord {
+  const result = parsedFinanceSchema.safeParse(input);
+  if (!result.success) {
+    return {
+      ...fallback,
+      notes: [fallback.notes, "AI JSON 未通过结构校验，已使用本地规则兜底。"].filter(Boolean).join(" ")
+    };
+  }
+
+  const parsed = result.data;
+  const missing = new Set(parsed.missing_fields);
+  if (!parsed.amount || parsed.amount <= 0) missing.add("amount");
+  if (!parsed.record_type) missing.add("record_type");
+  if (!parsed.occurred_at) missing.add("occurred_at");
+  if (!parsed.description.trim()) missing.add("description");
+
+  return {
+    ...parsed,
+    missing_fields: Array.from(missing)
+  };
+}
+
+export async function parseFinanceText(rawText: string, files: File[] = []) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   const user = await getCurrentUser();
-  const prompt = `Parse this finance bookkeeping text as strict JSON. Text: ${rawText}`;
-  const ai = await invokeAI({ module: "finance", prompt });
-  const parsed = inferParsedText(rawText);
+  const fileDescriptions = describeFiles(files);
+  const images = await filesToAIImages(files);
+  const normalizedText = rawText.trim();
+  const fallbackText = [normalizedText, fileDescriptions.length ? `票据附件：${fileDescriptions.join("；")}` : ""].filter(Boolean).join("\n");
+  const prompt = `你是企业财务记账解析器。请只返回一个严格 JSON 对象，不要 Markdown，不要解释。
+如果提供了票据图片，请识别商户、日期、金额、币种、支付方式、税费、订单/账单用途，并结合用户文字生成记账记录。
+字段必须包含：
+record_type: income | expense | reimbursement | transfer | refund | adjustment
+amount: number|null
+currency: 默认 CNY
+occurred_at: YYYY-MM-DD，没有日期用今天 ${today()}
+category_name, subcategory_name, account_name, payment_method, counterparty_name, project_name, description, quantity
+reimbursement_required, need_approval, risk_level: low | medium | high | critical
+confidence: 0-1
+missing_fields: 缺少 amount/record_type/occurred_at/description 等关键字段时列出
+notes
+
+用户原文：${normalizedText || "用户未输入文字，请优先根据票据图片识别。"}
+附件：${fileDescriptions.length ? fileDescriptions.join("；") : "无"}`;
+  const ai = images.length
+    ? await invokeAIWithImages({ module: "finance", prompt, images })
+    : await invokeAI({ module: "finance", prompt });
+  const fallback = inferParsedText(fallbackText);
+  const modelJson = extractJsonObject(ai.text);
+  const parsed = normalizeParsedResult(modelJson, fallback);
+  const rawLogText = fallbackText || "[空白 AI 记账请求]";
 
   if (!supabase) {
-    await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { raw_text: rawText, parsed } });
+    await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { raw_text: rawLogText, parsed, file_count: fileDescriptions.length } });
     return { id: "demo_ai_parse", parsed };
   }
 
@@ -91,18 +216,18 @@ export async function parseFinanceText(rawText: string) {
     .insert({
       organization_id: organization.id,
       user_id: user.id,
-      raw_text: rawText,
+      raw_text: rawLogText,
       parsed_result: parsed,
       ai_invocation_log_id: ai.invocationLogId ?? null,
-      status: parsed.missing_fields.length ? "failed" : "parsed",
-      error_message: parsed.missing_fields.length ? `缺少关键字段：${parsed.missing_fields.join(", ")}` : null
+      status: "parsed",
+      error_message: parsed.missing_fields.length ? `需要补充：${parsed.missing_fields.join(", ")}` : null
     })
     .select()
     .single();
 
   if (error) throw error;
   await logAction({ event_key: "finance.ai_parsed", action: "ai_parse", module: "finance", related_record_type: "finance_ai_parse_log", related_record_id: data.id, after_data: parsed });
-  await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence } });
+  await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence, file_count: fileDescriptions.length } });
   revalidatePath("/finance/ai-bookkeeping");
   return { id: data.id as string, parsed };
 }

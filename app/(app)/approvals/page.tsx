@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getApprovals } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
+import { createApprovalAction, approveApprovalAction, rejectApprovalAction } from "./actions";
 
 export default async function ApprovalsPage() {
   const approvals = await getApprovals();
@@ -26,18 +27,18 @@ export default async function ApprovalsPage() {
             <CardTitle>创建审批</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            <form action={createApprovalAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">标题</Label>
-                <Input id="title" placeholder="例如：Agent 高风险动作审批" />
+                <Input id="title" name="title" placeholder="例如：Agent 高风险动作审批" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="module">关联模块</Label>
-                <Input id="module" placeholder="agents" />
+                <Label htmlFor="related_module">关联模块</Label>
+                <Input id="related_module" name="related_module" placeholder="agents" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="desc">说明</Label>
-                <Textarea id="desc" placeholder="说明风险、关联对象和预期结果" />
+                <Label htmlFor="description">说明</Label>
+                <Textarea id="description" name="description" placeholder="说明风险、关联对象和预期结果" />
               </div>
               <Button type="submit" className="w-full">
                 <Plus className="h-4 w-4" />
@@ -76,8 +77,18 @@ export default async function ApprovalsPage() {
                     <TableCell><StatusBadge value={approval.status} /></TableCell>
                     <TableCell>{formatDate(approval.created_at)}</TableCell>
                     <TableCell className="space-x-2 text-right">
-                      <ConfirmButton label="批准" confirmText="确认批准该审批？" />
-                      <ConfirmButton label="驳回" confirmText="确认驳回该审批？" />
+                      {approval.status === "pending" && (
+                        <>
+                          <form action={approveApprovalAction} className="inline">
+                            <input type="hidden" name="approval_id" value={approval.id} />
+                            <ConfirmSubmitButton confirmText="确认批准该审批？">批准</ConfirmSubmitButton>
+                          </form>
+                          <form action={rejectApprovalAction} className="inline">
+                            <input type="hidden" name="approval_id" value={approval.id} />
+                            <ConfirmSubmitButton confirmText="确认驳回该审批？" variant="destructive">驳回</ConfirmSubmitButton>
+                          </form>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

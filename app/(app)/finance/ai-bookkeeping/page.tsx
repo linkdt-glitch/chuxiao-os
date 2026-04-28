@@ -9,8 +9,8 @@ export default async function AIBookkeepingPage() {
   return (
     <>
       <PageHeader
-        title="一句话 AI 记账"
-        description="AI 只负责解析，必须人工确认后才会创建财务记录。缺少金额、类型或日期等关键字段时需要先补充。"
+        title="快速 AI 记账"
+        description="支持一句话、手机语音和票据拍照识别。AI 只生成草稿，必须人工确认后才会创建财务记录。"
       />
       <AIBookkeepingForm categories={categories} accounts={accounts} />
     </>

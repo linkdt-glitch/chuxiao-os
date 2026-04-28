@@ -20,6 +20,10 @@ function projectProgress(tasks: Array<{ progress: number }>) {
   return Math.round(tasks.reduce((sum, task) => sum + Number(task.progress), 0) / tasks.length);
 }
 
+function taskFileHref(file: { file_id?: string | null; file_url?: string | null }) {
+  return file.file_id ? `/api/files/${file.file_id}` : file.file_url;
+}
+
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const project = await getProject(id);
@@ -167,7 +171,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <div className="font-medium">{file.file_name}</div>
                   <div className="text-xs text-muted-foreground">{file.taskName}</div>
                 </div>
-                {file.file_url ? <Button asChild variant="outline" size="sm"><a href={file.file_url}>下载</a></Button> : null}
+                {taskFileHref(file) ? <Button asChild variant="outline" size="sm"><a href={taskFileHref(file) ?? "#"}>下载</a></Button> : null}
               </div>
             )) : <div className="text-sm text-muted-foreground">暂无任务附件。</div>}
           </CardContent>

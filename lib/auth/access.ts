@@ -29,6 +29,8 @@ export function isEmailAllowedByConfig(email: string) {
   return allowedDomains.includes(domain);
 }
 
+// 仅用于登录前校验邮箱是否为已注册成员，登录流程中无组织上下文，故跨组织查询是预期行为。
+// 不可用于组织内的成员去重检查，那类场景必须传入 organization_id。
 export async function isExistingOrganizationEmail(email: string) {
   const normalized = normalizeEmail(email);
   const admin = createSupabaseAdminClient();
@@ -38,6 +40,23 @@ export async function isExistingOrganizationEmail(email: string) {
     .from("organization_members")
     .select("id")
     .ilike("email", normalized)
+    .in("status", ["active", "invited"])
+    .limit(1)
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
+export async function isEmailInOrganization(email: string, organizationId: string) {
+  const normalized = normalizeEmail(email);
+  const admin = createSupabaseAdminClient();
+  if (!admin || !normalized || !organizationId) return false;
+
+  const { data } = await admin
+    .from("organization_members")
+    .select("id")
+    .ilike("email", normalized)
+    .eq("organization_id", organizationId)
     .in("status", ["active", "invited"])
     .limit(1)
     .maybeSingle();

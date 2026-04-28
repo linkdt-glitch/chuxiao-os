@@ -256,6 +256,9 @@ export async function createTask(input: TaskInput) {
 }
 
 export async function updateTask(id: string, input: Partial<TaskInput>) {
+  if (input.status === "archived") {
+    throw new Error("任务归档必须通过归档审批流程处理。");
+  }
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: true };
 
@@ -288,6 +291,20 @@ export async function archiveTask(id: string) {
 
   const { data: before, error: readError } = await supabase.from("tasks").select("*").eq("id", id).single();
   if (readError) throw readError;
+  if (before.status === "archived") return before as ProjectTask;
+
+  const { data: existingApproval, error: approvalLookupError } = await supabase
+    .from("approval_requests")
+    .select("id")
+    .eq("related_module", "tasks")
+    .eq("related_record_type", "task")
+    .eq("related_record_id", id)
+    .eq("status", "pending")
+    .contains("metadata", { action: "archive_task" })
+    .maybeSingle();
+
+  if (approvalLookupError) throw approvalLookupError;
+  if (existingApproval) return before as ProjectTask;
 
   const approval = await createApproval({
     title: `归档任务审批：${before.name}`,
@@ -299,13 +316,23 @@ export async function archiveTask(id: string) {
     metadata: { project_id: before.project_id, action: "archive_task" }
   });
 
-  const { data, error } = await supabase.from("tasks").update({ status: "archived" }).eq("id", id).select().single();
-  if (error) throw error;
-  await logAction({ event_key: "tasks.updated", action: "archive", module: "tasks", related_record_type: "task", related_record_id: id, before_data: before, after_data: { ...data, approval_request_id: "id" in approval ? approval.id : null } });
-  await emitEvent({ event_key: "tasks.updated", module: "tasks", payload: { id, project_id: data.project_id, status: "archived", approval_request_id: "id" in approval ? approval.id : null } });
-  revalidatePath(`/projects/${data.project_id}/tasks`);
-  revalidatePath(`/projects/${data.project_id}/tasks/${id}`);
-  return data as ProjectTask;
+  await logAction({
+    event_key: "tasks.archive.requested",
+    action: "archive_request",
+    module: "tasks",
+    related_record_type: "task",
+    related_record_id: id,
+    before_data: before,
+    after_data: { approval_request_id: "id" in approval ? approval.id : null }
+  });
+  await emitEvent({
+    event_key: "tasks.archive.requested",
+    module: "tasks",
+    payload: { id, project_id: before.project_id, approval_request_id: "id" in approval ? approval.id : null }
+  });
+  revalidatePath(`/projects/${before.project_id}/tasks`);
+  revalidatePath(`/projects/${before.project_id}/tasks/${id}`);
+  return before as ProjectTask;
 }
 
 export async function getTaskComments(taskId: string) {
@@ -398,7 +425,7 @@ export async function createTaskFile(input: {
       organization_id: organization.id,
       task_id: input.task_id,
       file_id: fileId,
-      file_url: input.file_url ?? (fileId ? `company-assets/${createdFile.storage_path}` : null),
+      file_url: input.file_url ?? (fileId ? `/api/files/${fileId}` : null),
       file_name: input.file_name,
       uploaded_by: member.id
     })

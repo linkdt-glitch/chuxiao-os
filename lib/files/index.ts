@@ -4,6 +4,23 @@ import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { requirePermission } from "@/lib/permissions";
 
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain", "text/csv", "text/markdown",
+  "application/zip", "application/x-zip-compressed",
+  "video/mp4", "video/webm",
+  "audio/mpeg", "audio/wav", "audio/ogg"
+]);
+
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
+
 function normalizeStoragePath(organizationId: string, storagePath: string) {
   const cleanPath = storagePath.replace(/^\/+/, "");
   if (cleanPath.startsWith(`${organizationId}/`)) return cleanPath;
@@ -12,6 +29,7 @@ function normalizeStoragePath(organizationId: string, storagePath: string) {
 
 export async function uploadFile(input: {
   file?: File;
+  body?: Blob | ArrayBuffer | Buffer;
   file_name: string;
   storage_path: string;
   mime_type: string;
@@ -22,17 +40,25 @@ export async function uploadFile(input: {
   summary?: string | null;
   metadata?: Record<string, unknown>;
 }) {
+  if (!ALLOWED_MIME_TYPES.has(input.mime_type)) {
+    throw new Error(`不支持的文件类型：${input.mime_type}`);
+  }
+  if (input.size_bytes > MAX_FILE_SIZE_BYTES) {
+    throw new Error("文件大小不能超过 100MB。");
+  }
+
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   const member = await getCurrentMember();
   if (!supabase) return { ok: true };
   const storagePath = normalizeStoragePath(organization.id, input.storage_path);
+  const fileBody = input.file ?? input.body;
 
-  if (input.file) {
+  if (fileBody) {
     const { error: uploadError } = await supabase.storage
       .from("company-assets")
-      .upload(storagePath, input.file, {
-        contentType: input.mime_type || input.file.type || "application/octet-stream",
+      .upload(storagePath, fileBody, {
+        contentType: input.mime_type || input.file?.type || "application/octet-stream",
         upsert: false
       });
 

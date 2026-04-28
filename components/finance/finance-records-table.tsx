@@ -1,4 +1,4 @@
-import { approveFinanceRecordAction, rejectFinanceRecordAction } from "@/app/(app)/finance/actions";
+import { approveFinanceRecordAction, rejectFinanceRecordAction, updateFinanceRecordAction } from "@/app/(app)/finance/actions";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
@@ -59,6 +59,12 @@ export function FinanceRecordsTable({ records, showActions = false }: { records:
                       <ConfirmSubmitButton confirmText="确认驳回这条财务申请？" variant="destructive">驳回</ConfirmSubmitButton>
                     </form>
                   </>
+                ) : record.status === "approved" && record.account_id ? (
+                  <form action={updateFinanceRecordAction} className="inline">
+                    <input type="hidden" name="id" value={record.id} />
+                    <input type="hidden" name="status" value="paid" />
+                    <ConfirmSubmitButton confirmText="确认将这条记录标记为已付款/已入账？该操作会更新账户余额。" variant="secondary">付款</ConfirmSubmitButton>
+                  </form>
                 ) : (
                   <span className="text-xs text-muted-foreground">无需处理</span>
                 )}

@@ -10,6 +10,11 @@ function flattenCategories(categories: FinanceCategory[]) {
   return categories.flatMap((category) => [category, ...(category.children ?? [])]);
 }
 
+function rootCategoryFor(categories: FinanceCategory[], name?: string) {
+  if (!name) return undefined;
+  return categories.find((item) => item.name === name || item.children?.some((child) => child.name === name));
+}
+
 export function FinanceRecordForm({
   categories,
   accounts,
@@ -24,7 +29,7 @@ export function FinanceRecordForm({
   submitLabel?: string;
 }) {
   const flatCategories = flattenCategories(categories);
-  const category = flatCategories.find((item) => item.name === defaults?.category_name);
+  const category = rootCategoryFor(categories, defaults?.category_name) ?? rootCategoryFor(categories, defaults?.subcategory_name);
   const subcategory = flatCategories.find((item) => item.name === defaults?.subcategory_name);
   const account = accounts.find((item) => item.name === defaults?.account_name);
 
@@ -36,6 +41,8 @@ export function FinanceRecordForm({
       <CardContent>
         <form action={action} className="grid gap-4 md:grid-cols-2">
           {defaults?.parse_log_id ? <input type="hidden" name="parse_log_id" value={defaults.parse_log_id} /> : null}
+          <input type="hidden" name="currency" value={defaults?.currency ?? "CNY"} />
+          <input type="hidden" name="quantity" value={defaults?.quantity ?? 1} />
           <div className="space-y-2">
             <Label htmlFor="record_type">类型</Label>
             <select id="record_type" name="record_type" defaultValue={defaults?.record_type ?? "expense"} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
@@ -49,30 +56,14 @@ export function FinanceRecordForm({
             <Input id="amount" name="amount" type="number" min="0" step="0.01" required defaultValue={defaults?.amount ?? ""} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="currency">币种</Label>
-            <Input id="currency" name="currency" defaultValue={defaults?.currency ?? "CNY"} />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="occurred_at">日期</Label>
             <Input id="occurred_at" name="occurred_at" type="date" defaultValue={defaults?.occurred_at ?? new Date().toISOString().slice(0, 10)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="category_id">类目</Label>
+            <Label htmlFor="category_id">核心类目</Label>
             <select id="category_id" name="category_id" defaultValue={category?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
-              <option value="">未分类</option>
-              {categories.map((item) => (
-                <optgroup key={item.id} label={item.name}>
-                  <option value={item.id}>{item.name}</option>
-                  {item.children?.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="subcategory_id">子类目</Label>
-            <select id="subcategory_id" name="subcategory_id" defaultValue={subcategory?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
-              <option value="">无</option>
-              {flatCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              <option value="">先不分类</option>
+              {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </div>
           <div className="space-y-2">
@@ -82,34 +73,42 @@ export function FinanceRecordForm({
               {accounts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.currency}</option>)}
             </select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="payment_method">支付方式</Label>
-            <Input id="payment_method" name="payment_method" defaultValue={defaults?.payment_method ?? ""} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="quantity">数量</Label>
-            <Input id="quantity" name="quantity" type="number" step="0.01" min="0" defaultValue={defaults?.quantity ?? 1} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="counterparty_name">供应商 / 客户</Label>
-            <Input id="counterparty_name" name="counterparty_name" defaultValue={defaults?.counterparty_name ?? ""} />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="project_name">项目名称</Label>
-            <Input id="project_name" name="project_name" defaultValue={defaults?.project_name ?? ""} />
-          </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="description">说明</Label>
             <Textarea id="description" name="description" required defaultValue={defaults?.description ?? ""} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="notes">备注 / 票据说明</Label>
-            <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ""} />
-          </div>
-          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="receipt_files">票据附件</Label>
             <Input id="receipt_files" name="receipt_files" type="file" multiple />
           </div>
+          <details className="rounded-md border bg-muted/20 p-3 md:col-span-2">
+            <summary className="cursor-pointer text-sm font-medium">更多信息</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="subcategory_id">细分</Label>
+                <select id="subcategory_id" name="subcategory_id" defaultValue={subcategory?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                  <option value="">不选</option>
+                  {flatCategories.filter((item) => item.parent_id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment_method">支付方式</Label>
+                <Input id="payment_method" name="payment_method" defaultValue={defaults?.payment_method ?? ""} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="counterparty_name">供应商 / 客户</Label>
+                <Input id="counterparty_name" name="counterparty_name" defaultValue={defaults?.counterparty_name ?? ""} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="project_name">项目</Label>
+                <Input id="project_name" name="project_name" defaultValue={defaults?.project_name ?? ""} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="notes">备注</Label>
+                <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ""} />
+              </div>
+            </div>
+          </details>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="reimbursement_required" defaultChecked={defaults?.reimbursement_required} />
             需要报销

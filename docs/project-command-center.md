@@ -6,9 +6,9 @@
 - 权限：新增 `projects.view`、`projects.manage`、`tasks.view`、`tasks.create`、`tasks.update`、`tasks.delete`、`tasks.comment`、`tasks.files`、`tasks.archive`。
 - 数据隔离：`projects`、`tasks`、`task_comments`、`task_files`、`project_reviews` 均带 `organization_id`，并启用 RLS。
 - 成员复用：项目负责人和任务负责人均引用 `organization_members`。
-- 审批复用：任务归档会创建 `approval_requests`，用于任务相关审批留痕。
+- 审批复用：任务归档会先创建 `approval_requests`，审批通过后通过 `apply_task_archive_approval` 正式归档任务。
 - 日志事件：项目、任务、评论、附件、复盘关键操作会写入 `audit_logs`，并发出 `system_events`。
-- 文件复用：任务附件会写入 `files`，通过 `file_links` 关联任务，同时保留 `task_files` 作为任务附件视图表。
+- 文件复用：任务附件会写入 `files`，通过 `file_links` 关联任务，同时保留 `task_files` 作为任务附件视图表；下载统一走 `/api/files/[id]` 签名链接。
 
 ## 页面范围
 

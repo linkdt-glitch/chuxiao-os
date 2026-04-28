@@ -23,22 +23,22 @@ export default async function LoginPage({
         <CardHeader className="items-center text-center">
           <div className="brand-wordmark-frame mb-4 w-full">
             <Image
-              src="/brand/kairosmini-logo-compact.jpg"
+              src="/brand/kairosmini-logo-white.jpg"
               alt="Kairosmini"
-              width={520}
-              height={467}
+              width={698}
+              height={560}
               priority
               className="mx-auto h-28 w-full object-contain"
             />
           </div>
           <div className="brand-mark-frame mb-2 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl">
             <Image
-              src="/brand/kairosmini-mark-compact.png"
+              src="/brand/kairosmini-mark-white.png"
               alt="初晓 OS"
-              width={160}
-              height={160}
+              width={512}
+              height={512}
               priority
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain p-1"
             />
           </div>
           <CardTitle>初晓 OS 系统</CardTitle>

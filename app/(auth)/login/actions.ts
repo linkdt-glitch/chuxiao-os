@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { resolveAppOrigin } from "@/lib/auth/origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isEmailAllowedForLogin } from "@/lib/auth/access";
 
@@ -34,11 +35,11 @@ export async function requestLoginLink(_: LoginActionState, formData: FormData):
   }
 
   const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const origin = resolveAppOrigin(headerStore.get("origin"));
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${origin.replace(/\/+$/, "")}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback`,
       data: {
         full_name: fullName,
         organization_name: organizationName

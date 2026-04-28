@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isEmailAllowedForLogin } from "@/lib/auth/access";
+import { resolveAppOrigin } from "@/lib/auth/origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseEnvIssue } from "@/lib/supabase/env";
 
@@ -36,11 +37,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+    const origin = resolveAppOrigin(new URL(request.url).origin);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${origin.replace(/\/+$/, "")}/auth/callback`,
+        emailRedirectTo: `${origin}/auth/callback`,
         data: {
           full_name: fullName,
           organization_name: organizationName

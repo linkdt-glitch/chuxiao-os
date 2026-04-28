@@ -15,7 +15,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
     { title: "核心入口", keys: ["dashboard"] },
     { title: "核心业务舱", keys: ["finance", "projects", "ai_workforce"] },
     { title: "底座能力", keys: ["governance", "knowledge"] },
-    { title: "进化机制", keys: ["evolution"] },
+    { title: "进化机制", keys: ["evolution", "energy"] },
     { title: "系统管理", keys: ["organization", "modules", "ai-settings", "settings"] }
   ].map((section) => ({
     ...section,

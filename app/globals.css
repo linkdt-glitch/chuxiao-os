@@ -65,3 +65,92 @@ body {
     0 16px 38px rgba(15, 118, 178, 0.14),
     0 0 0 1px rgba(255, 255, 255, 0.82) inset;
 }
+
+@keyframes energy-toast-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(18px, -10px, 0) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes energy-card-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -14px, 0) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes energy-modal-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes energy-confetti {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--energy-x, 80px), 160px, 0) scale(1) rotate(210deg);
+  }
+}
+
+@keyframes energy-firework {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 currentColor;
+    transform: scale(0.2);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      0 -36px 0 0 currentColor,
+      31px -18px 0 0 currentColor,
+      31px 18px 0 0 currentColor,
+      0 36px 0 0 currentColor,
+      -31px 18px 0 0 currentColor,
+      -31px -18px 0 0 currentColor;
+    transform: scale(1.35);
+  }
+}
+
+.animate-energy-toast-in {
+  animation: energy-toast-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.animate-energy-card-in {
+  animation: energy-card-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.animate-energy-modal-in {
+  animation: energy-modal-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.animate-energy-confetti {
+  animation: energy-confetti 980ms cubic-bezier(0.18, 0.8, 0.25, 1) forwards;
+}
+
+.animate-energy-firework {
+  animation: energy-firework 1500ms ease-out infinite;
+}

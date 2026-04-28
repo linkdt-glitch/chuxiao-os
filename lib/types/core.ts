@@ -295,3 +295,85 @@ export type ImprovementSuggestion = {
   created_at: string;
   updated_at: string;
 };
+
+export type EnergyAnimationType =
+  | "toast"
+  | "sparkle"
+  | "confetti"
+  | "fireworks"
+  | "badge"
+  | "flywheel"
+  | "glow"
+  | "none";
+
+export type EnergyCategory = "finance" | "execution" | "ai" | "knowledge" | "evolution" | "habit";
+export type AchievementLevel = "bronze" | "silver" | "gold" | "platinum";
+export type StreakType = "login" | "bookkeeping" | "task_completion" | "review";
+
+export type OrganizationEnergyEvent = {
+  id: string;
+  organization_id: string;
+  user_id?: string | null;
+  source_event_id?: string | null;
+  event_key: string;
+  source_module?: string | null;
+  source_record_type?: string | null;
+  source_record_id?: string | null;
+  energy_points: number;
+  animation_type: EnergyAnimationType;
+  message?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AchievementBadge = {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  category: EnergyCategory;
+  icon?: string | null;
+  level: AchievementLevel;
+  condition: Record<string, unknown>;
+  energy_points: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type UserAchievement = {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  achievement_badge_id: string;
+  related_module?: string | null;
+  related_record_type?: string | null;
+  related_record_id?: string | null;
+  earned_at: string;
+  metadata: Record<string, unknown>;
+  badge?: AchievementBadge;
+};
+
+export type UserStreak = {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  streak_type: StreakType;
+  current_count: number;
+  longest_count: number;
+  last_active_at?: string | null;
+  updated_at: string;
+};
+
+export type EnergySettings = {
+  id?: string;
+  organization_id: string;
+  user_id?: string | null;
+  animations_enabled: boolean;
+  sounds_enabled: boolean;
+  sound_volume: number;
+  focus_mode: boolean;
+  daily_motivation_enabled: boolean;
+  large_celebrations_enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+};

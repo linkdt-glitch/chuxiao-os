@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { ensureDefaultAIProviders } from "@/lib/ai/default-providers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isEmailAllowedForLogin } from "@/lib/auth/access";
 
@@ -27,12 +28,15 @@ export async function ensureUserWorkspace(user: User) {
 
   const { data: existingMember } = await admin
     .from("organization_members")
-    .select("id")
+    .select("id, organization_id")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  if (existingMember) return;
+  if (existingMember) {
+    await ensureDefaultAIProviders(existingMember.organization_id);
+    return;
+  }
 
   const { data: organization, error: orgError } = await admin
     .from("organizations")
@@ -76,50 +80,7 @@ export async function ensureUserWorkspace(user: User) {
     );
   }
 
-  await admin.from("ai_providers").insert([
-    {
-      organization_id: organization.id,
-      provider_name: "openai",
-      label: "OpenAI 占位",
-      base_url: "https://api.openai.com/v1",
-      model_name: "gpt-4.1",
-      is_active: false
-    },
-    {
-      organization_id: organization.id,
-      provider_name: "anthropic",
-      label: "Anthropic 占位",
-      base_url: "https://api.anthropic.com",
-      model_name: "claude-3.5-sonnet",
-      is_active: false
-    },
-    {
-      organization_id: organization.id,
-      provider_name: "google",
-      label: "Google 占位",
-      base_url: "https://generativelanguage.googleapis.com",
-      model_name: "gemini-1.5-pro",
-      is_active: false
-    },
-    {
-      organization_id: organization.id,
-      provider_name: "deepseek",
-      label: "DeepSeek V4 Flash",
-      base_url: "https://api.deepseek.com",
-      model_name: "deepseek-v4-flash",
-      is_active: true,
-      settings: { format: "openai", thinking_mode: "default" }
-    },
-    {
-      organization_id: organization.id,
-      provider_name: "siliconflow",
-      label: "SiliconFlow DeepSeek V3",
-      base_url: "https://api.siliconflow.cn/v1",
-      model_name: "deepseek-ai/DeepSeek-V3",
-      is_active: false,
-      settings: { format: "openai", vendor: "siliconflow" }
-    }
-  ]);
+  await ensureDefaultAIProviders(organization.id);
 
   await admin.from("organization_members").insert({
     organization_id: organization.id,

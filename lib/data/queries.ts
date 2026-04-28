@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/lib/auth";
+import { ensureDefaultAIProviders } from "@/lib/ai/default-providers";
 import {
   demoAIInvocationLogs,
   demoAgentRunLogs,
@@ -166,6 +167,8 @@ export async function getAISettingsData() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return { providers: demoProviders, logs: demoAIInvocationLogs };
+
+  await ensureDefaultAIProviders(organization.id);
 
   const [{ data: providers }, { data: logs }] = await Promise.all([
     supabase

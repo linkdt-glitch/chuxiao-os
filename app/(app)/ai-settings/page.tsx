@@ -1,4 +1,5 @@
 import { KeyRound, ServerCog } from "lucide-react";
+import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,27 +19,30 @@ export default async function AISettingsPage() {
         description="预留 OpenAI / Anthropic / Google / Local Provider 抽象接口；API Key 仅加密存储，不在前端明文展示。"
       />
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Provider 安全配置</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div className="rounded-lg border bg-white/70 p-4">
-              <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
-                <ServerCog className="h-4 w-4" />
-                API Key 只放在服务端环境变量
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Provider 安全配置</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div className="rounded-lg border bg-white/70 p-4">
+                <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
+                  <ServerCog className="h-4 w-4" />
+                  API Key 只放在服务端环境变量
+                </div>
+                <p>当前页面只负责选择启用哪个 Provider，不在浏览器里保存或展示密钥。</p>
               </div>
-              <p>当前页面只负责选择启用哪个 Provider，不在浏览器里保存或展示密钥。</p>
-            </div>
-            <div className="space-y-2 rounded-lg border bg-white/70 p-4 font-mono text-xs">
-              <div>DEEPSEEK_API_KEY=...</div>
-              <div>SILICONFLOW_API_KEY=...</div>
-              <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
-              <div>SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3</div>
-            </div>
-            <p>切换 Provider 会写入审计日志和系统事件，后续 AI 调用会自动使用当前 active Provider。</p>
-          </CardContent>
-        </Card>
+              <div className="space-y-2 rounded-lg border bg-white/70 p-4 font-mono text-xs">
+                <div>DEEPSEEK_API_KEY=...</div>
+                <div>SILICONFLOW_API_KEY=...</div>
+                <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
+                <div>SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3</div>
+              </div>
+              <p>切换 Provider 会写入审计日志和系统事件，后续 AI 调用会自动使用当前 active Provider。</p>
+            </CardContent>
+          </Card>
+          <ProviderTestCard />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Provider 列表</CardTitle>

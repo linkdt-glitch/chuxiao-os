@@ -12,13 +12,13 @@ export function Topbar({
   user: UserProfile;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/70 bg-white/62 px-4 shadow-[0_8px_26px_rgba(15,23,42,0.04)] backdrop-blur-2xl lg:px-8">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/70 bg-white/68 px-4 shadow-[0_8px_26px_rgba(15,23,42,0.04)] backdrop-blur-2xl lg:px-8">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-950 shadow-sm lg:hidden">
-          <Image src="/brand/chuxiao-mark.png" alt="初晓 OS" width={32} height={32} className="h-full w-full object-cover" />
+        <div className="brand-mark-frame flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg lg:hidden">
+          <Image src="/brand/kairosmini-mark.png" alt="初晓 OS" width={32} height={32} className="h-full w-full object-cover" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{organization.name}</div>
+          <div className="truncate text-sm font-medium text-slate-950">{organization.name}</div>
           <div className="text-xs text-muted-foreground">初晓 OS 系统</div>
         </div>
       </div>

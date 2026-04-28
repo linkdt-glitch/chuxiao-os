@@ -17,21 +17,32 @@ export default async function LoginPage({
   const initialMessage = params?.error ? errorMessages[params.error] ?? params.error : undefined;
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md overflow-hidden">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-10 mx-auto h-56 max-w-4xl rounded-full bg-gradient-to-r from-cyan-200/35 via-indigo-200/24 to-rose-200/30 blur-3xl" />
+      <Card className="relative w-full max-w-lg overflow-hidden">
         <CardHeader className="items-center text-center">
-          <div className="brand-glow mb-2 flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-slate-950/95">
+          <div className="brand-wordmark-frame mb-4 w-full">
             <Image
-              src="/brand/chuxiao-mark.png"
+              src="/brand/kairosmini-logo.png"
+              alt="Kairosmini"
+              width={862}
+              height={774}
+              priority
+              className="mx-auto h-28 w-full object-contain"
+            />
+          </div>
+          <div className="brand-mark-frame mb-2 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl">
+            <Image
+              src="/brand/kairosmini-mark.png"
               alt="初晓 OS"
-              width={96}
-              height={96}
+              width={80}
+              height={80}
               priority
               className="h-full w-full object-cover"
             />
           </div>
           <CardTitle>初晓 OS 系统</CardTitle>
-          <CardDescription>登录初晓 OS；邮箱登录后进入组织工作台。</CardDescription>
+          <CardDescription>Kairosmini · 登录后进入组织工作台。</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm initialMessage={initialMessage} />

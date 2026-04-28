@@ -3,22 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 42% 98%;
+  --background: 205 65% 98%;
   --foreground: 220 28% 10%;
   --card: 0 0% 100%;
   --card-foreground: 220 28% 10%;
-  --primary: 198 86% 38%;
+  --primary: 193 88% 38%;
   --primary-foreground: 0 0% 98%;
-  --secondary: 210 34% 96%;
+  --secondary: 210 46% 96%;
   --secondary-foreground: 220 24% 15%;
-  --muted: 210 34% 95%;
+  --muted: 214 42% 95%;
   --muted-foreground: 216 12% 44%;
-  --accent: 180 78% 39%;
+  --accent: 258 76% 66%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 215 28% 87%;
-  --input: 215 28% 87%;
+  --border: 214 42% 88%;
+  --input: 214 42% 88%;
   --ring: 187 76% 42%;
   --radius: 8px;
 }
@@ -31,8 +31,16 @@ body {
   @apply bg-background text-foreground antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   background:
-    linear-gradient(145deg, rgba(239, 251, 255, 0.92) 0%, rgba(255, 255, 255, 0.98) 36%, rgba(244, 248, 255, 0.94) 68%, rgba(240, 253, 250, 0.9) 100%);
+    radial-gradient(circle at 10% 8%, rgba(125, 211, 252, 0.22), transparent 32rem),
+    radial-gradient(circle at 82% 4%, rgba(196, 181, 253, 0.2), transparent 28rem),
+    radial-gradient(circle at 80% 78%, rgba(153, 246, 228, 0.18), transparent 34rem),
+    radial-gradient(circle at 14% 86%, rgba(253, 186, 116, 0.12), transparent 30rem),
+    linear-gradient(145deg, rgba(247, 253, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 38%, rgba(247, 249, 255, 0.96) 68%, rgba(241, 253, 250, 0.92) 100%);
   min-height: 100vh;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.26);
 }
 
 .scrollbar-thin {
@@ -41,22 +49,27 @@ body {
 
 .surface-gradient {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 252, 255, 0.7)),
-    linear-gradient(135deg, rgba(219, 246, 255, 0.46), rgba(240, 245, 255, 0.38) 50%, rgba(235, 253, 250, 0.42));
+    radial-gradient(circle at 20% 0%, rgba(103, 232, 249, 0.18), transparent 18rem),
+    radial-gradient(circle at 92% 18%, rgba(167, 139, 250, 0.13), transparent 16rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 252, 255, 0.72)),
+    linear-gradient(135deg, rgba(219, 246, 255, 0.48), rgba(243, 240, 255, 0.38) 50%, rgba(235, 253, 250, 0.42));
   backdrop-filter: blur(24px) saturate(1.35);
 }
 
 .panel-gradient {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(249, 253, 255, 0.72)),
-    linear-gradient(135deg, rgba(223, 247, 255, 0.34), rgba(238, 245, 255, 0.28) 54%, rgba(237, 253, 250, 0.3));
+    radial-gradient(circle at 12% 0%, rgba(103, 232, 249, 0.12), transparent 18rem),
+    radial-gradient(circle at 96% 12%, rgba(196, 181, 253, 0.11), transparent 14rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(249, 253, 255, 0.76)),
+    linear-gradient(135deg, rgba(223, 247, 255, 0.36), rgba(245, 241, 255, 0.3) 54%, rgba(237, 253, 250, 0.32));
   backdrop-filter: blur(18px) saturate(1.22);
 }
 
 .mac-window {
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
-    0 20px 55px rgba(15, 23, 42, 0.08),
+    0 22px 60px rgba(15, 23, 42, 0.075),
+    0 8px 28px rgba(14, 165, 233, 0.045),
     0 1px 0 rgba(255, 255, 255, 0.86) inset;
 }
 
@@ -64,6 +77,27 @@ body {
   box-shadow:
     0 16px 38px rgba(15, 118, 178, 0.14),
     0 0 0 1px rgba(255, 255, 255, 0.82) inset;
+}
+
+.brand-mark-frame {
+  background:
+    linear-gradient(180deg, rgba(5, 18, 40, 0.98), rgba(3, 16, 34, 0.96)),
+    radial-gradient(circle at 62% 48%, rgba(34, 211, 238, 0.35), transparent 42%);
+  box-shadow:
+    0 18px 42px rgba(15, 118, 178, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.72) inset,
+    0 0 0 1px rgba(14, 165, 233, 0.08);
+}
+
+.brand-wordmark-frame {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 50% 24%, rgba(34, 211, 238, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 253, 255, 0.72));
+  box-shadow:
+    0 18px 48px rgba(15, 23, 42, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.86) inset;
 }
 
 @keyframes energy-toast-in {

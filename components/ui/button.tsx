@@ -4,14 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-b from-cyan-500 to-sky-600 text-primary-foreground shadow-[0_10px_24px_rgba(14,165,233,0.22)] hover:brightness-105",
-        secondary: "border border-white/75 bg-white/72 text-secondary-foreground backdrop-blur-xl hover:bg-white",
-        outline: "border border-slate-200/80 bg-white/64 backdrop-blur-xl hover:border-cyan-200 hover:bg-cyan-50/70",
-        ghost: "shadow-none hover:bg-white/64",
+        default: "bg-gradient-to-b from-cyan-500 via-sky-500 to-indigo-500 text-primary-foreground shadow-[0_12px_28px_rgba(14,165,233,0.24)] hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0",
+        secondary: "border border-white/75 bg-white/74 text-secondary-foreground backdrop-blur-xl hover:-translate-y-0.5 hover:bg-white",
+        outline: "border border-slate-200/80 bg-white/66 backdrop-blur-xl hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-cyan-50/76",
+        ghost: "shadow-none hover:bg-white/66",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90"
       },
       size: {

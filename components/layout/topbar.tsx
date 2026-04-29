@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BackButton } from "@/components/layout/back-button";
 import { Badge } from "@/components/ui/badge";
 import type { Organization, OrganizationMember, UserProfile } from "@/lib/types/core";
 
@@ -14,6 +15,7 @@ export function Topbar({
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/70 bg-white/68 px-4 shadow-[0_8px_26px_rgba(15,23,42,0.04)] backdrop-blur-2xl lg:px-8">
       <div className="flex min-w-0 items-center gap-3">
+        <BackButton />
         <div className="brand-mark-frame flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg lg:hidden">
           <Image src="/brand/kairosmini-mark-white.png" alt="初晓 OS" width={512} height={512} className="h-full w-full object-contain p-1" />
         </div>

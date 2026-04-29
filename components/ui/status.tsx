@@ -8,11 +8,11 @@ export function RiskBadge({ value }: { value: RiskLevel }) {
 
 export function StatusBadge({ value }: { value: ApprovalStatus | EventStatus | ModuleStatus | string }) {
   const variant =
-    value === "active" || value === "approved" || value === "processed" || value === "success"
+    value === "active" || value === "approved" || value === "paid" || value === "processed" || value === "success"
       ? "success"
-      : value === "pending" || value === "new" || value === "coming_soon" || value === "running"
+      : value === "pending" || value === "pending_approval" || value === "draft" || value === "new" || value === "coming_soon" || value === "running"
         ? "warning"
-        : value === "failed" || value === "rejected" || value === "disabled"
+        : value === "failed" || value === "rejected" || value === "cancelled" || value === "disabled"
           ? "danger"
           : "secondary";
   return <Badge variant={variant}>{value}</Badge>;

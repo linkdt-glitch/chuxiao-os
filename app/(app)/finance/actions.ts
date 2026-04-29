@@ -95,7 +95,7 @@ export async function createFinanceRecordAction(formData: FormData) {
     metadata: { notes: value(formData, "notes") ?? "" }
   });
   await attachReceiptFiles(formData, "id" in record ? record.id : undefined);
-  redirect("/finance/records");
+  redirect("/finance/records?created=1");
 }
 
 export async function updateFinanceRecordAction(formData: FormData) {
@@ -104,7 +104,10 @@ export async function updateFinanceRecordAction(formData: FormData) {
   await updateFinanceRecord(id, {
     status: value(formData, "status") as never
   });
+  revalidatePath("/finance");
   revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
+  revalidatePath("/approvals");
 }
 
 export async function approveFinanceRecordAction(formData: FormData) {
@@ -112,6 +115,8 @@ export async function approveFinanceRecordAction(formData: FormData) {
   if (!id) throw new Error("Missing record id");
   await approveFinanceRecord(id);
   revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
+  revalidatePath("/approvals");
   revalidatePath("/finance");
 }
 
@@ -120,6 +125,8 @@ export async function rejectFinanceRecordAction(formData: FormData) {
   if (!id) throw new Error("Missing record id");
   await rejectFinanceRecord(id, value(formData, "reason"));
   revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
+  revalidatePath("/approvals");
   revalidatePath("/finance");
 }
 

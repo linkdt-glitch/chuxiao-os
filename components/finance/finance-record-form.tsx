@@ -1,5 +1,6 @@
 import { createFinanceRecordAction } from "@/app/(app)/finance/actions";
 import { Button } from "@/components/ui/button";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,11 +34,14 @@ export function FinanceRecordForm({
   const category = rootCategoryFor(categories, defaults?.category_name) ?? rootCategoryFor(categories, defaults?.subcategory_name);
   const subcategory = flatCategories.find((item) => item.name === defaults?.subcategory_name);
   const account = accounts.find((item) => item.name === defaults?.account_name);
+  const fieldClass = "h-11 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:h-10 sm:text-sm";
+  const selectClass = `${fieldClass} w-full px-3`;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>记账信息</CardTitle>
+        <p className="text-sm text-muted-foreground">先把核心信息记录清楚；需要审批的支出或报销会自动进入审批中心。</p>
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-4 md:grid-cols-2">
@@ -46,7 +50,7 @@ export function FinanceRecordForm({
           <input type="hidden" name="quantity" value={defaults?.quantity ?? 1} />
           <div className="space-y-2">
             <Label htmlFor="record_type">类型</Label>
-            <select id="record_type" name="record_type" defaultValue={defaults?.record_type ?? "expense"} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+            <select id="record_type" name="record_type" defaultValue={defaults?.record_type ?? "expense"} className={selectClass}>
               <option value="income">收入</option>
               <option value="expense">支出</option>
               <option value="reimbursement">报销</option>
@@ -54,75 +58,75 @@ export function FinanceRecordForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">金额</Label>
-            <Input id="amount" name="amount" type="number" min="0" step="0.01" required defaultValue={defaults?.amount ?? ""} />
+            <Input id="amount" name="amount" type="number" min="0" step="0.01" required defaultValue={defaults?.amount ?? ""} className={fieldClass} inputMode="decimal" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="occurred_at">日期</Label>
-            <Input id="occurred_at" name="occurred_at" type="date" defaultValue={defaults?.occurred_at ?? new Date().toISOString().slice(0, 10)} />
+            <Input id="occurred_at" name="occurred_at" type="date" defaultValue={defaults?.occurred_at ?? new Date().toISOString().slice(0, 10)} className={fieldClass} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="category_id">核心类目</Label>
-            <select id="category_id" name="category_id" defaultValue={category?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+            <select id="category_id" name="category_id" defaultValue={category?.id ?? ""} className={selectClass}>
               <option value="">先不分类</option>
               {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="account_id">账户</Label>
-            <select id="account_id" name="account_id" defaultValue={account?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+            <select id="account_id" name="account_id" defaultValue={account?.id ?? ""} className={selectClass}>
               <option value="">未选择</option>
               {accounts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.currency}</option>)}
             </select>
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="description">说明</Label>
-            <Textarea id="description" name="description" required defaultValue={defaults?.description ?? ""} />
+            <Textarea id="description" name="description" required defaultValue={defaults?.description ?? ""} className="min-h-28 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:text-sm" />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="receipt_files">票据附件</Label>
-            <Input id="receipt_files" name="receipt_files" type="file" multiple />
+            <Input id="receipt_files" name="receipt_files" type="file" multiple className={fieldClass} accept="image/*,.pdf" />
           </div>
-          <details className="rounded-md border bg-muted/20 p-3 md:col-span-2">
+          <details className="rounded-2xl border border-slate-200/80 bg-white/50 p-4 md:col-span-2">
             <summary className="cursor-pointer text-sm font-medium">更多信息</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="subcategory_id">细分</Label>
-                <select id="subcategory_id" name="subcategory_id" defaultValue={subcategory?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                <select id="subcategory_id" name="subcategory_id" defaultValue={subcategory?.id ?? ""} className={selectClass}>
                   <option value="">不选</option>
                   {flatCategories.filter((item) => item.parent_id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payment_method">支付方式</Label>
-                <Input id="payment_method" name="payment_method" defaultValue={defaults?.payment_method ?? ""} />
+                <Input id="payment_method" name="payment_method" defaultValue={defaults?.payment_method ?? ""} className={fieldClass} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="counterparty_name">供应商 / 客户</Label>
-                <Input id="counterparty_name" name="counterparty_name" defaultValue={defaults?.counterparty_name ?? ""} />
+                <Input id="counterparty_name" name="counterparty_name" defaultValue={defaults?.counterparty_name ?? ""} className={fieldClass} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="project_name">项目</Label>
-                <Input id="project_name" name="project_name" defaultValue={defaults?.project_name ?? ""} />
+                <Input id="project_name" name="project_name" defaultValue={defaults?.project_name ?? ""} className={fieldClass} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="notes">备注</Label>
-                <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ""} />
+                <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ""} className="rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:text-sm" />
               </div>
             </div>
           </details>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="reimbursement_required" defaultChecked={defaults?.reimbursement_required} />
+          <label className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/65 px-3 text-sm">
+            <input type="checkbox" name="reimbursement_required" defaultChecked={defaults?.reimbursement_required} className="h-4 w-4" />
             需要报销
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="submit_for_approval" defaultChecked={defaults?.need_approval} />
+          <label className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/65 px-3 text-sm">
+            <input type="checkbox" name="submit_for_approval" defaultChecked={defaults?.need_approval} className="h-4 w-4" />
             提交审批
           </label>
-          <div className="flex gap-3 md:col-span-2">
+          <div className="sticky bottom-20 z-10 flex flex-col-reverse gap-3 rounded-2xl border border-white/80 bg-white/82 p-3 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl md:static md:col-span-2 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0 md:shadow-none">
             <Button type="button" variant="outline" asChild>
               <Link href="/finance/records">取消</Link>
             </Button>
-            <Button type="submit">{submitLabel}</Button>
+            <FormSubmitButton pendingText="保存中...">{submitLabel}</FormSubmitButton>
           </div>
         </form>
       </CardContent>

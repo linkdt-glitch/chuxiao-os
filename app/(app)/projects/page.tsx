@@ -26,7 +26,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <PageHeader
         title="执行指挥舱"
         description="简化管理，明确责任，跟踪项目进度，让团队高效协作。"
-        action={<Button asChild><Link href="/projects/new"><Plus className="h-4 w-4" />创建新项目</Link></Button>}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link href="/projects/tasks"><ListTodo className="h-4 w-4" />任务表</Link></Button>
+            <Button asChild><Link href="/projects/new"><Plus className="h-4 w-4" />创建新项目</Link></Button>
+          </div>
+        }
       />
 
       <div className="grid gap-4 md:grid-cols-4">

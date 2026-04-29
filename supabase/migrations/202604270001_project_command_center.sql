@@ -22,6 +22,7 @@ create table if not exists public.tasks (
   status text not null default 'to_do' check (status in ('to_do', 'in_progress', 'completed', 'archived')),
   due_date timestamptz,
   progress integer not null default 0 check (progress between 0 and 100),
+  priority integer not null default 3 check (priority between 1 and 5),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -66,6 +67,7 @@ create index if not exists idx_projects_due on public.projects(due_date);
 create index if not exists idx_tasks_org_project on public.tasks(organization_id, project_id);
 create index if not exists idx_tasks_assigned_to on public.tasks(assigned_to);
 create index if not exists idx_tasks_status on public.tasks(status);
+create index if not exists idx_tasks_priority on public.tasks(priority);
 create index if not exists idx_task_comments_task on public.task_comments(task_id, created_at desc);
 create index if not exists idx_task_files_task on public.task_files(task_id, created_at desc);
 create index if not exists idx_project_reviews_project on public.project_reviews(project_id);

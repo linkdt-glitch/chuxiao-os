@@ -10,8 +10,7 @@ import {
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProgressBar } from "@/components/projects/progress-bar";
-import { TaskStatusBadge, formatDate } from "@/components/projects/status";
-import { Badge } from "@/components/ui/badge";
+import { TaskPriorityBadge, TaskStatusBadge, formatDate } from "@/components/projects/status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,8 +56,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           <CardContent className="font-medium">{formatDate(task.due_date)}</CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">所属项目</CardTitle></CardHeader>
-          <CardContent><Badge variant="secondary">{project.name}</Badge></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">优先级</CardTitle></CardHeader>
+          <CardContent><TaskPriorityBadge priority={task.priority ?? 3} /></CardContent>
         </Card>
       </div>
 
@@ -139,6 +138,16 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                       <Label>进度</Label>
                       <Input name="progress" type="number" min="0" max="100" defaultValue={task.progress} />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>优先级</Label>
+                    <select name="priority" defaultValue={task.priority ?? 3} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                      <option value="5">P5 高</option>
+                      <option value="4">P4 较高</option>
+                      <option value="3">P3</option>
+                      <option value="2">P2</option>
+                      <option value="1">P1 低</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label>截止日期</Label>

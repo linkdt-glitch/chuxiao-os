@@ -4,6 +4,8 @@ import { recordAIWorkforceEvent } from "@/lib/ai-workforce/logging";
 import { demoWorkforceRuns } from "@/lib/ai-workforce/demo";
 import type { AgentRunLog, AgentRunStatus } from "@/lib/ai-workforce/types";
 
+const TERMINAL_STATES = new Set<AgentRunStatus>(["success", "failed", "cancelled"]);
+
 async function attachRunRelations(runs: AgentRunLog[]) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -85,7 +87,7 @@ export async function createAgentRun(input: {
       ai_invocation_log_id: input.ai_invocation_log_id ?? null,
       confirmation_request_id: input.confirmation_request_id ?? null,
       started_at: now,
-      finished_at: status === "running" ? null : now,
+      finished_at: TERMINAL_STATES.has(status) ? now : null,
       created_by: member.id
     })
     .select()
@@ -122,10 +124,12 @@ export async function updateAgentRun(runId: string, patch: {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: true };
 
-  const finished = patch.status && patch.status !== "running" ? new Date().toISOString() : undefined;
+  const finished = patch.status
+    ? TERMINAL_STATES.has(patch.status) ? new Date().toISOString() : null
+    : undefined;
   const { data, error } = await supabase
     .from("agent_run_logs")
-    .update({ ...patch, finished_at: finished })
+    .update({ ...patch, ...(finished !== undefined && { finished_at: finished }) })
     .eq("id", runId)
     .select()
     .single();

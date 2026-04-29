@@ -147,10 +147,20 @@ async function decideConfirmation(id: string, status: "approved" | "rejected", n
   if (error) throw error;
 
   if (data.approval_request_id) {
-    await supabase
+    const { error: approvalError } = await supabase
       .from("approval_requests")
       .update({ status })
       .eq("id", data.approval_request_id);
+    if (approvalError) {
+      await recordAIWorkforceEvent({
+        event_key: "ai_workforce.confirmation.sync_error",
+        action: "sync_error",
+        related_record_type: "ai_confirmation_request",
+        related_record_id: id,
+        after_data: { confirmation_status: status, approval_request_id: data.approval_request_id, error: approvalError.message }
+      });
+      throw new Error(`确认请求状态已更新，但审批单同步失败：${approvalError.message}`);
+    }
   }
 
   await recordAIWorkforceEvent({

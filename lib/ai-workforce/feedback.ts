@@ -18,13 +18,15 @@ export async function createAIFeedback(input: {
   const member = await getCurrentMember();
   if (!supabase) return { ok: true };
 
-  const feedbackType =
-    input.is_adopted_after_edit ? "edited" :
-      input.is_adopted ? "accepted" :
-        input.is_correct === false ? "incorrect" :
-          input.is_correct ? "correct" :
-            input.is_useful === false ? "not_useful" :
-              input.is_useful ? "useful" : "other";
+  // 数据库 feedback_type 有固定取值约束，多维结果放入 metadata 保留。
+  const tags: string[] = [];
+  if (input.is_adopted_after_edit) tags.push("edited");
+  else if (input.is_adopted) tags.push("accepted");
+  if (input.is_correct === false) tags.push("incorrect");
+  else if (input.is_correct) tags.push("correct");
+  if (input.is_useful === false) tags.push("not_useful");
+  else if (input.is_useful) tags.push("useful");
+  const feedbackType = tags[0] ?? "other";
 
   const { data, error } = await supabase
     .from("feedback_records")
@@ -42,7 +44,8 @@ export async function createAIFeedback(input: {
         is_useful: input.is_useful ?? null,
         is_correct: input.is_correct ?? null,
         is_adopted: input.is_adopted ?? null,
-        is_adopted_after_edit: input.is_adopted_after_edit ?? null
+        is_adopted_after_edit: input.is_adopted_after_edit ?? null,
+        feedback_tags: tags
       }
     })
     .select()

@@ -34,9 +34,9 @@ async function attachAgentRelations(agents: WorkforceAgent[]) {
       .from("ai_invocation_logs")
       .select("*")
       .eq("organization_id", organization.id)
-      .eq("module", "ai_workforce")
+      .in("invoked_by", agentIds)
       .order("created_at", { ascending: false })
-      .limit(100),
+      .limit(50),
     supabase
       .from("feedback_records")
       .select("*")
@@ -161,7 +161,26 @@ async function setAgentStatus(agentId: string, status: "active" | "paused" | "ar
   return { ok: true };
 }
 
+async function cancelAgentPendingWork(agentId: string) {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return;
+  const now = new Date().toISOString();
+  await Promise.all([
+    supabase
+      .from("agent_run_logs")
+      .update({ status: "cancelled", finished_at: now })
+      .eq("agent_id", agentId)
+      .in("status", ["running", "pending_confirmation"]),
+    supabase
+      .from("ai_confirmation_requests")
+      .update({ status: "cancelled" })
+      .eq("agent_id", agentId)
+      .eq("status", "pending")
+  ]);
+}
+
 export async function pauseAgent(agentId: string) {
+  await cancelAgentPendingWork(agentId);
   return setAgentStatus(agentId, "paused", "ai_workforce.agent.paused", "pause");
 }
 
@@ -170,6 +189,7 @@ export async function activateAgent(agentId: string) {
 }
 
 export async function archiveAgent(agentId: string) {
+  await cancelAgentPendingWork(agentId);
   return setAgentStatus(agentId, "archived", "ai_workforce.agent.archived", "archive");
 }
 

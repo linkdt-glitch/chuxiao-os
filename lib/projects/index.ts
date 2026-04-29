@@ -31,6 +31,11 @@ function clampProgress(value?: number) {
   return Math.max(0, Math.min(100, Math.round(Number(value))));
 }
 
+function clampPriority(value?: number) {
+  if (!Number.isFinite(value)) return 3;
+  return Math.max(1, Math.min(5, Math.round(Number(value))));
+}
+
 function statusFromProgress(status: TaskStatus | undefined, progress: number): TaskStatus {
   if (status) return status;
   if (progress >= 100) return "completed";
@@ -50,9 +55,15 @@ function normalizeProject(row: Record<string, unknown>): Project {
 }
 
 function normalizeTask(row: Record<string, unknown>): ProjectTask {
+  const rawComments = row.task_comments;
+  const rawFiles = row.task_files;
   return {
     ...(row as unknown as ProjectTask),
-    assignee: (row.assignee ?? null) as ProjectTask["assignee"]
+    priority: Number(row.priority ?? 3),
+    assignee: (row.assignee ?? null) as ProjectTask["assignee"],
+    project: (row.project ?? null) as ProjectTask["project"],
+    comment_count: Array.isArray(rawComments) && rawComments[0] && typeof rawComments[0] === "object" && "count" in rawComments[0] ? Number(rawComments[0].count) : undefined,
+    file_count: Array.isArray(rawFiles) && rawFiles[0] && typeof rawFiles[0] === "object" && "count" in rawFiles[0] ? Number(rawFiles[0].count) : undefined
   };
 }
 
@@ -199,13 +210,72 @@ export async function getProjectTasks(projectId: string) {
 
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, assignee:organization_members!tasks_assigned_to_fkey(id,display_name,email,member_type)")
+    .select("*, assignee:organization_members!tasks_assigned_to_fkey(id,display_name,email,member_type), task_comments(count), task_files(count)")
     .eq("organization_id", organization.id)
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   return (data ?? []).map((item) => normalizeTask(item as Record<string, unknown>));
+}
+
+export async function getTasks(filters?: {
+  project_id?: string;
+  status?: string;
+  assigned_to?: string;
+  priority?: string;
+  due?: string;
+  q?: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) {
+    return filterTasks(demoTasks, filters);
+  }
+
+  let query = supabase
+    .from("tasks")
+    .select("*, project:projects!tasks_project_id_fkey(id,name,status,due_date), assignee:organization_members!tasks_assigned_to_fkey(id,display_name,email,member_type), task_comments(count), task_files(count)")
+    .eq("organization_id", organization.id)
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("priority", { ascending: false })
+    .order("updated_at", { ascending: false });
+
+  if (filters?.project_id) query = query.eq("project_id", filters.project_id);
+  if (filters?.status && filters.status !== "all") query = query.eq("status", filters.status);
+  if (filters?.assigned_to) query = query.eq("assigned_to", filters.assigned_to);
+  if (filters?.priority && filters.priority !== "all") query = query.eq("priority", Number(filters.priority));
+  if (filters?.q) query = query.or(`name.ilike.%${filters.q}%,description.ilike.%${filters.q}%`);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return filterTasks((data ?? []).map((item) => normalizeTask(item as Record<string, unknown>)), {
+    due: filters?.due
+  });
+}
+
+function filterTasks(tasks: ProjectTask[], filters?: { due?: string; status?: string; assigned_to?: string; priority?: string; project_id?: string; q?: string }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(today);
+  weekEnd.setDate(today.getDate() + 7);
+  const query = filters?.q?.trim().toLowerCase();
+
+  return tasks.filter((task) => {
+    if (filters?.project_id && task.project_id !== filters.project_id) return false;
+    if (filters?.status && filters.status !== "all" && task.status !== filters.status) return false;
+    if (filters?.assigned_to && task.assigned_to !== filters.assigned_to) return false;
+    if (filters?.priority && filters.priority !== "all" && Number(task.priority) !== Number(filters.priority)) return false;
+    if (query && !`${task.name} ${task.description ?? ""}`.toLowerCase().includes(query)) return false;
+    if (!filters?.due || filters.due === "all") return true;
+    if (!task.due_date) return filters.due === "none";
+    const dueDate = new Date(task.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+    if (filters.due === "overdue") return dueDate < today && task.status !== "completed" && task.status !== "archived";
+    if (filters.due === "today") return dueDate.getTime() === today.getTime();
+    if (filters.due === "week") return dueDate >= today && dueDate <= weekEnd;
+    return true;
+  });
 }
 
 export async function getTask(taskId: string) {
@@ -240,7 +310,8 @@ export async function createTask(input: TaskInput) {
     assigned_to: input.assigned_to || member.id,
     status: statusFromProgress(input.status, progress),
     due_date: input.due_date || null,
-    progress
+    progress,
+    priority: clampPriority(input.priority ?? 3)
   };
 
   if (!supabase) return { ...payload, id: "demo_task_created", created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as ProjectTask;
@@ -270,6 +341,7 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
   const payload = {
     ...input,
     progress,
+    priority: input.priority === undefined ? undefined : clampPriority(input.priority),
     status: progress === 100 && input.status === undefined ? "completed" : input.status
   };
 
@@ -289,9 +361,15 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
 export async function archiveTask(id: string) {
   await requirePermission("tasks.archive");
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
-  const { data: before, error: readError } = await supabase.from("tasks").select("*").eq("id", id).single();
+  const { data: before, error: readError } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("organization_id", organization.id)
+    .eq("id", id)
+    .single();
   if (readError) throw readError;
   if (before.status === "archived") return before as ProjectTask;
 

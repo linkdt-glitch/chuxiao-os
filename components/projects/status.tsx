@@ -38,6 +38,11 @@ export function priorityLabel(priority: number) {
   return `P${priority}`;
 }
 
+export function TaskPriorityBadge({ priority }: { priority: number }) {
+  const variant = priority >= 5 ? "danger" : priority >= 4 ? "warning" : priority <= 2 ? "secondary" : "outline";
+  return <Badge variant={variant}>{priorityLabel(priority)}</Badge>;
+}
+
 export function formatDate(value?: string | null) {
   if (!value) return "-";
   return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(value));

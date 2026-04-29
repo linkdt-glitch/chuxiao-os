@@ -68,6 +68,16 @@ export default async function ProjectTasksPage({ params }: { params: Promise<{ i
                 </div>
               </div>
               <div className="space-y-2">
+                <Label>优先级</Label>
+                <select name="priority" defaultValue="3" className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                  <option value="5">P5 高</option>
+                  <option value="4">P4 较高</option>
+                  <option value="3">P3</option>
+                  <option value="2">P2</option>
+                  <option value="1">P1 低</option>
+                </select>
+              </div>
+              <div className="space-y-2">
                 <Label>截止日期</Label>
                 <Input name="due_date" type="date" />
               </div>

@@ -73,7 +73,8 @@ export async function createTaskAction(formData: FormData) {
     assigned_to: value(formData, "assigned_to") ?? null,
     status: (value(formData, "status") ?? "to_do") as TaskStatus,
     due_date: value(formData, "due_date") ?? null,
-    progress: numberValue(formData, "progress", 0)
+    progress: numberValue(formData, "progress", 0),
+    priority: numberValue(formData, "priority", 3)
   });
   revalidatePath(`/projects/${projectId}/tasks`);
 }
@@ -88,7 +89,8 @@ export async function updateTaskAction(formData: FormData) {
     assigned_to: value(formData, "assigned_to") ?? null,
     status: value(formData, "status") as TaskStatus | undefined,
     due_date: value(formData, "due_date") ?? null,
-    progress: value(formData, "progress") ? numberValue(formData, "progress", 0) : undefined
+    progress: value(formData, "progress") ? numberValue(formData, "progress", 0) : undefined,
+    priority: value(formData, "priority") ? numberValue(formData, "priority", 3) : undefined
   });
   if (projectId) {
     revalidatePath(`/projects/${projectId}/tasks`);

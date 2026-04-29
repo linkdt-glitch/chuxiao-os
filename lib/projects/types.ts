@@ -40,9 +40,13 @@ export type ProjectTask = {
   status: TaskStatus;
   due_date: string | null;
   progress: number;
+  priority: number;
   created_at: string;
   updated_at: string;
   assignee?: Pick<OrganizationMember, "id" | "display_name" | "email" | "member_type"> | null;
+  project?: Pick<Project, "id" | "name" | "status" | "due_date"> | null;
+  comment_count?: number;
+  file_count?: number;
 };
 
 export type TaskInput = {
@@ -53,6 +57,7 @@ export type TaskInput = {
   status?: TaskStatus;
   due_date?: string | null;
   progress?: number;
+  priority?: number;
 };
 
 export type TaskComment = {

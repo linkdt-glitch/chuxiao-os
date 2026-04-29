@@ -199,6 +199,15 @@ export async function createPromptVersion(input: {
   const member = await getCurrentMember();
   if (!supabase) return { ok: true };
 
+  const { data: existing } = await supabase
+    .from("prompt_versions")
+    .select("id")
+    .eq("organization_id", organization.id)
+    .eq("prompt_template_id", input.prompt_template_id)
+    .eq("version", input.version)
+    .maybeSingle();
+  if (existing) throw new Error(`版本号 ${input.version} 已存在，请使用不同的版本号`);
+
   const { data, error } = await supabase
     .from("prompt_versions")
     .insert({
@@ -231,7 +240,20 @@ export async function createPromptVersion(input: {
 
 async function setPromptStatus(promptId: string, status: "published" | "archived", eventKey: string, action: string) {
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
+
+  if (status === "published") {
+    const { data: versions } = await supabase
+      .from("prompt_versions")
+      .select("id")
+      .eq("organization_id", organization.id)
+      .eq("prompt_template_id", promptId)
+      .limit(1);
+    if (!versions || versions.length === 0) {
+      throw new Error("无法发布：该提示词尚未创建任何版本");
+    }
+  }
 
   const { error } = await supabase.from("prompt_templates").update({ status }).eq("id", promptId);
   if (error) throw error;

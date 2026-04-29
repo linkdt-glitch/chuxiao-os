@@ -292,17 +292,18 @@ on conflict (id) do update set
   due_date = excluded.due_date,
   priority = excluded.priority;
 
-insert into public.tasks (id, organization_id, project_id, name, description, assigned_to, status, due_date, progress)
+insert into public.tasks (id, organization_id, project_id, name, description, assigned_to, status, due_date, progress, priority)
 values
-  ('b0000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', '任务A1：设计 UI 界面', '完成核心页面的信息架构、视觉稿和交互说明。', '60000000-0000-4000-8000-000000000006', 'in_progress', '2023-03-30T00:00:00+08:00', 60),
-  ('b0000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000002', '任务B1：升级数据库', '整理客户支持系统的数据表变更，并完成迁移验证。', '60000000-0000-4000-8000-000000000007', 'to_do', '2023-04-30T00:00:00+08:00', 10)
+  ('b0000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', '任务A1：设计 UI 界面', '完成核心页面的信息架构、视觉稿和交互说明。', '60000000-0000-4000-8000-000000000006', 'in_progress', '2023-03-30T00:00:00+08:00', 60, 4),
+  ('b0000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000002', '任务B1：升级数据库', '整理客户支持系统的数据表变更，并完成迁移验证。', '60000000-0000-4000-8000-000000000007', 'to_do', '2023-04-30T00:00:00+08:00', 10, 5)
 on conflict (id) do update set
   name = excluded.name,
   description = excluded.description,
   assigned_to = excluded.assigned_to,
   status = excluded.status,
   due_date = excluded.due_date,
-  progress = excluded.progress;
+  progress = excluded.progress,
+  priority = excluded.priority;
 
 insert into public.task_comments (id, organization_id, task_id, comment_text, commenter_id)
 values (

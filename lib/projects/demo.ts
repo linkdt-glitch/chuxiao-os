@@ -50,9 +50,13 @@ export const demoTasks: ProjectTask[] = [
     status: "in_progress",
     due_date: "2023-03-30T00:00:00.000Z",
     progress: 60,
+    priority: 4,
     created_at: now,
     updated_at: now,
-    assignee: designer
+    assignee: designer,
+    project: demoProjects[0],
+    comment_count: 1,
+    file_count: 1
   },
   {
     id: "task_b1",
@@ -64,9 +68,13 @@ export const demoTasks: ProjectTask[] = [
     status: "to_do",
     due_date: "2023-04-30T00:00:00.000Z",
     progress: 10,
+    priority: 5,
     created_at: now,
     updated_at: now,
-    assignee: backend
+    assignee: backend,
+    project: demoProjects[1],
+    comment_count: 0,
+    file_count: 0
   }
 ];
 

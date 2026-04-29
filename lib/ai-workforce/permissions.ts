@@ -13,7 +13,9 @@ async function isManager() {
 }
 
 export async function canViewAgent(agent?: WorkforceAgent | null) {
-  if (!agent) return hasPermission("agent.view");
+  if (agent?.status === "archived") {
+    return isOwnerOrAdmin();
+  }
   return hasPermission("agent.view");
 }
 
@@ -30,7 +32,10 @@ export async function canRunAgent(agent?: WorkforceAgent | null) {
 }
 
 export async function canViewPrompt(prompt?: PromptTemplate | null) {
-  if (!prompt) return hasPermission("prompt.view");
+  if (prompt?.status === "draft") {
+    const member = await getCurrentMember();
+    return (await isOwnerOrAdmin()) || prompt.owner_id === member.user_id;
+  }
   return hasPermission("prompt.view");
 }
 

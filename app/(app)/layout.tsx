@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
 import {
   getCurrentMember,
@@ -32,8 +33,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="lg:pl-72">
         <Topbar organization={organization} member={member} user={user} />
         <EnergyProvider>
-          <main className="mx-auto w-full max-w-7xl px-4 py-7 lg:px-8">{children}</main>
+          <main className="mx-auto w-full max-w-7xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 animate-app-page-in lg:px-8 lg:py-7">
+            {children}
+          </main>
         </EnergyProvider>
+        <MobileTabbar modules={modules} />
       </div>
     </div>
   );

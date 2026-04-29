@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/lib/auth";
 import { ensureDefaultAIProviders } from "@/lib/ai/default-providers";
+import { getFinanceRecords } from "@/lib/finance/records";
+import type { FinanceRecord } from "@/lib/finance/types";
 import {
   demoAIInvocationLogs,
   demoAgentRunLogs,
@@ -122,6 +124,46 @@ export async function getApprovals() {
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
   return data ?? [];
+}
+
+export async function getApprovalCenterData() {
+  const [approvals, financeRecords] = await Promise.all([
+    getApprovals(),
+    getFinanceRecords({ limit: 500 })
+  ]);
+
+  const financeByApprovalId = new Map<string, FinanceRecord>();
+  const financeByRecordId = new Map<string, FinanceRecord>();
+
+  for (const record of financeRecords) {
+    financeByRecordId.set(record.id, record);
+    if (record.approval_request_id) financeByApprovalId.set(record.approval_request_id, record);
+  }
+
+  const financeApprovals = approvals
+    .filter((approval) => approval.related_module === "finance")
+    .map((approval) => ({
+      approval,
+      record: financeByApprovalId.get(approval.id) ?? (approval.related_record_id ? financeByRecordId.get(approval.related_record_id) : undefined)
+    }));
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
+
+  return {
+    approvals,
+    financeApprovals,
+    financeRecords,
+    stats: {
+      total: approvals.length,
+      pending: approvals.filter((approval) => approval.status === "pending").length,
+      financePending: financeApprovals.filter(({ approval, record }) => approval.status === "pending" || record?.status === "pending_approval").length,
+      highRiskPending: approvals.filter((approval) => approval.status === "pending" && ["high", "critical"].includes(approval.risk_level)).length,
+      processedThisWeek: approvals.filter((approval) => ["approved", "rejected"].includes(approval.status) && new Date(approval.updated_at ?? approval.created_at) >= weekStart).length,
+      rejectedThisWeek: approvals.filter((approval) => approval.status === "rejected" && new Date(approval.updated_at ?? approval.created_at) >= weekStart).length
+    }
+  };
 }
 
 export async function getAuditLogs() {

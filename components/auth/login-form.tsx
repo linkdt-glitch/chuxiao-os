@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
   const [message, setMessage] = useState(initialMessage ?? "");
   const [isError, setIsError] = useState(Boolean(initialMessage));
   const [pendingAction, setPendingAction] = useState<"password" | "magic" | "bootstrap" | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(form: HTMLFormElement, mode: "password" | "magic" | "bootstrap") {
     setPendingAction(mode);
@@ -63,7 +64,23 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">密码</Label>
-        <Input id="password" name="password" type="password" placeholder="首次管理员密码或已创建账号密码" />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="首次管理员密码或已创建账号密码"
+            className="pr-10"
+          />
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? "隐藏密码" : "显示密码"}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="full_name">姓名</Label>

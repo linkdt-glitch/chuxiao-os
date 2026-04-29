@@ -8,6 +8,11 @@ import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { requirePermission } from "@/lib/permissions";
 
+export type CreateHumanMemberState = {
+  ok: boolean;
+  message: string;
+};
+
 function value(formData: FormData, key: string) {
   const raw = formData.get(key);
   return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
@@ -73,97 +78,115 @@ async function getOrCreateAuthUser({
   return data.user.id;
 }
 
-export async function createHumanMemberAction(formData: FormData) {
-  await requirePermission("organization.manage");
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return "创建成员失败，请检查邮箱、密码和角色后重试。";
+}
 
-  const email = normalizeEmail(value(formData, "email") ?? "");
-  const display_name = value(formData, "display_name");
-  const password = value(formData, "password");
-  const role_key = value(formData, "role_key") ?? "member";
+export async function createHumanMemberAction(
+  _prevState: CreateHumanMemberState,
+  formData: FormData
+): Promise<CreateHumanMemberState> {
+  try {
+    await requirePermission("organization.manage");
 
-  if (!email || !email.includes("@")) throw new Error("请输入正确的成员邮箱。");
-  if (!display_name) throw new Error("请输入成员姓名。");
-  if (!password || password.length < 12) throw new Error("初始密码至少需要 12 位。");
-  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-    throw new Error("初始密码需同时包含字母和数字。");
-  }
-  if (!["admin", "manager", "member"].includes(role_key)) {
-    throw new Error("第一版仅支持添加 Admin / Manager / Member 三类人类成员。");
-  }
+    const email = normalizeEmail(value(formData, "email") ?? "");
+    const display_name = value(formData, "display_name");
+    const password = value(formData, "password");
+    const role_key = value(formData, "role_key") ?? "member";
 
-  const supabase = await createSupabaseServerClient();
-  const admin = createSupabaseAdminClient();
-  const organization = await getCurrentOrganization();
-  if (!supabase || !admin) return;
+    if (!email || !email.includes("@")) throw new Error("请输入正确的成员邮箱。");
+    if (!display_name) throw new Error("请输入成员姓名。");
+    if (!password || password.length < 12) throw new Error("初始密码至少需要 12 位。");
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      throw new Error("初始密码需同时包含字母和数字。");
+    }
+    if (!["admin", "manager", "member"].includes(role_key)) {
+      throw new Error("第一版仅支持添加 Admin / Manager / Member 三类人类成员。");
+    }
 
-  const { data: role, error: roleError } = await supabase
-    .from("roles")
-    .select("id, key, name")
-    .eq("organization_id", organization.id)
-    .eq("key", role_key)
-    .maybeSingle();
+    const supabase = await createSupabaseServerClient();
+    const admin = createSupabaseAdminClient();
+    const organization = await getCurrentOrganization();
+    if (!supabase || !admin) throw new Error("系统环境变量不完整，无法创建成员账号。");
 
-  if (roleError) throw roleError;
-  if (!role?.id) throw new Error("没有找到对应角色，请先检查角色权限配置。");
+    const { data: role, error: roleError } = await supabase
+      .from("roles")
+      .select("id, key, name")
+      .eq("organization_id", organization.id)
+      .eq("key", role_key)
+      .maybeSingle();
 
-  const user_id = await getOrCreateAuthUser({ email, password, displayName: display_name });
+    if (roleError) throw roleError;
+    if (!role?.id) throw new Error("没有找到对应角色，请先检查角色权限配置。");
 
-  const { data: existingMember, error: existingError } = await admin
-    .from("organization_members")
-    .select("id, status")
-    .eq("organization_id", organization.id)
-    .eq("user_id", user_id)
-    .maybeSingle();
+    const user_id = await getOrCreateAuthUser({ email, password, displayName: display_name });
 
-  if (existingError) throw existingError;
+    const { data: existingMember, error: existingError } = await admin
+      .from("organization_members")
+      .select("id, status")
+      .eq("organization_id", organization.id)
+      .eq("user_id", user_id)
+      .maybeSingle();
 
-  const memberPayload = {
-    organization_id: organization.id,
-    user_id,
-    role_id: role.id,
-    member_type: "human",
-    display_name,
-    email,
-    status: "active",
-    metadata: { created_from: "organization_admin" }
-  };
+    if (existingError) throw existingError;
 
-  const { data: member, error } = existingMember?.id
-    ? await admin
-        .from("organization_members")
-        .update(memberPayload)
-        .eq("id", existingMember.id)
-        .select("id")
-        .single()
-    : await admin
-        .from("organization_members")
-        .insert(memberPayload)
-        .select("id")
-        .single();
+    const memberPayload = {
+      organization_id: organization.id,
+      user_id,
+      role_id: role.id,
+      member_type: "human",
+      display_name,
+      email,
+      status: "active",
+      metadata: { created_from: "organization_admin" }
+    };
 
-  if (error) throw error;
+    const { data: member, error } = existingMember?.id
+      ? await admin
+          .from("organization_members")
+          .update(memberPayload)
+          .eq("id", existingMember.id)
+          .select("id")
+          .single()
+      : await admin
+          .from("organization_members")
+          .insert(memberPayload)
+          .select("id")
+          .single();
 
-  await logAction({
-    event_key: existingMember?.id ? "member.updated" : "member.created",
-    action: existingMember?.id ? "update" : "create",
-    module: "organization",
-    related_record_type: "organization_member",
-    related_record_id: member.id,
-    after_data: { email, display_name, role_key, status: "active" }
-  });
-  await emitEvent({
-    event_key: existingMember?.id ? "member.updated" : "member.created",
-    module: "organization",
-    payload: {
+    if (error) throw error;
+
+    await logAction({
+      event_key: existingMember?.id ? "member.updated" : "member.created",
+      action: existingMember?.id ? "update" : "create",
+      module: "organization",
       related_record_type: "organization_member",
       related_record_id: member.id,
-      email,
-      display_name,
-      role_key
-    }
-  });
+      after_data: { email, display_name, role_key, status: "active" }
+    });
+    await emitEvent({
+      event_key: existingMember?.id ? "member.updated" : "member.created",
+      module: "organization",
+      payload: {
+        related_record_type: "organization_member",
+        related_record_id: member.id,
+        email,
+        display_name,
+        role_key
+      }
+    });
 
-  revalidatePath("/organization");
+    revalidatePath("/organization");
+    return {
+      ok: true,
+      message: existingMember?.id
+        ? `已更新 ${display_name} 的账号、角色和初始密码。`
+        : `已创建 ${display_name} 的成员账号，可以用邮箱和初始密码登录。`
+    };
+  } catch (error) {
+    return { ok: false, message: getErrorMessage(error) };
+  }
 }
 
 export async function disableMemberAction(formData: FormData) {

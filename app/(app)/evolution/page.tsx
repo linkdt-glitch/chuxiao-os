@@ -1,17 +1,14 @@
 import Link from "next/link";
+import { CreateFeedbackForm } from "@/components/evolution/create-feedback-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { getEvolutionData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
-import { createFeedbackAction } from "./actions";
 
 export default async function EvolutionPage() {
   const data = await getEvolutionData();
@@ -35,36 +32,7 @@ export default async function EvolutionPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>创建反馈</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={createFeedbackAction} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="target_type">对象类型</Label>
-                <Input id="target_type" name="target_type" placeholder="task / agent_output / prompt_run / other" defaultValue="other" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="feedback_type">反馈类型</Label>
-                <Input id="feedback_type" name="feedback_type" placeholder="useful / edited / rejected / other" defaultValue="other" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="module">关联模块</Label>
-                <Input id="module" name="module" placeholder="finance / agents / approvals" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rating">评分</Label>
-                <Input id="rating" name="rating" type="number" min="1" max="5" placeholder="1-5" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="content">内容</Label>
-                <Textarea id="content" name="content" placeholder="这次输出哪里有用、哪里需要改进" />
-              </div>
-              <Button type="submit" className="w-full">保存反馈</Button>
-            </form>
-          </CardContent>
-        </Card>
+        <CreateFeedbackForm />
 
         <div className="grid gap-4">
           <SummaryCard title="反馈记录" value={data.stats.feedbackCount} href="#feedback" />

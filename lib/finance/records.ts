@@ -197,14 +197,15 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
 
 export async function updateFinanceRecord(id: string, input: Partial<FinanceRecordInput>) {
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
   if (input.status === "paid") {
     return markFinanceRecordPaid(id);
   }
 
-  const { data: before } = await supabase.from("finance_records").select("*").eq("id", id).single();
-  const { data, error } = await supabase.from("finance_records").update(input).eq("id", id).select().single();
+  const { data: before } = await supabase.from("finance_records").select("*").eq("organization_id", organization.id).eq("id", id).single();
+  const { data, error } = await supabase.from("finance_records").update(input).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
   await logAction({ event_key: "finance.record.updated", action: "update", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
@@ -279,14 +280,15 @@ export async function submitFinanceRecord(id: string) {
 export async function approveFinanceRecord(id: string) {
   if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   const member = await getCurrentMember();
   if (!supabase) return { ok: true };
 
-  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("organization_id", organization.id).eq("id", id).single();
   if (readError) throw readError;
   if (before.approval_request_id) await approveApproval(before.approval_request_id);
 
-  const { data, error } = await supabase.from("finance_records").update({ status: "approved", approved_by: member.id }).eq("id", id).select().single();
+  const { data, error } = await supabase.from("finance_records").update({ status: "approved", approved_by: member.id }).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
   await logAction({ event_key: "finance.record.approved", action: "approve", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
   await emitEvent({ event_key: "finance.record.approved", module: "finance", payload: { id } });
@@ -297,14 +299,15 @@ export async function approveFinanceRecord(id: string) {
 export async function rejectFinanceRecord(id: string, reason?: string) {
   if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
-  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
+  const { data: before, error: readError } = await supabase.from("finance_records").select("*").eq("organization_id", organization.id).eq("id", id).single();
   if (readError) throw readError;
   if (before.approval_request_id) await rejectApproval(before.approval_request_id);
 
   const metadata = { ...(before.metadata ?? {}), reject_reason: reason ?? "" };
-  const { data, error } = await supabase.from("finance_records").update({ status: "rejected", metadata }).eq("id", id).select().single();
+  const { data, error } = await supabase.from("finance_records").update({ status: "rejected", metadata }).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
   await logAction({ event_key: "finance.record.rejected", action: "reject", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
   await emitEvent({ event_key: "finance.record.rejected", module: "finance", payload: { id, reason } });

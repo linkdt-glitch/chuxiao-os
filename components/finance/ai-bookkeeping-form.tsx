@@ -57,12 +57,12 @@ function getSpeechRecognition() {
 export function AIBookkeepingForm({ categories, accounts }: { categories: FinanceCategory[]; accounts: FinanceAccount[] }) {
   const [parseState, parseAction, parsing] = useActionState<AIParseState, FormData>(parseFinanceTextAction, {});
   const [confirmState, confirmAction, confirming] = useActionState<AIParseState, FormData>(confirmParsedFinanceRecordAction, {});
-  const [rawText, setRawText] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const parsed = parseState.parsed;
   const allCategories = flat(categories);
   const category = rootCategoryFor(categories, parsed?.category_name) ?? rootCategoryFor(categories, parsed?.subcategory_name);
@@ -92,8 +92,9 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
         const result = event.results[index];
         if (result?.isFinal) parts.push(result[0].transcript.trim());
       }
-      if (parts.length) {
-        setRawText((current) => [current.trim(), parts.join("，")].filter(Boolean).join("，"));
+      if (parts.length && textareaRef.current) {
+        const current = textareaRef.current.value.trim();
+        textareaRef.current.value = [current, parts.join("，")].filter(Boolean).join("，");
       }
     };
     recognition.onerror = () => {
@@ -123,10 +124,10 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
             <div className="space-y-2">
               <Label htmlFor="raw_text">一句话描述</Label>
               <Textarea
+                ref={textareaRef}
                 id="raw_text"
                 name="raw_text"
-                value={rawText}
-                onChange={(event) => setRawText(event.target.value)}
+                defaultValue=""
                 placeholder="今天支付供应商打样费680元，用于新款产品开发，微信支付，需要报销"
                 className="min-h-28 text-base sm:min-h-40 sm:text-sm"
               />
@@ -146,7 +147,6 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                 name="receipt_files"
                 type="file"
                 accept="image/*,application/pdf"
-                capture="environment"
                 multiple
                 className="sr-only"
                 onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []).map((file) => file.name))}

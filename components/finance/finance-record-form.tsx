@@ -1,5 +1,6 @@
 import { createFinanceRecordAction } from "@/app/(app)/finance/actions";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,7 +118,10 @@ export function FinanceRecordForm({
             <input type="checkbox" name="submit_for_approval" defaultChecked={defaults?.need_approval} />
             提交审批
           </label>
-          <div className="md:col-span-2">
+          <div className="flex gap-3 md:col-span-2">
+            <Button type="button" variant="outline" asChild>
+              <Link href="/finance/records">取消</Link>
+            </Button>
             <Button type="submit">{submitLabel}</Button>
           </div>
         </form>

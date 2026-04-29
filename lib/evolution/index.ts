@@ -85,9 +85,10 @@ export async function createReview(input: {
 export async function updateReview(id: string, patch: Record<string, unknown>) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: true };
+  const organization = await getCurrentOrganization();
   const member = await getCurrentMember();
   const actorId = member.user_id ?? member.agent_id ?? member.id;
-  const { error } = await supabase.from("review_records").update(patch).eq("id", id);
+  const { error } = await supabase.from("review_records").update(patch).eq("organization_id", organization.id).eq("id", id);
   if (error) throw error;
   await logAction({ actor_id: actorId, actor_type: member.member_type, event_key: "evolution.review.updated", action: "update", module: "evolution", related_record_type: "review_record", related_record_id: id, after_data: patch });
   await emitEvent({ event_key: "evolution.review.updated", module: "evolution", actor_id: actorId, actor_type: member.member_type, payload: { id } });
@@ -136,9 +137,10 @@ export async function createSop(input: {
 export async function updateSop(id: string, patch: Record<string, unknown>) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: true };
+  const organization = await getCurrentOrganization();
   const member = await getCurrentMember();
   const actorId = member.user_id ?? member.agent_id ?? member.id;
-  const { error } = await supabase.from("sop_records").update(patch).eq("id", id);
+  const { error } = await supabase.from("sop_records").update(patch).eq("organization_id", organization.id).eq("id", id);
   if (error) throw error;
   await logAction({ actor_id: actorId, actor_type: member.member_type, event_key: "knowledge.sop.updated", action: "update", module: "knowledge", related_record_type: "sop_record", related_record_id: id, after_data: patch });
   await emitEvent({ event_key: "knowledge.sop.updated", module: "knowledge", actor_id: actorId, actor_type: member.member_type, payload: { id } });

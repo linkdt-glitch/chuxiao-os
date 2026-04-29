@@ -1,6 +1,7 @@
 import { createPromptAction } from "@/app/(app)/ai-workforce/actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +62,10 @@ export default async function NewPromptPage() {
               <Label htmlFor="content">Prompt 内容</Label>
               <Textarea id="content" name="content" className="min-h-56 font-mono" placeholder="你是 {{role}}。请基于 {{input}} 输出..." />
             </div>
-            <div className="md:col-span-2">
+            <div className="flex gap-3 md:col-span-2">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/ai-workforce/prompts">取消</Link>
+              </Button>
               <Button type="submit">创建并生成 v1.0</Button>
             </div>
           </form>

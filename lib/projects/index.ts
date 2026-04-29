@@ -172,15 +172,16 @@ export async function createProject(input: ProjectInput) {
 
 export async function updateProject(id: string, input: Partial<ProjectInput>) {
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
   const payload = {
     ...input,
     priority: input.priority ? Math.max(1, Math.min(5, Number(input.priority))) : undefined
   };
-  const { data: before, error: readError } = await supabase.from("projects").select("*").eq("id", id).single();
+  const { data: before, error: readError } = await supabase.from("projects").select("*").eq("organization_id", organization.id).eq("id", id).single();
   if (readError) throw readError;
-  const { data, error } = await supabase.from("projects").update(payload).eq("id", id).select().single();
+  const { data, error } = await supabase.from("projects").update(payload).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
   const eventKey = data.status === "completed" && before.status !== "completed" ? "projects.completed" : "projects.updated";
@@ -260,9 +261,10 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
     throw new Error("任务归档必须通过归档审批流程处理。");
   }
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
-  const { data: before, error: readError } = await supabase.from("tasks").select("*").eq("id", id).single();
+  const { data: before, error: readError } = await supabase.from("tasks").select("*").eq("organization_id", organization.id).eq("id", id).single();
   if (readError) throw readError;
   const progress = input.progress === undefined ? undefined : clampProgress(input.progress);
   const payload = {
@@ -271,7 +273,7 @@ export async function updateTask(id: string, input: Partial<TaskInput>) {
     status: progress === 100 && input.status === undefined ? "completed" : input.status
   };
 
-  const { data, error } = await supabase.from("tasks").update(payload).eq("id", id).select().single();
+  const { data, error } = await supabase.from("tasks").update(payload).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
   const eventKey = data.status === "completed" && before.status !== "completed" ? "tasks.completed" : "tasks.updated";

@@ -1,6 +1,7 @@
 import { createAgentAction } from "@/app/(app)/ai-workforce/actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +71,10 @@ export default async function NewWorkforceAgentPage() {
               <Label htmlFor="description">描述</Label>
               <Textarea id="description" name="description" placeholder="Agent 职责、边界和风险说明" />
             </div>
-            <div className="md:col-span-2">
+            <div className="flex gap-3 md:col-span-2">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/ai-workforce/agents">取消</Link>
+              </Button>
               <Button type="submit">创建 Agent</Button>
             </div>
           </form>

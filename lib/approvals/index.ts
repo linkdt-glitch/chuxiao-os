@@ -46,11 +46,13 @@ export async function createApproval(input: {
 
 async function setApprovalStatus(id: string, status: ApprovalStatus) {
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
   const { data: approval, error: readError } = await supabase
     .from("approval_requests")
     .select("*")
+    .eq("organization_id", organization.id)
     .eq("id", id)
     .single();
 
@@ -59,10 +61,12 @@ async function setApprovalStatus(id: string, status: ApprovalStatus) {
   const { error } = await supabase
     .from("approval_requests")
     .update({ status })
+    .eq("organization_id", organization.id)
     .eq("id", id);
 
   if (error) throw error;
   await logAction({ event_key: `approval.${status}`, action: status, module: "approvals", related_record_type: "approval_request", related_record_id: id });
+  revalidatePath("/approvals");
 
   if (
     status === "approved" &&

@@ -111,12 +111,16 @@ export async function approveFinanceRecordAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing record id");
   await approveFinanceRecord(id);
+  revalidatePath("/finance/records");
+  revalidatePath("/finance");
 }
 
 export async function rejectFinanceRecordAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing record id");
   await rejectFinanceRecord(id, value(formData, "reason"));
+  revalidatePath("/finance/records");
+  revalidatePath("/finance");
 }
 
 export async function createFinanceCategoryAction(formData: FormData) {

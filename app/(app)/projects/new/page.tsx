@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getMembers } from "@/lib/data/queries";
+import Link from "next/link";
 
 export default async function NewProjectPage() {
   const members = await getMembers();
@@ -58,7 +59,10 @@ export default async function NewProjectPage() {
               <Label>截止日期</Label>
               <Input name="due_date" type="date" />
             </div>
-            <div className="flex justify-end lg:col-span-2">
+            <div className="flex justify-end gap-3 lg:col-span-2">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/projects">取消</Link>
+              </Button>
               <Button type="submit">创建项目</Button>
             </div>
           </form>

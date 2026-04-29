@@ -61,10 +61,11 @@ export async function createFinanceAccount(input: {
 
 export async function updateFinanceAccount(id: string, input: Partial<Pick<FinanceAccount, "name" | "account_type" | "currency" | "current_balance" | "is_active">>) {
   const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
 
-  const { data: before } = await supabase.from("finance_accounts").select("*").eq("id", id).single();
-  const { data, error } = await supabase.from("finance_accounts").update(input).eq("id", id).select().single();
+  const { data: before } = await supabase.from("finance_accounts").select("*").eq("organization_id", organization.id).eq("id", id).single();
+  const { data, error } = await supabase.from("finance_accounts").update(input).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
   await logAction({ event_key: "finance.account.updated", action: "update", module: "finance", related_record_type: "finance_account", related_record_id: id, before_data: before, after_data: data });

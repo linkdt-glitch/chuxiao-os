@@ -59,6 +59,8 @@ export async function updateProjectStatusAction(formData: FormData) {
   await updateProject(id, {
     status: (value(formData, "status") ?? "in_progress") as ProjectStatus
   });
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${id}`);
 }
 
 export async function createTaskAction(formData: FormData) {
@@ -88,12 +90,18 @@ export async function updateTaskAction(formData: FormData) {
     due_date: value(formData, "due_date") ?? null,
     progress: value(formData, "progress") ? numberValue(formData, "progress", 0) : undefined
   });
+  if (projectId) {
+    revalidatePath(`/projects/${projectId}/tasks`);
+    revalidatePath(`/projects/${projectId}/tasks/${id}`);
+  }
 }
 
 export async function archiveTaskAction(formData: FormData) {
   const id = value(formData, "id");
+  const projectId = value(formData, "project_id");
   if (!id) throw new Error("Missing task id");
   await archiveTask(id);
+  if (projectId) revalidatePath(`/projects/${projectId}/tasks`);
 }
 
 export async function createTaskCommentAction(formData: FormData) {

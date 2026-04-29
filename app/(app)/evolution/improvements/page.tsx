@@ -1,16 +1,14 @@
+import { CreateImprovementForm } from "@/components/evolution/create-improvement-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { getImprovementSuggestions } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
-import { changeImprovementStatusAction, createImprovementAction } from "../actions";
+import { changeImprovementStatusAction } from "../actions";
 
 const statuses = ["new", "accepted", "rejected", "in_progress", "done"];
 
@@ -24,24 +22,7 @@ export default async function ImprovementsPage() {
         description="成长飞轮引擎的一部分。记录系统、人类或 Agent 对流程、风险、知识、财务和 AI 工作方式的改进建议。"
       />
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>创建优化建议</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={createImprovementAction} className="space-y-4">
-              <Field name="title" label="标题" placeholder="优化报销审批阈值" />
-              <Field name="suggestion_type" label="类型" placeholder="finance / project / agent / risk" defaultValue="other" />
-              <Field name="related_module" label="关联模块" placeholder="finance / governance / agents" />
-              <Field name="impact_level" label="影响等级" placeholder="low / medium / high / critical" defaultValue="medium" />
-              <div className="space-y-2">
-                <Label htmlFor="description">说明</Label>
-                <Textarea id="description" name="description" placeholder="为什么建议优化，预期影响是什么" />
-              </div>
-              <Button className="w-full" type="submit">保存建议</Button>
-            </form>
-          </CardContent>
-        </Card>
+        <CreateImprovementForm />
 
         <Card>
           <CardHeader>
@@ -91,14 +72,5 @@ export default async function ImprovementsPage() {
         </Card>
       </div>
     </>
-  );
-}
-
-function Field({ name, label, placeholder, defaultValue }: { name: string; label: string; placeholder?: string; defaultValue?: string }) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} placeholder={placeholder} defaultValue={defaultValue} />
-    </div>
   );
 }

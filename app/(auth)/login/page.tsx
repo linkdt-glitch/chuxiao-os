@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Building2, ShieldCheck } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -46,16 +45,6 @@ export default async function LoginPage({
         </CardHeader>
         <CardContent>
           <LoginForm initialMessage={initialMessage} />
-          <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              注册后自动初始化组织、角色、模块。
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4" />
-              组织数据通过 RLS 按 organization_id 隔离。
-            </div>
-          </div>
         </CardContent>
       </Card>
     </main>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Plus } from "lucide-react";
+import { CheckCircle2, Download, Plus } from "lucide-react";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,12 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
         description="统一管理收入、支出、报销流水，支持按类型、状态、日期、类目筛选与导出。"
         action={<Button asChild><Link href="/finance/records/new"><Plus className="h-4 w-4" />新增记录</Link></Button>}
       />
+      {params.created ? (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-800 shadow-[0_12px_34px_rgba(16,185,129,0.08)]">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>财务记录已保存，最新流水已同步。</span>
+        </div>
+      ) : null}
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>筛选</CardTitle>

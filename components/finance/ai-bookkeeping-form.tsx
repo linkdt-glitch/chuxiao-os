@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import { Camera, Mic, MicOff, Sparkles, Upload } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Camera, CheckCircle2, Keyboard, Mic, MicOff, Sparkles, Upload } from "lucide-react";
 import { confirmParsedFinanceRecordAction, parseFinanceTextAction, type AIParseState } from "@/app/(app)/finance/actions";
+import { ConfettiBurst } from "@/components/energy/confetti-burst";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -55,10 +57,14 @@ function getSpeechRecognition() {
 }
 
 export function AIBookkeepingForm({ categories, accounts }: { categories: FinanceCategory[]; accounts: FinanceAccount[] }) {
+  const router = useRouter();
   const [parseState, parseAction, parsing] = useActionState<AIParseState, FormData>(parseFinanceTextAction, {});
   const [confirmState, confirmAction, confirming] = useActionState<AIParseState, FormData>(confirmParsedFinanceRecordAction, {});
+  const [rawText, setRawText] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
+  const [voiceFallback, setVoiceFallback] = useState(false);
+  const [saveCelebration, setSaveCelebration] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -69,6 +75,12 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
   const subcategory = allCategories.find((item) => item.name === parsed?.subcategory_name);
   const account = accounts.find((item) => item.name === parsed?.account_name);
 
+  function focusTextInput(message: string) {
+    setVoiceFallback(true);
+    setVoiceMessage(message);
+    window.setTimeout(() => textareaRef.current?.focus(), 80);
+  }
+
   function toggleVoiceInput() {
     if (listening) {
       recognitionRef.current?.stop();
@@ -78,7 +90,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
 
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
-      setVoiceMessage("当前浏览器不支持语音输入，可以用手机系统键盘的语音按钮。");
+      focusTextInput("当前浏览器不支持网页语音识别，已打开输入框。可以点击手机键盘上的麦克风说话，或直接输入文字。");
       return;
     }
 
@@ -92,29 +104,48 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
         const result = event.results[index];
         if (result?.isFinal) parts.push(result[0].transcript.trim());
       }
-      if (parts.length && textareaRef.current) {
-        const current = textareaRef.current.value.trim();
-        textareaRef.current.value = [current, parts.join("，")].filter(Boolean).join("，");
+      if (parts.length) {
+        setRawText((current) => [current.trim(), parts.join("，")].filter(Boolean).join("，"));
+        setVoiceMessage("语音已写入一句话描述，可以继续补充或直接识别。");
+        setVoiceFallback(false);
       }
     };
     recognition.onerror = () => {
-      setVoiceMessage("语音识别没有成功，请检查浏览器麦克风权限。");
       setListening(false);
+      focusTextInput("语音识别没有成功。已切换到文字输入，你也可以用手机键盘自带的麦克风继续说话。");
     };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     setVoiceMessage("");
+    setVoiceFallback(false);
     try {
       recognition.start();
       setListening(true);
     } catch {
       setListening(false);
-      setVoiceMessage("语音识别启动失败，请用手机键盘语音或直接输入文字。");
+      focusTextInput("语音识别启动失败。已打开输入框，请用手机键盘语音或直接输入文字。");
     }
   }
 
+  useEffect(() => {
+    if (!confirmState.success) return;
+
+    setSaveCelebration(true);
+    const redirectTimer = window.setTimeout(() => {
+      router.push("/finance/records?created=1");
+      router.refresh();
+    }, 900);
+    const animationTimer = window.setTimeout(() => setSaveCelebration(false), 1200);
+
+    return () => {
+      window.clearTimeout(redirectTimer);
+      window.clearTimeout(animationTimer);
+    };
+  }, [confirmState.success, router]);
+
   return (
     <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
+      <ConfettiBurst active={saveCelebration} />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> 快速 AI 记账</CardTitle>
@@ -127,9 +158,11 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                 ref={textareaRef}
                 id="raw_text"
                 name="raw_text"
-                defaultValue=""
+                value={rawText}
+                onChange={(event) => setRawText(event.target.value)}
                 placeholder="今天支付供应商打样费680元，用于新款产品开发，微信支付，需要报销"
                 className="min-h-28 text-base sm:min-h-40 sm:text-sm"
+                autoComplete="off"
               />
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -152,7 +185,12 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                 onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []).map((file) => file.name))}
               />
             </div>
-            {voiceMessage ? <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">{voiceMessage}</div> : null}
+            {voiceMessage ? (
+              <div className={`flex items-start gap-2 rounded-md p-3 text-xs ${voiceFallback ? "border border-cyan-100 bg-cyan-50 text-cyan-900" : "bg-muted text-muted-foreground"}`}>
+                {voiceFallback ? <Keyboard className="mt-0.5 h-3.5 w-3.5 shrink-0" /> : null}
+                <span>{voiceMessage}</span>
+              </div>
+            ) : null}
             {selectedFiles.length ? (
               <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
                 <div className="mb-1 flex items-center gap-2 font-medium text-foreground"><Upload className="h-3.5 w-3.5" /> 已选择票据</div>
@@ -170,7 +208,12 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
           <CardTitle>解析确认</CardTitle>
         </CardHeader>
         <CardContent>
-          {confirmState.success ? <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{confirmState.success}</div> : null}
+          {confirmState.success ? (
+            <div className="mb-4 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{confirmState.success}</span>
+            </div>
+          ) : null}
           {confirmState.error ? <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{confirmState.error}</div> : null}
           {!parsed ? (
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">输入一句话、语音或票据图片后，AI 会在这里生成待确认草稿。</div>
@@ -262,8 +305,22 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                 提交审批
               </label>
               <div className="grid gap-2 md:col-span-2 sm:grid-cols-2">
-                <Button type="submit" name="intent" value="confirm" disabled={confirming} className="h-11">{confirming ? "保存中..." : "确认并保存"}</Button>
-                <Button type="submit" variant="outline" name="intent" value="draft" disabled={confirming} className="h-11">保存草稿</Button>
+                {confirmState.success ? (
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 sm:col-span-2">
+                    保存成功，正在跳转到财务流水...
+                  </div>
+                ) : null}
+                {confirmState.error ? (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">
+                    {confirmState.error}
+                  </div>
+                ) : null}
+                <Button type="submit" name="intent" value="confirm" disabled={confirming || Boolean(confirmState.success)} className="h-11">
+                  {confirming ? "正在保存，请稍候..." : "确认并保存"}
+                </Button>
+                <Button type="submit" variant="outline" name="intent" value="draft" disabled={confirming || Boolean(confirmState.success)} className="h-11">
+                  {confirming ? "正在保存..." : "保存草稿"}
+                </Button>
               </div>
             </form>
           )}

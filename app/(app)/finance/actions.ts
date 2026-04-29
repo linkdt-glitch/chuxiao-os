@@ -149,6 +149,7 @@ export type AIParseState = {
   parseLogId?: string;
   parsed?: ParsedFinanceRecord;
   pendingFileIds?: string[];
+  recordId?: string;
   error?: string;
   success?: string;
 };
@@ -191,7 +192,10 @@ export async function confirmParsedFinanceRecordAction(_: AIParseState, formData
     const recordId = "id" in record ? record.id : undefined;
     await linkPendingReceiptFiles(formData, recordId);
     await attachReceiptFiles(formData, recordId);
-    return { success: "已确认并创建财务记录。" };
+    return {
+      recordId,
+      success: intent === "draft" ? "草稿已保存，正在返回财务流水。" : "财务记录已保存，正在返回财务流水。"
+    };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "保存失败，请检查金额、说明和必填字段。" };
   }

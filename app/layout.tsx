@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "初晓 OS 系统",
   description: "AI native company operating system foundation",
   icons: {
-    icon: "/brand/kairosmini-mark-white.png",
+    icon: "/brand/kairosmini-mark.svg",
     apple: "/brand/kairosmini-mark-white.png"
   }
 };

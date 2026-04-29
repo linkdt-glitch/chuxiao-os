@@ -17,7 +17,7 @@ export function Topbar({
       <div className="flex min-w-0 items-center gap-3">
         <BackButton />
         <div className="brand-mark-frame flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg lg:hidden">
-          <Image src="/brand/kairosmini-mark-white.png" alt="初晓 OS" width={512} height={512} className="h-full w-full object-contain p-1" />
+          <Image src="/brand/kairosmini-mark.svg" alt="初晓 OS" width={512} height={512} className="h-full w-full object-contain p-0.5" />
         </div>
         <div className="min-w-0">
           <div className="truncate text-sm font-medium text-slate-950">{organization.name}</div>

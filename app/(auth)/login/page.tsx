@@ -19,26 +19,24 @@ export default async function LoginPage({
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
       <div className="pointer-events-none absolute inset-x-0 top-10 mx-auto h-56 max-w-4xl rounded-full bg-gradient-to-r from-cyan-200/35 via-indigo-200/24 to-rose-200/30 blur-3xl" />
       <Card className="relative w-full max-w-lg overflow-hidden">
-        <CardHeader className="items-center text-center">
-          <div className="brand-wordmark-frame mb-4 w-full">
-            <Image
-              src="/brand/kairosmini-logo-white.jpg"
-              alt="Kairosmini"
-              width={698}
-              height={560}
-              priority
-              className="mx-auto h-28 w-full object-contain"
-            />
-          </div>
-          <div className="brand-mark-frame mb-2 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl">
-            <Image
-              src="/brand/kairosmini-mark-white.png"
-              alt="初晓 OS"
-              width={512}
-              height={512}
-              priority
-              className="h-full w-full object-contain p-1"
-            />
+        <CardHeader className="items-center pb-6 text-center">
+          <div className="mb-3 flex flex-col items-center">
+            <div className="relative mb-3 flex h-24 w-24 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-cyan-200/35 blur-2xl" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-[28px] border border-white/80 bg-white/54 shadow-[0_18px_46px_rgba(14,165,233,0.16)] backdrop-blur-xl">
+                <Image
+                  src="/brand/kairosmini-mark.svg"
+                  alt="Kairosmini"
+                  width={512}
+                  height={512}
+                  priority
+                  className="h-20 w-20 object-contain"
+                />
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-slate-950 via-cyan-700 to-teal-500 bg-clip-text text-3xl font-semibold tracking-normal text-transparent">
+              Kairosmini
+            </div>
           </div>
           <CardTitle>初晓 OS 系统</CardTitle>
           <CardDescription>Kairosmini · 登录后进入组织工作台。</CardDescription>

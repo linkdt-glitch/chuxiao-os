@@ -1,0 +1,53 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wingDark" x1="96" y1="246" x2="290" y2="246" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#061A3A"/>
+      <stop offset="0.58" stop-color="#0B3A62"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="wingCyan" x1="250" y1="246" x2="430" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#04D9FF"/>
+      <stop offset="0.55" stop-color="#16C7CA"/>
+      <stop offset="1" stop-color="#23E3F3"/>
+    </linearGradient>
+    <linearGradient id="tailCyan" x1="264" y1="267" x2="414" y2="362" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E8FEFF"/>
+      <stop offset="0.36" stop-color="#05B8D1"/>
+      <stop offset="1" stop-color="#063858"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(269 251) rotate(90) scale(80)">
+      <stop offset="0" stop-color="white"/>
+      <stop offset="0.12" stop-color="#DFFBFF"/>
+      <stop offset="0.35" stop-color="#05D9FF" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#05D9FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="50" y="52" width="412" height="408" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#softGlow)">
+    <path d="M92 181C139 209 199 210 255 235C202 219 153 239 100 224C142 263 196 262 247 258C182 282 131 329 70 351C151 348 228 320 274 258C243 249 164 249 108 247C96 246 89 240 96 230C111 207 87 190 92 181Z" fill="url(#wingDark)"/>
+    <path d="M83 196C131 222 184 223 248 241C191 235 144 248 92 236" stroke="white" stroke-opacity="0.95" stroke-width="12" stroke-linecap="round"/>
+    <path d="M106 288C164 284 219 276 267 254" stroke="white" stroke-opacity="0.94" stroke-width="12" stroke-linecap="round"/>
+    <path d="M264 233L442 82L302 263L264 233Z" fill="url(#wingCyan)"/>
+    <path d="M286 270L430 360C375 360 332 331 286 270Z" fill="url(#tailCyan)"/>
+    <path d="M94 246H262" stroke="#CFFBFF" stroke-width="7" stroke-linecap="round"/>
+    <path d="M267 92V410" stroke="#BFF8FF" stroke-opacity="0.55" stroke-width="3"/>
+    <path d="M91 248H440" stroke="#BFF8FF" stroke-opacity="0.55" stroke-width="3"/>
+    <circle cx="269" cy="251" r="84" fill="url(#coreGlow)"/>
+    <circle cx="269" cy="251" r="18" fill="white"/>
+    <circle cx="269" cy="251" r="33" stroke="#A5F3FC" stroke-opacity="0.42" stroke-width="2"/>
+    <circle cx="269" cy="251" r="58" stroke="#E0F2FE" stroke-opacity="0.34" stroke-width="2"/>
+    <path d="M88 252H58" stroke="#0FB7C8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M125 270H84" stroke="#0FB7C8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M139 229H112" stroke="#0FB7C8" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="52" cy="252" r="6" fill="#0FB7C8"/>
+    <circle cx="78" cy="270" r="4" fill="#0FB7C8"/>
+    <circle cx="106" cy="229" r="4" fill="#0FB7C8"/>
+  </g>
+</svg>

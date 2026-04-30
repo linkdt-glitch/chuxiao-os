@@ -4,6 +4,7 @@ import { logAction } from "@/lib/audit";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { emitEvent } from "@/lib/events";
 import { canApproveFinance } from "@/lib/finance/permissions";
+import { getFinanceRecords } from "@/lib/finance/records";
 import type { FinanceCategory } from "@/lib/finance/types";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { hasPermission, requirePermission } from "@/lib/permissions";
@@ -796,13 +797,18 @@ export async function createExpenseApprovalRule(input: {
 }
 
 export async function getExpenseDashboard() {
-  const [reports, budgets, canApprove, canManage, canPay] = await Promise.all([
+  const [reports, financeRecords, budgets, canApprove, canManage, canPay] = await Promise.all([
     getExpenseReports({ limit: 300 }),
+    getFinanceRecords({ status: "pending_approval", limit: 300 }),
     getDepartmentBudgets(),
     hasPermission("finance.expense.approve"),
     hasPermission("finance.expense.manage"),
     hasPermission("finance.expense.pay")
   ]);
+  const financeRecordApprovals = financeRecords.filter((record) =>
+    record.status === "pending_approval" &&
+    (record.reimbursement_required || record.record_type === "reimbursement" || record.record_type === "expense")
+  );
   const pendingStatuses: ExpenseStatus[] = ["submitted", "pending_manager", "pending_finance"];
   const pending = reports.filter((report) => pendingStatuses.includes(report.status));
   const approved = reports.filter((report) => report.status === "approved");
@@ -812,6 +818,7 @@ export async function getExpenseDashboard() {
 
   return {
     reports,
+    financeRecordApprovals,
     budgets,
     canApprove,
     canManage,
@@ -819,6 +826,10 @@ export async function getExpenseDashboard() {
     stats: {
       pendingCount: pending.length,
       pendingAmount: pending.reduce((sum, item) => sum + item.total_amount, 0),
+      financeRecordPendingCount: financeRecordApprovals.length,
+      financeRecordPendingAmount: financeRecordApprovals.reduce((sum, item) => sum + Number(item.amount), 0),
+      totalPendingCount: pending.length + financeRecordApprovals.length,
+      totalPendingAmount: pending.reduce((sum, item) => sum + item.total_amount, 0) + financeRecordApprovals.reduce((sum, item) => sum + Number(item.amount), 0),
       approvedCount: approved.length,
       approvedAmount: approved.reduce((sum, item) => sum + item.total_amount, 0),
       paidCount: paid.length,

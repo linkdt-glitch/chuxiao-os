@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarDays, Check, ChevronDown, Eye, FileImage, Filter, Search, UserRoundCheck, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, ChevronDown, CircleDollarSign, Clock3, Eye, FileImage, Filter, Layers3, Search, UserRoundCheck, X } from "lucide-react";
 import {
   approveExpenseReportAction,
   rejectExpenseReportAction,
@@ -141,6 +141,8 @@ function ExpenseDetailDrawer({
   const item = firstItem(report);
   const flags = reportRiskFlags(report);
   const quickReasons = ["票据不清晰", "金额或用途需要补充说明", "疑似重复报销", "不符合当前报销标准"];
+  const [revisionComment, setRevisionComment] = useState("");
+  const [rejectComment, setRejectComment] = useState("");
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/20 backdrop-blur-sm">
@@ -218,16 +220,39 @@ function ExpenseDetailDrawer({
                 <form action={requestExpenseRevisionAction} className="space-y-2">
                   <input type="hidden" name="id" value={report.id} />
                   <Label>要求补充材料 / 驳回原因</Label>
-                  <Textarea name="comment" required placeholder="写清楚需要补充什么材料或驳回原因。" />
+                  <Textarea
+                    name="comment"
+                    required
+                    placeholder="写清楚需要补充什么材料或驳回原因。"
+                    value={revisionComment}
+                    onChange={(event) => setRevisionComment(event.target.value)}
+                  />
                   <div className="flex flex-wrap gap-2">
-                    {quickReasons.map((reason) => <Badge key={reason} variant="outline">{reason}</Badge>)}
+                    {quickReasons.map((reason) => (
+                      <Button key={reason} type="button" size="sm" variant="outline" onClick={() => setRevisionComment(reason)}>
+                        {reason}
+                      </Button>
+                    ))}
                   </div>
                   <Button type="submit" variant="outline" className="w-full">要求补充</Button>
                 </form>
                 <form action={rejectExpenseReportAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={report.id} />
                   <Label>驳回原因</Label>
-                  <Textarea name="comment" required placeholder="例如：不符合报销标准，或疑似重复报销。" />
+                  <Textarea
+                    name="comment"
+                    required
+                    placeholder="例如：不符合报销标准，或疑似重复报销。"
+                    value={rejectComment}
+                    onChange={(event) => setRejectComment(event.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {quickReasons.map((reason) => (
+                      <Button key={reason} type="button" size="sm" variant="outline" onClick={() => setRejectComment(reason)}>
+                        {reason}
+                      </Button>
+                    ))}
+                  </div>
                   <Button type="submit" variant="destructive" className="w-full">驳回</Button>
                 </form>
               </div>
@@ -279,7 +304,12 @@ export function ExpenseApprovalWorkbench({
   }, [reports, status, keyword, departmentId]);
 
   const groups = useMemo(() => groupReports(filteredReports, viewMode), [filteredReports, viewMode]);
-  const pendingIds = filteredReports.filter((report) => pendingStatuses.includes(report.status)).map((report) => report.id);
+  const statusSummary = useMemo(() => ({
+    all: reports.length,
+    pendingManager: reports.filter((report) => report.status === "pending_manager").length,
+    approved: reports.filter((report) => report.status === "approved").length,
+    pendingAmount: reports.filter((report) => pendingStatuses.includes(report.status)).reduce((sum, report) => sum + report.total_amount, 0)
+  }), [reports]);
 
   function toggleSelected(id: string) {
     setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -294,6 +324,39 @@ export function ExpenseApprovalWorkbench({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-white/88 via-cyan-50/72 to-indigo-50/70 p-4 shadow-[0_18px_52px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/70 px-3 py-1 text-xs font-medium text-cyan-800">
+              <Layers3 className="h-3.5 w-3.5" />
+              正式报销单工作台
+            </div>
+            <h2 className="mt-3 text-lg font-semibold text-slate-950">按员工优先处理，异常优先复核</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              这里处理员工提交的正式报销单；上方处理 AI 记账和手动记账产生的快捷财务审批。两类审批都归口到经营能量舱，不再分散到独立审批中心。
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[520px] xl:grid-cols-4">
+            <button type="button" onClick={() => setStatus("all")} className="rounded-2xl border border-white/80 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Layers3 className="h-3.5 w-3.5" />全部单据</div>
+              <div className="mt-1 text-xl font-semibold text-slate-950">{statusSummary.all}</div>
+            </button>
+            <button type="button" onClick={() => setStatus("pending_manager")} className="rounded-2xl border border-amber-100 bg-amber-50/80 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center gap-2 text-xs text-amber-700"><Clock3 className="h-3.5 w-3.5" />待一级审批</div>
+              <div className="mt-1 text-xl font-semibold text-amber-950">{statusSummary.pendingManager}</div>
+            </button>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3 shadow-sm">
+              <div className="flex items-center gap-2 text-xs text-cyan-700"><CircleDollarSign className="h-3.5 w-3.5" />待审金额</div>
+              <div className="mt-1 text-xl font-semibold text-cyan-950">{money(statusSummary.pendingAmount)}</div>
+            </div>
+            <button type="button" onClick={() => setStatus("approved")} className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center gap-2 text-xs text-emerald-700"><Check className="h-3.5 w-3.5" />已批待打款</div>
+              <div className="mt-1 text-xl font-semibold text-emerald-950">{statusSummary.approved}</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-lg border border-white/80 bg-white/72 p-3 shadow-[0_14px_38px_rgba(15,23,42,0.055)] backdrop-blur-xl">
         <div className="grid gap-3 lg:grid-cols-[1.4fr_160px_160px_auto]">
           <label className="relative">
@@ -302,6 +365,7 @@ export function ExpenseApprovalWorkbench({
           </label>
           <select value={status} onChange={(event) => setStatus(event.target.value as ExpenseStatus | "all")} className="h-9 rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">
             <option value="all">全部状态</option>
+            <option value="submitted">已提交待分派</option>
             <option value="pending_manager">待一级审批</option>
             <option value="pending_finance">待财务复核</option>
             <option value="approved">已批准待打款</option>
@@ -346,7 +410,7 @@ export function ExpenseApprovalWorkbench({
       ) : null}
 
       {!filteredReports.length ? (
-        <EmptyState title="暂无符合条件的报销单" description="调整筛选条件，或让员工先提交报销申请。" />
+        <EmptyState title="暂无正式报销单" description="调整筛选条件，或让员工在经营能量舱提交正式报销。AI 记账和手动记账产生的快捷审批会显示在上方财务审批区。" />
       ) : (
         <div className="space-y-3">
           {groups.map((group) => {

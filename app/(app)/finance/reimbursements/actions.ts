@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createExpenseApprovalRule,
@@ -63,32 +64,36 @@ export async function submitExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing expense report id");
   await submitExpenseReport(id);
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function withdrawExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing expense report id");
   await withdrawExpenseReport(id);
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function approveExpenseReportAction(formData: FormData) {
   const ids = values(formData, "id");
   if (!ids.length) throw new Error("请选择至少一条报销单。");
-  for (const id of ids) {
-    await decideExpenseReport(id, "approved", value(formData, "comment") ?? "");
-  }
+  await Promise.all(ids.map((id) => decideExpenseReport(id, "approved", value(formData, "comment") ?? "")));
+  revalidatePath("/finance/reimbursements");
+  revalidatePath("/finance/reimbursements/payments");
 }
 
 export async function rejectExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing expense report id");
   await decideExpenseReport(id, "rejected", value(formData, "comment") ?? "");
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function requestExpenseRevisionAction(formData: FormData) {
   const id = value(formData, "id");
   if (!id) throw new Error("Missing expense report id");
   await decideExpenseReport(id, "need_revision", value(formData, "comment") ?? "");
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function markExpenseReportsPaidAction(formData: FormData) {
@@ -97,6 +102,8 @@ export async function markExpenseReportsPaidAction(formData: FormData) {
     paid_at: value(formData, "paid_at"),
     payment_reference: value(formData, "payment_reference")
   });
+  revalidatePath("/finance/reimbursements");
+  revalidatePath("/finance/reimbursements/payments");
 }
 
 export async function createExpenseTemplateAction(formData: FormData) {

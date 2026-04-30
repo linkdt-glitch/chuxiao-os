@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowLeft, FileText, Save, Send } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle, ArrowLeft, FileText, ReceiptText, Save, Send } from "lucide-react";
 import { createExpenseReportAction } from "@/app/(app)/finance/reimbursements/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +23,40 @@ export function ExpenseReportForm({
   templates: ExpenseTemplate[];
 }) {
   const today = new Date().toISOString().slice(0, 10);
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [occurredAt, setOccurredAt] = useState(today);
+  const [departmentId, setDepartmentId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [merchantName, setMerchantName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [description, setDescription] = useState("");
+  const [fileCount, setFileCount] = useState(0);
   const fieldClass = "h-11 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:h-10 sm:text-sm";
   const selectClass = `${fieldClass} w-full px-3`;
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const selectedDepartment = departments.find((department) => department.id === departmentId);
+  const numericAmount = Number(amount) || 0;
+  const dateAge = useMemo(() => {
+    const timestamp = new Date(occurredAt).getTime();
+    if (!timestamp) return 0;
+    return Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24));
+  }, [occurredAt]);
+  const warnings = [
+    dateAge > 90 ? "发生日期超过 90 天，审批时会重点关注。" : "",
+    numericAmount >= 5000 ? "金额较高，请补充清楚用途和票据。" : "",
+    fileCount === 0 ? "未上传票据，提交后会被标记为异常。" : ""
+  ].filter(Boolean);
+
+  function applyTemplate(templateId: string) {
+    const template = templates.find((item) => item.id === templateId);
+    if (!template) return;
+    setTitle(template.name);
+    setAmount(template.amount ? String(template.amount) : "");
+    setCategoryId(template.category_id ?? "");
+    setMerchantName(template.merchant_name ?? "");
+    setDescription(template.description ?? "");
+  }
 
   return (
     <Card>
@@ -34,7 +69,7 @@ export function ExpenseReportForm({
           <input type="hidden" name="currency" value="CNY" />
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="template_hint">常用模板</Label>
-            <select id="template_hint" className={selectClass} defaultValue="">
+            <select id="template_hint" className={selectClass} defaultValue="" onChange={(event) => applyTemplate(event.target.value)}>
               <option value="">不使用模板</option>
               {templates.map((template) => (
                 <option key={template.id} value={template.id}>
@@ -42,26 +77,26 @@ export function ExpenseReportForm({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">第一版模板用于参考和沉淀常用项目，后续会支持一键填充。</p>
+            <p className="text-xs text-muted-foreground">选择模板会自动填入标题、金额、类别、商家和说明。</p>
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="title">报销标题</Label>
-            <Input id="title" name="title" required placeholder="例如：供应商打样费报销" className={fieldClass} />
+            <Input id="title" name="title" required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：供应商打样费报销" className={fieldClass} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="amount">金额</Label>
-            <Input id="amount" name="amount" required type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" className={fieldClass} />
+            <Input id="amount" name="amount" required type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" className={fieldClass} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="occurred_at">发生日期</Label>
-            <Input id="occurred_at" name="occurred_at" type="date" defaultValue={today} className={fieldClass} />
+            <Input id="occurred_at" name="occurred_at" type="date" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} className={fieldClass} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="department_id">归属部门</Label>
-            <select id="department_id" name="department_id" className={selectClass} defaultValue="">
+            <select id="department_id" name="department_id" className={selectClass} value={departmentId} onChange={(event) => setDepartmentId(event.target.value)}>
               <option value="">暂不选择</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>{department.name}</option>
@@ -70,7 +105,7 @@ export function ExpenseReportForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="category_id">报销类别</Label>
-            <select id="category_id" name="category_id" className={selectClass} defaultValue="">
+            <select id="category_id" name="category_id" className={selectClass} value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
               <option value="">未分类</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
@@ -80,22 +115,68 @@ export function ExpenseReportForm({
 
           <div className="space-y-2">
             <Label htmlFor="merchant_name">商家 / 收款方</Label>
-            <Input id="merchant_name" name="merchant_name" placeholder="例如：某供应商" className={fieldClass} />
+            <Input id="merchant_name" name="merchant_name" value={merchantName} onChange={(event) => setMerchantName(event.target.value)} placeholder="例如：某供应商" className={fieldClass} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="payment_method">支付方式</Label>
-            <Input id="payment_method" name="payment_method" placeholder="微信 / 支付宝 / 银行卡" className={fieldClass} />
+            <Input id="payment_method" name="payment_method" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} placeholder="微信 / 支付宝 / 银行卡" className={fieldClass} />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="description">说明</Label>
-            <Textarea id="description" name="description" required placeholder="请说明用途、项目背景、是否需要报销等。" className="min-h-28 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:text-sm" />
+            <Textarea id="description" name="description" required value={description} onChange={(event) => setDescription(event.target.value)} placeholder="请说明用途、项目背景、是否需要报销等。" className="min-h-28 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:text-sm" />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="receipt_files">发票 / 票据附件</Label>
-            <Input id="receipt_files" name="receipt_files" type="file" multiple accept="image/*,.pdf" capture="environment" className={fieldClass} />
+            <Input
+              id="receipt_files"
+              name="receipt_files"
+              type="file"
+              multiple
+              accept="image/*,.pdf"
+              capture="environment"
+              className={fieldClass}
+              onChange={(event) => setFileCount(event.target.files?.length ?? 0)}
+            />
             <p className="text-xs text-muted-foreground">支持多张图片或 PDF。缺少票据会自动标记为红色异常，但不阻止保存草稿。</p>
+          </div>
+
+          <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4 md:col-span-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-cyan-950">
+              <ReceiptText className="h-4 w-4" />
+              提交前快速检查
+            </div>
+            <div className="mt-3 grid gap-3 text-sm sm:grid-cols-4">
+              <div>
+                <div className="text-xs text-muted-foreground">金额</div>
+                <div className="mt-1 font-semibold">{numericAmount ? `¥${numericAmount.toFixed(2)}` : "未填写"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">部门</div>
+                <div className="mt-1 font-semibold">{selectedDepartment?.name ?? "未选择"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">类别</div>
+                <div className="mt-1 font-semibold">{selectedCategory?.name ?? "未分类"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">票据</div>
+                <div className="mt-1 font-semibold">{fileCount ? `${fileCount} 个附件` : "未上传"}</div>
+              </div>
+            </div>
+            {warnings.length ? (
+              <div className="mt-3 space-y-1 text-sm text-amber-800">
+                {warnings.map((warning) => (
+                  <div key={warning} className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{warning}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 text-sm text-emerald-700">核心信息完整，提交后审批会更顺畅。</div>
+            )}
           </div>
 
           <details className="rounded-2xl border border-slate-200/80 bg-white/55 p-4 md:col-span-2">

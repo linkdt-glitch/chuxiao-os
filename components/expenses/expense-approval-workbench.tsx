@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarDays, Check, ChevronDown, CircleDollarSign, Clock3, Eye, FileImage, Filter, Layers3, Search, UserRoundCheck, X } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, CalendarDays, Check, ChevronDown, CircleDollarSign, Clock3, Eye, FileImage, Filter, Layers3, ReceiptText, Search, UserRoundCheck, X } from "lucide-react";
 import {
   approveExpenseReportAction,
   rejectExpenseReportAction,
@@ -60,6 +60,35 @@ function groupReports(reports: ExpenseReport[], mode: ViewMode) {
   return Array.from(map.values());
 }
 
+function reportPriorityScore(report: ExpenseReport) {
+  const flags = reportRiskFlags(report);
+  const danger = flags.filter((flag) => flag.severity === "danger").length;
+  const warning = flags.filter((flag) => flag.severity === "warning").length;
+  const statusBoost = pendingStatuses.includes(report.status) ? 1000 : 0;
+  const attachmentBoost = report.attachments.length ? 0 : 120;
+  const amountBoost = Math.min(200, Math.floor(report.total_amount / 100));
+  return statusBoost + danger * 260 + warning * 120 + attachmentBoost + amountBoost;
+}
+
+function sortReportsByPriority(reports: ExpenseReport[]) {
+  return [...reports].sort((a, b) => {
+    const score = reportPriorityScore(b) - reportPriorityScore(a);
+    if (score !== 0) return score;
+    return new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime();
+  });
+}
+
+function groupRiskSummary(reports: ExpenseReport[]) {
+  return reports.reduce((summary, report) => {
+    const flags = reportRiskFlags(report);
+    return {
+      danger: summary.danger + flags.filter((flag) => flag.severity === "danger").length,
+      warning: summary.warning + flags.filter((flag) => flag.severity === "warning").length,
+      missingReceipts: summary.missingReceipts + (report.attachments.length ? 0 : 1)
+    };
+  }, { danger: 0, warning: 0, missingReceipts: 0 });
+}
+
 function monthUsedByMember(reports: ExpenseReport[], memberId: string) {
   const month = new Date().toISOString().slice(0, 7);
   return reports
@@ -92,6 +121,9 @@ function ReceiptPreview({ report }: { report: ExpenseReport }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0 truncate text-sm font-medium">{file.file_name}</div>
         <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" asChild>
+            <a href={url} target="_blank" rel="noreferrer">原图</a>
+          </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setZoom((current) => Math.max(0.7, current - 0.1))}>缩小</Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setZoom((current) => Math.min(1.6, current + 0.1))}>放大</Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setRotation((current) => current + 90)}>旋转</Button>
@@ -281,6 +313,7 @@ export function ExpenseApprovalWorkbench({
   const [status, setStatus] = useState<ExpenseStatus | "all">("all");
   const [keyword, setKeyword] = useState("");
   const [departmentId, setDepartmentId] = useState("");
+  const [onlyRisk, setOnlyRisk] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeReport, setActiveReport] = useState<ExpenseReport | null>(null);
 
@@ -289,6 +322,7 @@ export function ExpenseApprovalWorkbench({
     return reports.filter((report) => {
       if (status !== "all" && report.status !== status) return false;
       if (departmentId && report.department_id !== departmentId) return false;
+      if (onlyRisk && !reportRiskFlags(report).length) return false;
       if (!normalizedKeyword) return true;
       const item = firstItem(report);
       return [
@@ -301,12 +335,17 @@ export function ExpenseApprovalWorkbench({
         item?.category?.name
       ].filter(Boolean).join(" ").toLowerCase().includes(normalizedKeyword);
     });
-  }, [reports, status, keyword, departmentId]);
+  }, [reports, status, keyword, departmentId, onlyRisk]);
 
   const groups = useMemo(() => groupReports(filteredReports, viewMode), [filteredReports, viewMode]);
+  const selectedTotal = useMemo(() => reports
+    .filter((report) => selectedIds.includes(report.id))
+    .reduce((sum, report) => sum + report.total_amount, 0), [reports, selectedIds]);
   const statusSummary = useMemo(() => ({
     all: reports.length,
     pendingManager: reports.filter((report) => report.status === "pending_manager").length,
+    pendingFinance: reports.filter((report) => report.status === "pending_finance").length,
+    risky: reports.filter((report) => reportRiskFlags(report).length).length,
     approved: reports.filter((report) => report.status === "approved").length,
     pendingAmount: reports.filter((report) => pendingStatuses.includes(report.status)).reduce((sum, report) => sum + report.total_amount, 0)
   }), [reports]);
@@ -345,13 +384,17 @@ export function ExpenseApprovalWorkbench({
               <div className="flex items-center gap-2 text-xs text-amber-700"><Clock3 className="h-3.5 w-3.5" />待一级审批</div>
               <div className="mt-1 text-xl font-semibold text-amber-950">{statusSummary.pendingManager}</div>
             </button>
+            <button type="button" onClick={() => setStatus("pending_finance")} className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center gap-2 text-xs text-blue-700"><ReceiptText className="h-3.5 w-3.5" />待财务复核</div>
+              <div className="mt-1 text-xl font-semibold text-blue-950">{statusSummary.pendingFinance}</div>
+            </button>
             <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3 shadow-sm">
               <div className="flex items-center gap-2 text-xs text-cyan-700"><CircleDollarSign className="h-3.5 w-3.5" />待审金额</div>
               <div className="mt-1 text-xl font-semibold text-cyan-950">{money(statusSummary.pendingAmount)}</div>
             </div>
-            <button type="button" onClick={() => setStatus("approved")} className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-2 text-xs text-emerald-700"><Check className="h-3.5 w-3.5" />已批待打款</div>
-              <div className="mt-1 text-xl font-semibold text-emerald-950">{statusSummary.approved}</div>
+            <button type="button" onClick={() => setOnlyRisk((current) => !current)} className="rounded-2xl border border-rose-100 bg-rose-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center gap-2 text-xs text-rose-700"><AlertTriangle className="h-3.5 w-3.5" />异常单据</div>
+              <div className="mt-1 text-xl font-semibold text-rose-950">{statusSummary.risky}</div>
             </button>
           </div>
         </div>
@@ -379,12 +422,16 @@ export function ExpenseApprovalWorkbench({
             {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
           </select>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => { setKeyword(""); setStatus("all"); setDepartmentId(""); }}>
+            <Button type="button" variant="outline" size="sm" onClick={() => { setKeyword(""); setStatus("all"); setDepartmentId(""); setOnlyRisk(false); }}>
               <Filter className="h-4 w-4" />重置
             </Button>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant={onlyRisk ? "default" : "outline"} onClick={() => setOnlyRisk((current) => !current)}>
+            <AlertTriangle className="h-4 w-4" />
+            只看异常
+          </Button>
           {([
             ["employee", "按员工"],
             ["date", "按日期"],
@@ -400,7 +447,7 @@ export function ExpenseApprovalWorkbench({
 
       {canApprove && selectedIds.length ? (
         <form action={approveExpenseReportAction} className="flex flex-col gap-2 rounded-lg border border-cyan-200 bg-cyan-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-medium text-cyan-950">已选择 {selectedIds.length} 条待审批报销</div>
+          <div className="text-sm font-medium text-cyan-950">已选择 {selectedIds.length} 条 · {money(selectedTotal)}</div>
           {selectedIds.map((id) => <input key={id} type="hidden" name="id" value={id} />)}
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds([])}>取消选择</Button>
@@ -414,11 +461,13 @@ export function ExpenseApprovalWorkbench({
       ) : (
         <div className="space-y-3">
           {groups.map((group) => {
-            const groupPending = group.reports.filter((report) => pendingStatuses.includes(report.status));
+            const sortedReports = sortReportsByPriority(group.reports);
+            const groupPending = sortedReports.filter((report) => pendingStatuses.includes(report.status));
             const groupPendingIds = groupPending.map((report) => report.id);
             const total = group.reports.reduce((sum, report) => sum + report.total_amount, 0);
             const memberMonthUsed = viewMode === "employee" ? monthUsedByMember(reports, group.key) : total;
             const referenceReport = group.reports[0];
+            const risks = groupRiskSummary(group.reports);
 
             return (
               <details key={group.key} open className="rounded-lg border border-white/80 bg-white/74 shadow-[0_14px_38px_rgba(15,23,42,0.055)] backdrop-blur-xl">
@@ -432,8 +481,13 @@ export function ExpenseApprovalWorkbench({
                         <span className="font-semibold text-slate-950">{viewMode === "status" ? group.title : group.title}</span>
                         <Badge variant={groupPending.length ? "warning" : "secondary"}>{groupPending.length} 待审</Badge>
                         <Badge variant="outline">{money(total)}</Badge>
+                        {risks.danger ? <Badge variant="danger">{risks.danger} 红色异常</Badge> : null}
+                        {!risks.danger && risks.warning ? <Badge variant="warning">{risks.warning} 需关注</Badge> : null}
                       </div>
-                      <div className="mt-1 text-sm text-muted-foreground">{group.subtitle ?? `${group.reports.length} 条报销记录`}</div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                        <span>{group.subtitle ?? `${group.reports.length} 条报销记录`}</span>
+                        {risks.missingReceipts ? <span>· {risks.missingReceipts} 条缺票据</span> : null}
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -456,7 +510,7 @@ export function ExpenseApprovalWorkbench({
                 </summary>
                 <div className="border-t border-slate-100 p-3">
                   <div className="space-y-2">
-                    {group.reports.map((report) => {
+                    {sortedReports.map((report) => {
                       const item = firstItem(report);
                       const flags = reportRiskFlags(report);
                       const isPending = pendingStatuses.includes(report.status);
@@ -480,6 +534,7 @@ export function ExpenseApprovalWorkbench({
                                 <div className="flex flex-wrap items-center gap-2">
                                   <ExpenseStatusBadge status={report.status} />
                                   <Badge variant="outline">{report.report_no}</Badge>
+                                  <Badge variant="secondary"><ArrowUpDown className="h-3 w-3" />优先级 {reportPriorityScore(report)}</Badge>
                                   {flags.some((flag) => flag.severity === "danger") ? <Badge variant="danger"><AlertTriangle className="h-3 w-3" />红色异常</Badge> : flags.length ? <Badge variant="warning">需关注</Badge> : null}
                                 </div>
                                 <button type="button" className="mt-2 text-left font-semibold text-slate-950 hover:text-cyan-700" onClick={() => setActiveReport(report)}>

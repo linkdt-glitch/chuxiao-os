@@ -61,6 +61,7 @@ function groupRecords(records: FinanceRecord[]) {
     total: number;
     attachmentCount: number;
     highestRisk: FinanceRecord["risk_level"];
+    missingAttachments: number;
   }>();
 
   for (const record of records) {
@@ -72,21 +73,30 @@ function groupRecords(records: FinanceRecord[]) {
       records: [],
       total: 0,
       attachmentCount: 0,
-      highestRisk: "low" as FinanceRecord["risk_level"]
+      highestRisk: "low" as FinanceRecord["risk_level"],
+      missingAttachments: 0
     };
     current.records.push(record);
     current.total += Number(record.amount) || 0;
     current.attachmentCount += record.attachments?.length ?? 0;
+    current.missingAttachments += record.attachments?.length ? 0 : 1;
     if (riskRank[record.risk_level] > riskRank[current.highestRisk]) current.highestRisk = record.risk_level;
     groups.set(key, current);
   }
 
-  return Array.from(groups.values()).sort((a, b) => b.total - a.total);
+  return Array.from(groups.values()).sort((a, b) => {
+    const riskScore = riskRank[b.highestRisk] - riskRank[a.highestRisk];
+    if (riskScore !== 0) return riskScore;
+    if (b.missingAttachments !== a.missingAttachments) return b.missingAttachments - a.missingAttachments;
+    return b.total - a.total;
+  });
 }
 
 function ReceiptPreview({ record }: { record: FinanceRecord }) {
   const attachments = record.attachments ?? [];
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const active = attachments[Math.min(activeIndex, Math.max(attachments.length - 1, 0))];
   const hasFileDescription = record.description.includes("票据附件") || record.description.includes("IMG_");
 
@@ -116,13 +126,21 @@ function ReceiptPreview({ record }: { record: FinanceRecord }) {
         <Button type="button" variant="outline" size="sm" asChild>
           <a href={active ? attachmentUrl(active) : "#"} target="_blank" rel="noreferrer">新窗口</a>
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setZoom((current) => Math.max(0.7, current - 0.1))}>缩小</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setZoom((current) => Math.min(1.7, current + 0.1))}>放大</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setRotation((current) => current + 90)}>旋转</Button>
       </div>
-      <div className="flex min-h-[300px] items-center justify-center overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-3">
+      <div className="flex min-h-[300px] items-center justify-center overflow-auto rounded-3xl border border-slate-200/80 bg-white/80 p-3">
         {isPdf ? (
           <iframe src={attachmentUrl(active)} className="h-[420px] w-full rounded-2xl" title={active.file_name} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={attachmentUrl(active)} alt={active.file_name} className="max-h-[460px] max-w-full rounded-2xl object-contain shadow-sm" />
+          <img
+            src={attachmentUrl(active)}
+            alt={active.file_name}
+            className="max-h-[460px] max-w-full rounded-2xl object-contain shadow-sm transition-transform"
+            style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+          />
         )}
       </div>
       {attachments.length > 1 ? (
@@ -270,6 +288,10 @@ export function FinanceApprovalWorkbench({
   const activeRecord = activeGroup?.records.find((record) => record.id === activeRecordId) ?? activeGroup?.records[0] ?? null;
   const totalAmount = filteredRecords.reduce((sum, record) => sum + Number(record.amount), 0);
   const attachmentCount = filteredRecords.reduce((sum, record) => sum + (record.attachments?.length ?? 0), 0);
+  const selectedTotal = records
+    .filter((record) => selectedIds.includes(record.id))
+    .reduce((sum, record) => sum + Number(record.amount), 0);
+  const missingAttachmentCount = filteredRecords.filter((record) => !(record.attachments?.length)).length;
 
   function openGroup(key: string) {
     setActiveGroupKey(key);
@@ -318,6 +340,10 @@ export function FinanceApprovalWorkbench({
               <div className="text-xs text-muted-foreground">票据附件</div>
               <div className="mt-1 text-2xl font-semibold text-slate-950">{attachmentCount}</div>
             </div>
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/75 p-3 shadow-sm">
+              <div className="text-xs text-amber-700">缺票据记录</div>
+              <div className="mt-1 text-2xl font-semibold text-amber-950">{missingAttachmentCount}</div>
+            </div>
           </div>
         </div>
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -327,7 +353,7 @@ export function FinanceApprovalWorkbench({
           </label>
           {showActions && selectedIds.length ? (
             <form action={approveFinanceRecordAction} className="flex flex-col gap-2 rounded-2xl border border-cyan-200 bg-cyan-50/80 p-2 sm:flex-row sm:items-center">
-              <span className="px-2 text-sm font-medium text-cyan-950">已选 {selectedIds.length} 笔</span>
+              <span className="px-2 text-sm font-medium text-cyan-950">已选 {selectedIds.length} 笔 · {money(selectedTotal)}</span>
               {selectedIds.map((id) => <input key={id} type="hidden" name="id" value={id} />)}
               <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds([])}>取消</Button>
               <ConfirmSubmitButton confirmText={`确认批量批准 ${selectedIds.length} 笔财务审批？`} size="sm">
@@ -375,6 +401,7 @@ export function FinanceApprovalWorkbench({
                       </div>
                       <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1"><Files className="h-3.5 w-3.5" />票据 {group.attachmentCount}</span>
+                        {group.missingAttachments ? <span className="text-amber-700">缺票据 {group.missingAttachments}</span> : null}
                         <span>点击查看</span>
                       </div>
                     </div>

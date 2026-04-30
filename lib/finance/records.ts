@@ -81,8 +81,37 @@ function normalizeRecord(row: Record<string, unknown>): FinanceRecord {
     subcategory: (row.subcategory ?? null) as FinanceRecord["subcategory"],
     account: (row.account ?? null) as FinanceRecord["account"],
     submitter: (row.submitter ?? null) as FinanceRecord["submitter"],
-    approver: (row.approver ?? null) as FinanceRecord["approver"]
+    approver: (row.approver ?? null) as FinanceRecord["approver"],
+    attachments: Array.isArray(row.attachments) ? row.attachments as FinanceRecord["attachments"] : []
   };
+}
+
+async function hydrateFinanceRecordAttachments(records: FinanceRecord[]) {
+  if (!records.length) return records;
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) return records;
+
+  const { data, error } = await supabase
+    .from("file_links")
+    .select("record_id, file:files(id,file_name,mime_type,size_bytes,asset_type,summary,created_at)")
+    .eq("organization_id", organization.id)
+    .eq("module", "finance")
+    .eq("record_type", "finance_record")
+    .in("record_id", records.map((record) => record.id));
+
+  if (error) return records;
+
+  const byRecord = new Map<string, NonNullable<FinanceRecord["attachments"]>>();
+  for (const link of data ?? []) {
+    const file = Array.isArray(link.file) ? link.file[0] : link.file;
+    if (!file) continue;
+    const current = byRecord.get(link.record_id) ?? [];
+    current.push(file as NonNullable<FinanceRecord["attachments"]>[number]);
+    byRecord.set(link.record_id, current);
+  }
+
+  return records.map((record) => ({ ...record, attachments: byRecord.get(record.id) ?? [] }));
 }
 
 async function nextRecordNo() {
@@ -159,7 +188,8 @@ export async function getFinanceRecords(filters?: {
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((item) => normalizeRecord(item));
+  const records = (data ?? []).map((item) => normalizeRecord(item));
+  return hydrateFinanceRecordAttachments(records);
 }
 
 export async function getFinanceRecord(id: string) {

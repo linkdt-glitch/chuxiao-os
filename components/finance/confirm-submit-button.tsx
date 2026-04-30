@@ -1,21 +1,26 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 
 export function ConfirmSubmitButton({
   children,
   confirmText,
-  variant = "outline"
+  variant = "outline",
+  size = "sm",
+  className
 }: {
   children: React.ReactNode;
   confirmText: string;
-  variant?: "outline" | "destructive" | "secondary" | "default";
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
+  className?: string;
 }) {
   return (
     <Button
       type="submit"
-      size="sm"
+      size={size}
       variant={variant}
+      className={className}
       onClick={(event) => {
         if (!window.confirm(confirmText)) event.preventDefault();
       }}

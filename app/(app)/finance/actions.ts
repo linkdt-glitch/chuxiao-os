@@ -14,6 +14,10 @@ function value(formData: FormData, key: string) {
   return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
 }
 
+function values(formData: FormData, key: string) {
+  return formData.getAll(key).filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
 function bool(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
@@ -107,10 +111,11 @@ export async function updateFinanceRecordAction(formData: FormData) {
 }
 
 export async function approveFinanceRecordAction(formData: FormData) {
-  const id = value(formData, "id");
-  if (!id) throw new Error("Missing record id");
-  await approveFinanceRecord(id);
+  const ids = values(formData, "id");
+  if (!ids.length) throw new Error("Missing record id");
+  await Promise.all(ids.map((id) => approveFinanceRecord(id)));
   revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function rejectFinanceRecordAction(formData: FormData) {
@@ -118,6 +123,7 @@ export async function rejectFinanceRecordAction(formData: FormData) {
   if (!id) throw new Error("Missing record id");
   await rejectFinanceRecord(id, value(formData, "reason"));
   revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
 }
 
 export async function createFinanceCategoryAction(formData: FormData) {

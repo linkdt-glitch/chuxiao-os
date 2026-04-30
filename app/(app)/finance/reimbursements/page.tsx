@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ClipboardCheck, Download, Plus, Settings, WalletCards } from "lucide-react";
 import { ExpenseApprovalWorkbench } from "@/components/expenses/expense-approval-workbench";
 import { ExpenseMetricCard } from "@/components/expenses/expense-shared";
-import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
+import { FinanceApprovalWorkbench } from "@/components/finance/finance-approval-workbench";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,11 +71,9 @@ export default async function ReimbursementsPage() {
         </CardHeader>
         <CardContent>
           {dashboard.financeRecordApprovals.length ? (
-            <FinanceRecordsTable
+            <FinanceApprovalWorkbench
               records={dashboard.financeRecordApprovals}
               showActions={dashboard.canApprove}
-              emptyTitle="暂无快捷记账待审批"
-              emptyDescription="AI 记账或手动记账勾选提交审批后，会直接出现在这里。"
             />
           ) : (
             <EmptyState

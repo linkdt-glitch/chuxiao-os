@@ -7,6 +7,16 @@ export type FinanceAccountType = "bank" | "cash" | "paypal" | "stripe" | "amazon
 export type FinanceRecordSource = "manual" | "ai_parse" | "import" | "agent";
 export type FinanceExportType = "expense" | "income" | "reimbursement" | "all";
 
+export type FinanceReceiptAttachment = {
+  id: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  asset_type?: string | null;
+  summary?: string | null;
+  created_at?: string | null;
+};
+
 export type FinanceCategory = {
   id: string;
   organization_id: string;
@@ -75,6 +85,7 @@ export type FinanceRecord = {
   account?: FinanceAccount | null;
   submitter?: { id: string; display_name: string; email?: string | null } | null;
   approver?: { id: string; display_name: string; email?: string | null } | null;
+  attachments?: FinanceReceiptAttachment[];
 };
 
 export type ParsedFinanceRecord = {

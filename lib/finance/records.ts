@@ -6,6 +6,7 @@ import { emitEvent } from "@/lib/events";
 import { canApproveFinance, getFinanceScope } from "@/lib/finance/permissions";
 import { demoFinanceAccounts } from "@/lib/finance/accounts";
 import { demoFinanceCategories } from "@/lib/finance/categories";
+import { runAfter } from "@/lib/server/after";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FinanceRecord, FinanceRecordInput, FinanceRecordStatus, FinanceRecordType } from "@/lib/finance/types";
 
@@ -85,19 +86,45 @@ function normalizeRecord(row: Record<string, unknown>): FinanceRecord {
 }
 
 async function nextRecordNo() {
-  const supabase = await createSupabaseServerClient();
-  const organization = await getCurrentOrganization();
   const date = new Date();
   const month = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
-  if (!supabase) return `FIN-${month}-${String(demoFinanceRecords.length + 1).padStart(4, "0")}`;
+  const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`.toUpperCase().slice(-7);
 
-  const { count } = await supabase
-    .from("finance_records")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organization.id)
-    .gte("created_at", `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`);
+  return `FIN-${month}-${suffix}`;
+}
 
-  return `FIN-${month}-${String((count ?? 0) + 1).padStart(4, "0")}`;
+function writeFinanceRecordTrace(input: {
+  event_key: string;
+  action: string;
+  related_record_id: string;
+  before_data?: Record<string, unknown> | null;
+  after_data?: Record<string, unknown> | null;
+  payload?: Record<string, unknown>;
+}) {
+  runAfter(input.event_key, () =>
+    Promise.all([
+      logAction({
+        event_key: input.event_key,
+        action: input.action,
+        module: "finance",
+        related_record_type: "finance_record",
+        related_record_id: input.related_record_id,
+        before_data: input.before_data,
+        after_data: input.after_data
+      }),
+      emitEvent({
+        event_key: input.event_key,
+        module: "finance",
+        payload: input.payload ?? { id: input.related_record_id }
+      })
+    ])
+  );
+}
+
+function revalidateFinanceRecordPaths(...paths: string[]) {
+  runAfter("finance.revalidate", () => {
+    for (const path of paths) revalidatePath(path);
+  });
 }
 
 export async function getFinanceRecords(filters?: {
@@ -186,12 +213,16 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   if (status === "pending_approval") {
     record = await submitFinanceRecord(record.id);
   } else {
-    await logAction({ event_key: "finance.record.created", action: "create", module: "finance", related_record_type: "finance_record", related_record_id: record.id, after_data: record as unknown as Record<string, unknown> });
-    await emitEvent({ event_key: "finance.record.created", module: "finance", payload: { id: record.id, record_no: record.record_no, amount: record.amount } });
+    writeFinanceRecordTrace({
+      event_key: "finance.record.created",
+      action: "create",
+      related_record_id: record.id,
+      after_data: record as unknown as Record<string, unknown>,
+      payload: { id: record.id, record_no: record.record_no, amount: record.amount }
+    });
   }
 
-  revalidatePath("/finance");
-  revalidatePath("/finance/records");
+  revalidateFinanceRecordPaths("/finance/records");
   return record;
 }
 
@@ -208,9 +239,15 @@ export async function updateFinanceRecord(id: string, input: Partial<FinanceReco
   const { data, error } = await supabase.from("finance_records").update(input).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
-  await logAction({ event_key: "finance.record.updated", action: "update", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
-  await emitEvent({ event_key: "finance.record.updated", module: "finance", payload: { id } });
-  revalidatePath("/finance/records");
+  writeFinanceRecordTrace({
+    event_key: "finance.record.updated",
+    action: "update",
+    related_record_id: id,
+    before_data: before,
+    after_data: data,
+    payload: { id }
+  });
+  revalidateFinanceRecordPaths("/finance/records");
   return data as FinanceRecord;
 }
 
@@ -229,19 +266,15 @@ export async function markFinanceRecordPaid(id: string) {
   });
   if (error) throw error;
 
-  await logAction({
+  writeFinanceRecordTrace({
     event_key: "finance.record.paid",
     action: "paid",
-    module: "finance",
-    related_record_type: "finance_record",
     related_record_id: id,
     before_data: before,
-    after_data: data as Record<string, unknown>
+    after_data: data as Record<string, unknown>,
+    payload: { id, amount: (data as FinanceRecord).amount }
   });
-  await emitEvent({ event_key: "finance.record.paid", module: "finance", payload: { id, amount: (data as FinanceRecord).amount } });
-  revalidatePath("/finance");
-  revalidatePath("/finance/records");
-  revalidatePath("/finance/reimbursements");
+  revalidateFinanceRecordPaths("/finance/records", "/finance/reimbursements");
   return data as FinanceRecord;
 }
 
@@ -270,10 +303,15 @@ export async function submitFinanceRecord(id: string) {
     .single();
 
   if (error) throw error;
-  await logAction({ event_key: "finance.record.submitted", action: "submit", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: record, after_data: data });
-  await emitEvent({ event_key: "finance.record.submitted", module: "finance", payload: { id, approval_request_id: data.approval_request_id } });
-  revalidatePath("/finance");
-  revalidatePath("/finance/reimbursements");
+  writeFinanceRecordTrace({
+    event_key: "finance.record.submitted",
+    action: "submit",
+    related_record_id: id,
+    before_data: record,
+    after_data: data,
+    payload: { id, approval_request_id: data.approval_request_id }
+  });
+  revalidateFinanceRecordPaths("/finance/reimbursements");
   return data as FinanceRecord;
 }
 
@@ -290,9 +328,15 @@ export async function approveFinanceRecord(id: string) {
 
   const { data, error } = await supabase.from("finance_records").update({ status: "approved", approved_by: member.id }).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
-  await logAction({ event_key: "finance.record.approved", action: "approve", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
-  await emitEvent({ event_key: "finance.record.approved", module: "finance", payload: { id } });
-  revalidatePath("/finance/reimbursements");
+  writeFinanceRecordTrace({
+    event_key: "finance.record.approved",
+    action: "approve",
+    related_record_id: id,
+    before_data: before,
+    after_data: data,
+    payload: { id }
+  });
+  revalidateFinanceRecordPaths("/finance/reimbursements");
   return data as FinanceRecord;
 }
 
@@ -309,8 +353,14 @@ export async function rejectFinanceRecord(id: string, reason?: string) {
   const metadata = { ...(before.metadata ?? {}), reject_reason: reason ?? "" };
   const { data, error } = await supabase.from("finance_records").update({ status: "rejected", metadata }).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
-  await logAction({ event_key: "finance.record.rejected", action: "reject", module: "finance", related_record_type: "finance_record", related_record_id: id, before_data: before, after_data: data });
-  await emitEvent({ event_key: "finance.record.rejected", module: "finance", payload: { id, reason } });
-  revalidatePath("/finance/reimbursements");
+  writeFinanceRecordTrace({
+    event_key: "finance.record.rejected",
+    action: "reject",
+    related_record_id: id,
+    before_data: before,
+    after_data: data,
+    payload: { id, reason }
+  });
+  revalidateFinanceRecordPaths("/finance/reimbursements");
   return data as FinanceRecord;
 }

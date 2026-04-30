@@ -6,6 +6,7 @@ import { emitEvent } from "@/lib/events";
 import { createFinanceRecord } from "@/lib/finance/records";
 import { getFinanceAccounts } from "@/lib/finance/accounts";
 import { getFinanceCategories } from "@/lib/finance/categories";
+import { runAfter } from "@/lib/server/after";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { invokeAI, invokeAIWithImages, type AIImageInput } from "@/lib/ai";
 import type { FinanceRecordInput, ParsedFinanceRecord } from "@/lib/finance/types";
@@ -215,9 +216,13 @@ export async function parseFinanceText(rawText: string, files: File[] = []) {
       .single();
 
     if (error) throw error;
-    await logAction({ event_key: "finance.ai_parsed", action: "ai_parse", module: "finance", related_record_type: "finance_ai_parse_log", related_record_id: data.id, after_data: parsed });
-    await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence, file_count: fileDescriptions.length } });
-    revalidatePath("/finance/ai-bookkeeping");
+    runAfter("finance.ai_parsed", () =>
+      Promise.all([
+        logAction({ event_key: "finance.ai_parsed", action: "ai_parse", module: "finance", related_record_type: "finance_ai_parse_log", related_record_id: data.id, after_data: parsed }),
+        emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence, file_count: fileDescriptions.length } })
+      ])
+    );
+    runAfter("finance.ai_parse.revalidate", () => revalidatePath("/finance/ai-bookkeeping"));
     return { id: data.id as string, parsed };
   }
 
@@ -261,23 +266,28 @@ reimbursement_required, need_approval, risk_level(low/medium/high/critical), con
 export async function confirmParsedFinanceRecord(parseLogId: string, input: FinanceRecordInput) {
   const supabase = await createSupabaseServerClient();
   const record = await createFinanceRecord({ ...input, source: "ai_parse" });
+  const recordId = "id" in record ? record.id : null;
 
+  const sideEffects: Array<() => Promise<unknown>> = [
+    () => logAction({ event_key: "finance.ai_confirmed", action: "confirm", module: "finance", related_record_type: "finance_record", related_record_id: recordId, after_data: record as unknown as Record<string, unknown> }),
+    () => emitEvent({ event_key: "finance.ai_confirmed", module: "finance", payload: { parse_log_id: parseLogId, record_id: recordId } })
+  ];
   if (supabase && parseLogId !== "demo_ai_parse") {
-    const { error } = await supabase
-      .from("finance_ai_parse_logs")
-      .update({
-        confirmed_result: record,
-        status: "confirmed",
-        confirmed_at: new Date().toISOString()
-      })
-      .eq("id", parseLogId);
-    if (error) throw error;
+    sideEffects.push(async () => {
+      const { error } = await supabase
+        .from("finance_ai_parse_logs")
+        .update({
+          confirmed_result: record,
+          status: "confirmed",
+          confirmed_at: new Date().toISOString()
+        })
+        .eq("id", parseLogId);
+      if (error) throw error;
+    });
   }
 
-  await logAction({ event_key: "finance.ai_confirmed", action: "confirm", module: "finance", related_record_type: "finance_record", related_record_id: "id" in record ? record.id : null, after_data: record as unknown as Record<string, unknown> });
-  await emitEvent({ event_key: "finance.ai_confirmed", module: "finance", payload: { parse_log_id: parseLogId, record_id: "id" in record ? record.id : null } });
-  revalidatePath("/finance");
-  revalidatePath("/finance/records");
+  runAfter("finance.ai_confirmed", () => Promise.all(sideEffects.map((task) => task())));
+  runAfter("finance.ai_confirmed.revalidate", () => revalidatePath("/finance/records"));
   return record;
 }
 

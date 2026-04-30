@@ -21,7 +21,7 @@ function bool(formData: FormData, key: string) {
 async function attachReceiptFiles(formData: FormData, recordId?: string) {
   if (!recordId) return;
   const files = receiptFiles(formData);
-  for (const file of files) {
+  await Promise.all(files.map(async (file) => {
     const created = await uploadFile({
       file,
       file_name: file.name,
@@ -39,7 +39,7 @@ async function attachReceiptFiles(formData: FormData, recordId?: string) {
         record_id: recordId
       });
     }
-  }
+  }));
 }
 
 function receiptFiles(formData: FormData) {
@@ -47,8 +47,7 @@ function receiptFiles(formData: FormData) {
 }
 
 async function uploadPendingReceiptFiles(files: File[]) {
-  const fileIds: string[] = [];
-  for (const file of files) {
+  const fileIds = await Promise.all(files.map(async (file) => {
     const created = await uploadFile({
       file,
       file_name: file.name || "receipt",
@@ -58,22 +57,22 @@ async function uploadPendingReceiptFiles(files: File[]) {
       asset_type: "receipt",
       metadata: { asset_type: "receipt", module: "finance", status: "pending_ai_parse" }
     });
-    if ("id" in created) fileIds.push(created.id);
-  }
-  return fileIds;
+    return "id" in created ? created.id : null;
+  }));
+  return fileIds.filter((id): id is string => Boolean(id));
 }
 
 async function linkPendingReceiptFiles(formData: FormData, recordId?: string) {
   if (!recordId) return;
   const fileIds = formData.getAll("pending_file_id").filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  for (const fileId of fileIds) {
-    await linkFileToRecord({
+  await Promise.all(fileIds.map((fileId) =>
+    linkFileToRecord({
       file_id: fileId,
       module: "finance",
       record_type: "finance_record",
       record_id: recordId
-    });
-  }
+    })
+  ));
 }
 
 export async function createFinanceRecordAction(formData: FormData) {
@@ -95,7 +94,7 @@ export async function createFinanceRecordAction(formData: FormData) {
     metadata: { notes: value(formData, "notes") ?? "" }
   });
   await attachReceiptFiles(formData, "id" in record ? record.id : undefined);
-  redirect("/finance/records?created=1");
+  redirect(`/finance/records?created=1${"id" in record ? `&highlight=${record.id}` : ""}`);
 }
 
 export async function updateFinanceRecordAction(formData: FormData) {
@@ -104,10 +103,7 @@ export async function updateFinanceRecordAction(formData: FormData) {
   await updateFinanceRecord(id, {
     status: value(formData, "status") as never
   });
-  revalidatePath("/finance");
   revalidatePath("/finance/records");
-  revalidatePath("/finance/reimbursements");
-  revalidatePath("/approvals");
 }
 
 export async function approveFinanceRecordAction(formData: FormData) {
@@ -115,9 +111,6 @@ export async function approveFinanceRecordAction(formData: FormData) {
   if (!id) throw new Error("Missing record id");
   await approveFinanceRecord(id);
   revalidatePath("/finance/records");
-  revalidatePath("/finance/reimbursements");
-  revalidatePath("/approvals");
-  revalidatePath("/finance");
 }
 
 export async function rejectFinanceRecordAction(formData: FormData) {
@@ -125,9 +118,6 @@ export async function rejectFinanceRecordAction(formData: FormData) {
   if (!id) throw new Error("Missing record id");
   await rejectFinanceRecord(id, value(formData, "reason"));
   revalidatePath("/finance/records");
-  revalidatePath("/finance/reimbursements");
-  revalidatePath("/approvals");
-  revalidatePath("/finance");
 }
 
 export async function createFinanceCategoryAction(formData: FormData) {
@@ -197,8 +187,10 @@ export async function confirmParsedFinanceRecordAction(_: AIParseState, formData
       metadata: { notes: value(formData, "notes") ?? "" }
     });
     const recordId = "id" in record ? record.id : undefined;
-    await linkPendingReceiptFiles(formData, recordId);
-    await attachReceiptFiles(formData, recordId);
+    await Promise.all([
+      linkPendingReceiptFiles(formData, recordId),
+      attachReceiptFiles(formData, recordId)
+    ]);
     return {
       recordId,
       success: intent === "draft" ? "草稿已保存，正在返回财务流水。" : "财务记录已保存，正在返回财务流水。"

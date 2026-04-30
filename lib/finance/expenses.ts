@@ -7,6 +7,7 @@ import { canApproveFinance } from "@/lib/finance/permissions";
 import type { FinanceCategory } from "@/lib/finance/types";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { hasPermission, requirePermission } from "@/lib/permissions";
+import { runAfter } from "@/lib/server/after";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ExpenseStatus =
@@ -453,18 +454,10 @@ export async function getExpenseTemplates() {
 }
 
 async function nextExpenseReportNo() {
-  const supabase = await createSupabaseServerClient();
-  const organization = await getCurrentOrganization();
-  if (!supabase) return `EXP-${Date.now()}`;
-
-  const { data, error } = await supabase.rpc("finance_next_expense_report_no", {
-    target_org_id: organization.id
-  });
-  if (error) {
-    const month = new Date().toISOString().slice(0, 7).replace("-", "");
-    return `EXP-${month}-${String(Math.floor(Math.random() * 9999)).padStart(4, "0")}`;
-  }
-  return String(data);
+  const date = new Date();
+  const month = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`.toUpperCase().slice(-7);
+  return `EXP-${month}-${suffix}`;
 }
 
 async function buildRiskFlags(input: ExpenseReportInput) {
@@ -480,16 +473,11 @@ async function buildRiskFlags(input: ExpenseReportInput) {
     flags.push({ key: "older_than_90_days", severity: "warning", message: "发生日期超过 90 天，请确认是否仍可报销。" });
   }
 
-  const categories = await getExpenseCategories();
-  const category = categories.find((item) => item.id === input.category_id);
-  const singleLimit = category && "single_amount_limit" in category ? asNumber((category as FinanceCategory & { single_amount_limit?: number }).single_amount_limit) : 0;
-  if (singleLimit > 0 && input.amount > singleLimit) {
-    flags.push({ key: "over_category_limit", severity: "warning", message: `超过该类别单笔参考标准 ${money(singleLimit)}。` });
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const organization = await getCurrentOrganization();
-  if (supabase && input.merchant_name) {
+  const duplicateCheck = async () => {
+    if (!input.merchant_name) return false;
+    const supabase = await createSupabaseServerClient();
+    const organization = await getCurrentOrganization();
+    if (!supabase) return false;
     const dateFrom = new Date(occurred);
     dateFrom.setDate(dateFrom.getDate() - 7);
     const dateTo = new Date(occurred);
@@ -503,16 +491,27 @@ async function buildRiskFlags(input: ExpenseReportInput) {
       .gte("occurred_at", dateFrom.toISOString().slice(0, 10))
       .lte("occurred_at", dateTo.toISOString().slice(0, 10))
       .limit(1);
-    if (data?.length) {
-      flags.push({ key: "duplicate_amount_merchant", severity: "danger", message: "7 天内存在同金额同商家的报销记录，请核对是否重复。" });
-    }
+    return Boolean(data?.length);
+  };
+
+  const [categories, hasDuplicate] = await Promise.all([
+    input.category_id ? getExpenseCategories() : Promise.resolve([] as FinanceCategory[]),
+    duplicateCheck()
+  ]);
+  const category = categories.find((item) => item.id === input.category_id);
+  const singleLimit = category && "single_amount_limit" in category ? asNumber((category as FinanceCategory & { single_amount_limit?: number }).single_amount_limit) : 0;
+  if (singleLimit > 0 && input.amount > singleLimit) {
+    flags.push({ key: "over_category_limit", severity: "warning", message: `超过该类别单笔参考标准 ${money(singleLimit)}。` });
+  }
+  if (hasDuplicate) {
+    flags.push({ key: "duplicate_amount_merchant", severity: "danger", message: "7 天内存在同金额同商家的报销记录，请核对是否重复。" });
   }
 
   return flags;
 }
 
 async function linkExpenseFiles(reportId: string, files: File[]) {
-  for (const file of files) {
+  await Promise.all(files.map(async (file) => {
     const created = await uploadFile({
       file,
       file_name: file.name || "receipt",
@@ -530,7 +529,7 @@ async function linkExpenseFiles(reportId: string, files: File[]) {
         record_id: reportId
       });
     }
-  }
+  }));
 }
 
 export async function createExpenseReport(input: ExpenseReportInput, submit = false) {
@@ -564,47 +563,56 @@ export async function createExpenseReport(input: ExpenseReportInput, submit = fa
 
   if (reportError) throw reportError;
 
-  const { error: itemError } = await supabase
-    .from("finance_expense_items")
-    .insert({
-      organization_id: organization.id,
-      expense_report_id: report.id,
-      category_id: input.category_id || null,
-      amount: input.amount,
-      currency: (input.currency || "CNY").toUpperCase(),
-      occurred_at: input.occurred_at,
-      merchant_name: input.merchant_name || null,
-      description: input.description.trim(),
-      risk_flags: riskFlags,
-      metadata: {}
-    });
+  const postCreateTasks: Promise<unknown>[] = [
+    (async () => {
+      const { error } = await supabase
+        .from("finance_expense_items")
+        .insert({
+          organization_id: organization.id,
+          expense_report_id: report.id,
+          category_id: input.category_id || null,
+          amount: input.amount,
+          currency: (input.currency || "CNY").toUpperCase(),
+          occurred_at: input.occurred_at,
+          merchant_name: input.merchant_name || null,
+          description: input.description.trim(),
+          risk_flags: riskFlags,
+          metadata: {}
+        });
+      if (error) throw error;
+    })()
+  ];
 
-  if (itemError) throw itemError;
-  if (input.files?.length) await linkExpenseFiles(report.id, input.files);
-
+  if (input.files?.length) postCreateTasks.push(linkExpenseFiles(report.id, input.files));
   if (input.save_as_template && input.template_name?.trim()) {
-    await upsertExpenseTemplate({
+    postCreateTasks.push(upsertExpenseTemplate({
       name: input.template_name.trim(),
       category_id: input.category_id,
       amount: input.amount,
       merchant_name: input.merchant_name,
       description: input.description
-    });
+    }));
   }
 
-  await logAction({
-    event_key: "finance.expense.created",
-    action: "create",
-    module: "finance",
-    related_record_type: "finance_expense_report",
-    related_record_id: report.id,
-    after_data: report
-  });
-  await emitEvent({
-    event_key: "finance.expense.created",
-    module: "finance",
-    payload: { id: report.id, report_no: report.report_no, amount: input.amount }
-  });
+  await Promise.all(postCreateTasks);
+
+  runAfter("finance.expense.created", () =>
+    Promise.all([
+      logAction({
+        event_key: "finance.expense.created",
+        action: "create",
+        module: "finance",
+        related_record_type: "finance_expense_report",
+        related_record_id: report.id,
+        after_data: report
+      }),
+      emitEvent({
+        event_key: "finance.expense.created",
+        module: "finance",
+        payload: { id: report.id, report_no: report.report_no, amount: input.amount }
+      })
+    ])
+  );
 
   const result = submit ? await submitExpenseReport(report.id) : report;
   revalidateFinanceExpensePaths();
@@ -890,9 +898,9 @@ export async function buildExpenseReconciliationWorkbook(input: { month?: string
 }
 
 function revalidateFinanceExpensePaths() {
-  revalidatePath("/finance");
-  revalidatePath("/finance/reimbursements");
-  revalidatePath("/finance/reimbursements/payments");
-  revalidatePath("/finance/records");
-  revalidatePath("/dashboard");
+  runAfter("finance.expense.revalidate", () => {
+    revalidatePath("/finance/reimbursements");
+    revalidatePath("/finance/reimbursements/payments");
+    revalidatePath("/finance/records");
+  });
 }

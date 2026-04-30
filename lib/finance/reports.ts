@@ -1,4 +1,5 @@
 import { getFinanceAccounts } from "@/lib/finance/accounts";
+import { getExpenseReports } from "@/lib/finance/expenses";
 import { getFinanceRecords } from "@/lib/finance/records";
 import type { FinanceRecord } from "@/lib/finance/types";
 
@@ -11,15 +12,17 @@ function currentMonthRange() {
 
 export async function getFinanceSummary() {
   const { start, end } = currentMonthRange();
-  const [records, accounts] = await Promise.all([
+  const [records, accounts, expenseReports] = await Promise.all([
     getFinanceRecords({ date_from: start, date_to: end }),
-    getFinanceAccounts()
+    getFinanceAccounts(),
+    getExpenseReports({ date_from: start, date_to: end, limit: 300 })
   ]);
 
   const bookedRecords = records.filter((record) => ["approved", "paid"].includes(record.status));
   const income = bookedRecords.filter((record) => record.record_type === "income").reduce((sum, record) => sum + Number(record.amount), 0);
   const expense = bookedRecords.filter((record) => ["expense", "reimbursement"].includes(record.record_type)).reduce((sum, record) => sum + Number(record.amount), 0);
-  const pendingReimbursements = records.filter((record) => record.status === "pending_approval" && (record.record_type === "reimbursement" || record.reimbursement_required)).length;
+  const pendingReimbursements = records.filter((record) => record.status === "pending_approval" && (record.record_type === "reimbursement" || record.reimbursement_required)).length
+    + expenseReports.filter((report) => ["submitted", "pending_manager", "pending_finance"].includes(report.status)).length;
   const cashBalance = accounts.filter((account) => account.currency === "CNY").reduce((sum, account) => sum + Number(account.current_balance), 0);
 
   return {

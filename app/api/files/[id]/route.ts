@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { getCurrentOrganization } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const preview = searchParams.get("preview") === "1";
   const supabase = await createSupabaseServerClient();
   if (!supabase) return new NextResponse("Supabase is not configured", { status: 404 });
 
@@ -19,7 +21,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
   const { data, error: signedUrlError } = await supabase.storage
     .from(file.storage_bucket)
-    .createSignedUrl(file.storage_path, 60, { download: file.file_name });
+    .createSignedUrl(file.storage_path, 60, preview ? undefined : { download: file.file_name });
 
   if (signedUrlError || !data?.signedUrl) {
     return new NextResponse("Unable to create download URL", { status: 500 });

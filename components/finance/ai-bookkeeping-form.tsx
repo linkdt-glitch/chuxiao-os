@@ -132,9 +132,9 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
 
     setSaveCelebration(true);
     const redirectTimer = window.setTimeout(() => {
-      router.push("/finance/records?created=1");
+      window.location.assign("/finance/records?created=1");
       router.refresh();
-    }, 900);
+    }, 650);
     const animationTimer = window.setTimeout(() => setSaveCelebration(false), 1200);
 
     return () => {

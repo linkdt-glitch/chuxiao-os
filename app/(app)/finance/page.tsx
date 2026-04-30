@@ -46,6 +46,12 @@ export default async function FinancePage() {
       icon: ClipboardCheck
     },
     {
+      title: "新建报销单",
+      description: "提交员工报销，上传票据并进入财务审批流。",
+      href: "/finance/reimbursements/new",
+      icon: ReceiptText
+    },
+    {
       title: "导出报表",
       description: "导出收入、支出和全部流水 Excel。",
       href: "/finance/reports",
@@ -81,7 +87,7 @@ export default async function FinancePage() {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {quickActions.map((item) => {
           const Icon = item.icon;
           return (

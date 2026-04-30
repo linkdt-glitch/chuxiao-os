@@ -2,7 +2,7 @@ import { getCurrentMember } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import type { FinanceRecord } from "@/lib/finance/types";
 
-const financeAllRoles = new Set(["owner", "admin", "finance_lead"]);
+const financeAllRoles = new Set(["owner", "admin"]);
 
 export async function canManageFinance() {
   const member = await getCurrentMember();

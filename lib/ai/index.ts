@@ -21,6 +21,16 @@ export type AIImageInput = {
   file_name?: string;
 };
 
+type AIInvokeOptions = {
+  module: string;
+  prompt: string;
+  images?: AIImageInput[];
+  maxTokens?: number;
+  timeoutMs?: number;
+  temperature?: number;
+  responseFormat?: "json";
+};
+
 export async function getActiveProvider() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -168,13 +178,46 @@ export async function logAIInvocation(input: {
 
 type OpenAICompatibleProviderName = "deepseek" | "siliconflow";
 
-function getProviderConfig(provider: AIProvider) {
+function numberEnv(key: string, fallback: number) {
+  const value = Number(process.env[key]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function modelForModule(provider: AIProvider, module: string, hasImages = false) {
+  if (provider.provider_name === "siliconflow") {
+    if (hasImages) return process.env.SILICONFLOW_VISION_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
+    if (module.startsWith("finance.ai_parse")) return process.env.SILICONFLOW_FAST_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
+    if (module === "ai_chat") return process.env.SILICONFLOW_CHAT_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
+    return provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
+  }
+
+  if (module.startsWith("finance.ai_parse")) return process.env.DEEPSEEK_FAST_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  if (module === "ai_chat") return process.env.DEEPSEEK_CHAT_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  return provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+}
+
+function timeoutForModule(module: string, hasImages = false) {
+  if (module.startsWith("finance.ai_parse")) {
+    return numberEnv(hasImages ? "FINANCE_AI_VISION_TIMEOUT_MS" : "FINANCE_AI_PARSE_TIMEOUT_MS", hasImages ? 12_000 : 6_500);
+  }
+  if (module === "ai_chat") return numberEnv("AI_CHAT_TIMEOUT_MS", 45_000);
+  return numberEnv("AI_DEFAULT_TIMEOUT_MS", 20_000);
+}
+
+function maxTokensForModule(module: string, hasImages = false) {
+  if (module.startsWith("finance.ai_parse")) return hasImages ? 650 : 420;
+  if (module === "ai_chat") return 900;
+  if (module === "ai_settings") return 600;
+  return 900;
+}
+
+function getProviderConfig(provider: AIProvider, module: string, hasImages = false) {
   if (provider.provider_name === "siliconflow") {
     return {
       displayName: "SiliconFlow",
       apiKey: process.env.SILICONFLOW_API_KEY ?? "",
       baseUrl: provider.base_url ?? process.env.SILICONFLOW_BASE_URL ?? "https://api.siliconflow.cn/v1",
-      model: provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3",
+      model: modelForModule(provider, module, hasImages),
       missingKeyMessage: "Missing SILICONFLOW_API_KEY"
     };
   }
@@ -183,7 +226,7 @@ function getProviderConfig(provider: AIProvider) {
     displayName: "DeepSeek",
     apiKey: process.env.DEEPSEEK_API_KEY ?? process.env.SPEEK_V4_API_KEY ?? "",
     baseUrl: provider.base_url ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
-    model: provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
+    model: modelForModule(provider, module, hasImages),
     missingKeyMessage: "Missing DEEPSEEK_API_KEY"
   };
 }
@@ -202,13 +245,37 @@ function buildUserContent(prompt: string, images?: AIImageInput[]) {
   ];
 }
 
-async function invokeOpenAICompatible(input: {
+function buildChatBody(input: AIInvokeOptions, config: ReturnType<typeof getProviderConfig>, stream = false) {
+  return {
+    model: config.model,
+    messages: [
+      {
+        role: "system",
+        content: "You are the AI engine inside 初晓 OS 系统. Return concise, structured, business-safe answers."
+      },
+      { role: "user", content: buildUserContent(input.prompt, input.images) }
+    ],
+    temperature: input.temperature ?? 0.2,
+    max_tokens: input.maxTokens ?? maxTokensForModule(input.module, Boolean(input.images?.length)),
+    ...(stream ? { stream: true } : {}),
+    ...(input.responseFormat === "json" ? { response_format: { type: "json_object" } } : {})
+  };
+}
+
+function makeTextStream(text: string) {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(text));
+      controller.close();
+    }
+  });
+}
+
+async function invokeOpenAICompatible(input: AIInvokeOptions & {
   provider: AIProvider & { provider_name: OpenAICompatibleProviderName };
-  module: string;
-  prompt: string;
-  images?: AIImageInput[];
 }) {
-  const config = getProviderConfig(input.provider);
+  const hasImages = Boolean(input.images?.length);
+  const config = getProviderConfig(input.provider, input.module, hasImages);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");
   const promptPreview = input.images?.length ? `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]` : input.prompt;
 
@@ -227,6 +294,9 @@ async function invokeOpenAICompatible(input: {
     };
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? timeoutForModule(input.module, hasImages));
+
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
@@ -234,17 +304,8 @@ async function invokeOpenAICompatible(input: {
         Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          {
-            role: "system",
-            content: "You are the AI engine inside 初晓 OS 系统. Return concise, structured, business-safe answers."
-          },
-          { role: "user", content: buildUserContent(input.prompt, input.images) }
-        ],
-        temperature: 0.2
-      })
+      body: JSON.stringify(buildChatBody(input, config)),
+      signal: controller.signal
     });
 
     const payload = (await response.json().catch(() => ({}))) as ChatCompletionResponse & {
@@ -283,7 +344,9 @@ async function invokeOpenAICompatible(input: {
       text
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : `Unknown ${config.displayName} error`;
+    const message = error instanceof Error && error.name === "AbortError"
+      ? `${config.displayName} 调用超时，已启用快速降级。`
+      : error instanceof Error ? error.message : `Unknown ${config.displayName} error`;
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
@@ -296,16 +359,160 @@ async function invokeOpenAICompatible(input: {
       invocationLogId: "id" in invocation ? invocation.id : undefined,
       text: `${config.displayName} 调用失败：${message}`
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-export async function invokeAI(input: { module: string; prompt: string }) {
+async function streamOpenAICompatible(input: AIInvokeOptions & {
+  provider: AIProvider & { provider_name: OpenAICompatibleProviderName };
+}) {
+  const hasImages = Boolean(input.images?.length);
+  const config = getProviderConfig(input.provider, input.module, hasImages);
+  const baseUrl = config.baseUrl.replace(/\/+$/, "");
+  const promptPreview = input.images?.length ? `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]` : input.prompt;
+
+  if (!config.apiKey) {
+    const invocation = await logAIInvocation({
+      provider_id: input.provider.id,
+      module: input.module,
+      prompt_preview: promptPreview.slice(0, 500),
+      status: "failed",
+      error_message: config.missingKeyMessage
+    });
+    return {
+      provider: input.provider,
+      invocationLogId: "id" in invocation ? invocation.id : undefined,
+      stream: makeTextStream(`${config.displayName} API Key 未配置。请在服务端环境变量中设置对应 API Key。`)
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? timeoutForModule(input.module, hasImages));
+
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildChatBody(input, config, true)),
+      signal: controller.signal
+    });
+
+    if (!response.ok || !response.body) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+      const message = payload.error?.message ?? `${config.displayName} request failed: ${response.status}`;
+      const invocation = await logAIInvocation({
+        provider_id: input.provider.id,
+        module: input.module,
+        prompt_preview: promptPreview.slice(0, 500),
+        status: "failed",
+        error_message: message
+      });
+      return {
+        provider: input.provider,
+        invocationLogId: "id" in invocation ? invocation.id : undefined,
+        stream: makeTextStream(`${config.displayName} 调用失败：${message}`)
+      };
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
+
+    void (async () => {
+      let buffer = "";
+      let output = "";
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const data = trimmed.slice(5).trim();
+            if (!data || data === "[DONE]") continue;
+            try {
+              const event = JSON.parse(data) as {
+                choices?: Array<{ delta?: { content?: string | null }; message?: { content?: string | null } }>;
+                usage?: ChatCompletionResponse["usage"];
+              };
+              const chunk = event.choices?.[0]?.delta?.content ?? event.choices?.[0]?.message?.content ?? "";
+              if (chunk) {
+                output += chunk;
+                await writer.write(encoder.encode(chunk));
+              }
+            } catch {
+              // Ignore malformed stream frames and keep reading.
+            }
+          }
+        }
+
+        await logAIInvocation({
+          provider_id: input.provider.id,
+          module: input.module,
+          prompt_preview: promptPreview.slice(0, 500),
+          output_tokens: Math.ceil(output.length / 2),
+          status: "success"
+        });
+      } catch (error) {
+        const message = error instanceof Error && error.name === "AbortError"
+          ? `${config.displayName} 流式调用超时。`
+          : error instanceof Error ? error.message : `Unknown ${config.displayName} stream error`;
+        await writer.write(encoder.encode(`\n\n${config.displayName} 调用中断：${message}`));
+        await logAIInvocation({
+          provider_id: input.provider.id,
+          module: input.module,
+          prompt_preview: promptPreview.slice(0, 500),
+          status: "failed",
+          error_message: message
+        });
+      } finally {
+        clearTimeout(timeout);
+        await writer.close();
+      }
+    })();
+
+    return { provider: input.provider, stream: readable };
+  } catch (error) {
+    clearTimeout(timeout);
+    const message = error instanceof Error && error.name === "AbortError"
+      ? `${config.displayName} 调用超时，请稍后重试。`
+      : error instanceof Error ? error.message : `Unknown ${config.displayName} stream error`;
+    const invocation = await logAIInvocation({
+      provider_id: input.provider.id,
+      module: input.module,
+      prompt_preview: promptPreview.slice(0, 500),
+      status: "failed",
+      error_message: message
+    });
+    return {
+      provider: input.provider,
+      invocationLogId: "id" in invocation ? invocation.id : undefined,
+      stream: makeTextStream(`${config.displayName} 调用失败：${message}`)
+    };
+  }
+}
+
+export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
   const provider = await getActiveProvider();
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
       module: input.module,
-      prompt: input.prompt
+      prompt: input.prompt,
+      maxTokens: input.maxTokens,
+      timeoutMs: input.timeoutMs,
+      temperature: input.temperature,
+      responseFormat: input.responseFormat
     });
   }
 
@@ -322,14 +529,18 @@ export async function invokeAI(input: { module: string; prompt: string }) {
   };
 }
 
-export async function invokeAIWithImages(input: { module: string; prompt: string; images: AIImageInput[] }) {
+export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIImageInput[] }) {
   const provider = await getActiveProvider();
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
       module: input.module,
       prompt: input.prompt,
-      images: input.images
+      images: input.images,
+      maxTokens: input.maxTokens,
+      timeoutMs: input.timeoutMs,
+      temperature: input.temperature,
+      responseFormat: input.responseFormat
     });
   }
 
@@ -344,5 +555,27 @@ export async function invokeAIWithImages(input: { module: string; prompt: string
     provider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
     text: "当前 AI Provider 尚未接入图片识别。请补充文字描述后再解析。"
+  };
+}
+
+export async function streamAI(input: Omit<AIInvokeOptions, "images">) {
+  const provider = await getActiveProvider();
+  if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
+    return streamOpenAICompatible({
+      provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
+      ...input
+    });
+  }
+
+  const invocation = await logAIInvocation({
+    provider_id: provider.id,
+    module: input.module,
+    prompt_preview: input.prompt.slice(0, 500),
+    status: "success"
+  });
+  return {
+    provider,
+    invocationLogId: "id" in invocation ? invocation.id : undefined,
+    stream: makeTextStream("AI Provider interface reserved. Real model execution can be plugged in here.")
   };
 }

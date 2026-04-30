@@ -38,9 +38,29 @@ services:
         value: https://api.deepseek.com
       - key: DEEPSEEK_MODEL
         value: deepseek-v4-flash
+      - key: DEEPSEEK_FAST_MODEL
+        sync: false
+      - key: DEEPSEEK_CHAT_MODEL
+        sync: false
       - key: SILICONFLOW_API_KEY
         sync: false
       - key: SILICONFLOW_BASE_URL
         value: https://api.siliconflow.cn/v1
       - key: SILICONFLOW_MODEL
         value: deepseek-ai/DeepSeek-V3
+      - key: SILICONFLOW_FAST_MODEL
+        value: Qwen/Qwen2.5-7B-Instruct
+      - key: SILICONFLOW_CHAT_MODEL
+        value: deepseek-ai/DeepSeek-V3
+      - key: SILICONFLOW_VISION_MODEL
+        sync: false
+      - key: AI_DEFAULT_TIMEOUT_MS
+        value: "20000"
+      - key: AI_CHAT_TIMEOUT_MS
+        value: "45000"
+      - key: FINANCE_AI_PARSE_TIMEOUT_MS
+        value: "6500"
+      - key: FINANCE_AI_VISION_TIMEOUT_MS
+        value: "12000"
+      - key: FINANCE_AI_FAST_LOCAL
+        value: "true"

@@ -37,8 +37,10 @@ export default async function AISettingsPage() {
                 <div>SILICONFLOW_API_KEY=...</div>
                 <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
                 <div>SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3</div>
+                <div>SILICONFLOW_FAST_MODEL=Qwen/Qwen2.5-7B-Instruct</div>
+                <div>FINANCE_AI_FAST_LOCAL=true</div>
               </div>
-              <p>切换 Provider 会写入审计日志和系统事件，后续 AI 调用会自动使用当前 active Provider。</p>
+              <p>切换 Provider 会写入审计日志和系统事件。财务一句话记账会优先走极速草稿，复杂识别和 AI 对话会自动使用当前 active Provider。</p>
             </CardContent>
           </Card>
           <ProviderTestCard />

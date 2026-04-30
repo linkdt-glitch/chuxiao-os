@@ -33,30 +33,54 @@ export function AssistantChat() {
     if (!question || pending) return;
 
     const nextMessages: Message[] = [...messages, { role: "user", content: question }];
-    setMessages(nextMessages);
+    const assistantIndex = nextMessages.length;
+    setMessages([...nextMessages, { role: "assistant", content: "正在连接 AI..." }]);
     setInput("");
     setPending(true);
     setError("");
 
-    const response = await fetch("/api/ai/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: nextMessages })
-    });
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: nextMessages, stream: true })
+      });
 
-    const payload = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      message?: Message;
-    };
+      if (!response.ok || !response.body) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(payload.error ?? "AI 助手暂时没有返回内容。");
+        setMessages(nextMessages);
+        return;
+      }
 
-    setPending(false);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let answer = "";
 
-    if (!response.ok || payload.error || !payload.message) {
-      setError(payload.error ?? "AI 助手暂时没有返回内容。");
-      return;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        answer += decoder.decode(value, { stream: true });
+        setMessages((current) =>
+          current.map((message, index) =>
+            index === assistantIndex ? { ...message, content: answer || "正在生成..." } : message
+          )
+        );
+      }
+
+      if (!answer.trim()) {
+        setMessages((current) =>
+          current.map((message, index) =>
+            index === assistantIndex ? { ...message, content: "AI 没有返回内容，请稍后重试。" } : message
+          )
+        );
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "AI 助手调用失败。");
+      setMessages(nextMessages);
+    } finally {
+      setPending(false);
     }
-
-    setMessages((current) => [...current, payload.message!]);
   }
 
   return (
@@ -92,7 +116,7 @@ export function AssistantChat() {
               </div>
             </div>
           ))}
-          {pending ? (
+          {pending && messages[messages.length - 1]?.role !== "assistant" ? (
             <div className="flex justify-start">
               <div className="rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-muted-foreground">
                 AI 正在思考...

@@ -21,7 +21,13 @@ export async function POST(request: Request) {
       text(body.prompt) ||
       "请用 5 条要点说明：初晓 OS 如何帮助小公司管理组织、审批、文件、AI Agent 和经营执行。";
 
-    const result = await invokeAI({ module: "ai_settings", prompt });
+    const result = await invokeAI({
+      module: "ai_settings",
+      prompt,
+      maxTokens: 600,
+      timeoutMs: Number(process.env.AI_DEFAULT_TIMEOUT_MS || 20_000),
+      temperature: 0.2
+    });
 
     return NextResponse.json({
       message: "AI Provider 测试完成。",

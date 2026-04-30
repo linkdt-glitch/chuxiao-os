@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { invokeAI } from "@/lib/ai";
+import { invokeAI, streamAI } from "@/lib/ai";
 import { requirePermission } from "@/lib/permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -64,12 +64,38 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const messages = normalizeMessages(body.messages);
+    const wantsStream = body.stream !== false;
 
     if (!messages.length || messages[messages.length - 1]?.role !== "user") {
       return NextResponse.json({ error: "请输入要咨询的问题。" }, { status: 400 });
     }
 
-    const result = await invokeAI({ module: "ai_chat", prompt: buildPrompt(messages) });
+    const prompt = buildPrompt(messages);
+
+    if (wantsStream) {
+      const result = await streamAI({
+        module: "ai_chat",
+        prompt,
+        maxTokens: 900,
+        timeoutMs: Number(process.env.AI_CHAT_TIMEOUT_MS || 45_000),
+        temperature: 0.3
+      });
+      return new Response(result.stream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "X-AI-Provider": result.provider.label ?? result.provider.provider_name
+        }
+      });
+    }
+
+    const result = await invokeAI({
+      module: "ai_chat",
+      prompt,
+      maxTokens: 900,
+      timeoutMs: Number(process.env.AI_CHAT_TIMEOUT_MS || 45_000),
+      temperature: 0.3
+    });
 
     return NextResponse.json({
       provider: { label: result.provider.label },

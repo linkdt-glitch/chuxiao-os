@@ -130,9 +130,9 @@ function extractJsonObject(text: string) {
   }
 }
 
-const VISION_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MAX_VISION_FILE_SIZE = 8 * 1024 * 1024;
-const MAX_VISION_FILES = 3;
+const VISION_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_VISION_FILE_SIZE = 3 * 1024 * 1024;
+const MAX_VISION_FILES = 1;
 
 function isReadableFile(file: File) {
   return file.size > 0 && VISION_MIME_TYPES.has(file.type) && file.size <= MAX_VISION_FILE_SIZE;
@@ -175,6 +175,14 @@ function normalizeParsedResult(input: unknown, fallback: ParsedFinanceRecord): P
   };
 }
 
+function canUseLocalFastPath(text: string, fallback: ParsedFinanceRecord, images: AIImageInput[], hasFiles: boolean) {
+  if (process.env.FINANCE_AI_FAST_LOCAL === "false") return false;
+  if (hasFiles) return false;
+  if (images.length > 0) return false;
+  if (!text || text.length > 180) return false;
+  return Boolean(fallback.amount && fallback.confidence >= 0.86 && fallback.missing_fields.length === 0);
+}
+
 export async function parseFinanceText(rawText: string, files: File[] = []) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -183,53 +191,71 @@ export async function parseFinanceText(rawText: string, files: File[] = []) {
   const images = await filesToAIImages(files);
   const normalizedText = rawText.trim();
   const fallbackText = [normalizedText, fileDescriptions.length ? `票据附件：${fileDescriptions.join("；")}` : ""].filter(Boolean).join("\n");
-  const prompt = `你是企业财务记账解析器。请只返回一个严格 JSON 对象，不要 Markdown，不要解释。
-如果提供了票据图片，请识别商户、日期、金额、币种、支付方式、税费、订单/账单用途，并结合用户文字生成记账记录。
-字段必须包含：
-record_type: income | expense | reimbursement | transfer | refund | adjustment
-amount: number|null
-currency: 默认 CNY
-occurred_at: YYYY-MM-DD，没有日期用今天 ${today()}
-category_name, subcategory_name, account_name, payment_method, counterparty_name, project_name, description, quantity
-reimbursement_required, need_approval, risk_level: low | medium | high | critical
-confidence: 0-1
-missing_fields: 缺少 amount/record_type/occurred_at/description 等关键字段时列出
-notes
-
-用户原文：${normalizedText || "用户未输入文字，请优先根据票据图片识别。"}
-附件：${fileDescriptions.length ? fileDescriptions.join("；") : "无"}`;
-  const ai = images.length
-    ? await invokeAIWithImages({ module: "finance", prompt, images })
-    : await invokeAI({ module: "finance", prompt });
   const fallback = inferParsedText(fallbackText);
-  const modelJson = extractJsonObject(ai.text);
-  const parsed = normalizeParsedResult(modelJson, fallback);
   const rawLogText = fallbackText || "[空白 AI 记账请求]";
 
-  if (!supabase) {
-    await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { raw_text: rawLogText, parsed, file_count: fileDescriptions.length } });
-    return { id: "demo_ai_parse", parsed };
+  async function saveParsedResult(parsed: ParsedFinanceRecord, aiInvocationLogId?: string | null) {
+    if (!supabase) {
+      await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { raw_text: rawLogText, parsed, file_count: fileDescriptions.length } });
+      return { id: "demo_ai_parse", parsed };
+    }
+
+    const { data, error } = await supabase
+      .from("finance_ai_parse_logs")
+      .insert({
+        organization_id: organization.id,
+        user_id: user.id,
+        raw_text: rawLogText,
+        parsed_result: parsed,
+        ai_invocation_log_id: aiInvocationLogId ?? null,
+        status: "parsed",
+        error_message: parsed.missing_fields.length ? `需要补充：${parsed.missing_fields.join(", ")}` : null
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    await logAction({ event_key: "finance.ai_parsed", action: "ai_parse", module: "finance", related_record_type: "finance_ai_parse_log", related_record_id: data.id, after_data: parsed });
+    await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence, file_count: fileDescriptions.length } });
+    revalidatePath("/finance/ai-bookkeeping");
+    return { id: data.id as string, parsed };
   }
 
-  const { data, error } = await supabase
-    .from("finance_ai_parse_logs")
-    .insert({
-      organization_id: organization.id,
-      user_id: user.id,
-      raw_text: rawLogText,
-      parsed_result: parsed,
-      ai_invocation_log_id: ai.invocationLogId ?? null,
-      status: "parsed",
-      error_message: parsed.missing_fields.length ? `需要补充：${parsed.missing_fields.join(", ")}` : null
-    })
-    .select()
-    .single();
+  if (canUseLocalFastPath(normalizedText, fallback, images, fileDescriptions.length > 0)) {
+    return saveParsedResult({
+      ...fallback,
+      notes: [fallback.notes, "极速草稿：已用本地财务规则秒级生成，适合常见一句话记账。"].filter(Boolean).join(" ")
+    }, null);
+  }
 
-  if (error) throw error;
-  await logAction({ event_key: "finance.ai_parsed", action: "ai_parse", module: "finance", related_record_type: "finance_ai_parse_log", related_record_id: data.id, after_data: parsed });
-  await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { id: data.id, confidence: parsed.confidence, file_count: fileDescriptions.length } });
-  revalidatePath("/finance/ai-bookkeeping");
-  return { id: data.id as string, parsed };
+  const prompt = `只返回 JSON，不要 Markdown。
+从企业财务文本或票据中提取一条记账记录。字段：
+record_type(income/expense/reimbursement/transfer/refund/adjustment), amount, currency, occurred_at(YYYY-MM-DD),
+category_name, subcategory_name, account_name, payment_method, counterparty_name, project_name, description, quantity,
+reimbursement_required, need_approval, risk_level(low/medium/high/critical), confidence, missing_fields, notes。
+今天日期：${today()}
+用户原文：${normalizedText || "无文字，按票据识别"}
+附件：${fileDescriptions.length ? fileDescriptions.join("；") : "无"}`;
+
+  const ai = images.length
+    ? await invokeAIWithImages({
+      module: "finance.ai_parse.vision",
+      prompt,
+      images,
+      responseFormat: "json",
+      maxTokens: 650,
+      timeoutMs: Number(process.env.FINANCE_AI_VISION_TIMEOUT_MS || 12_000)
+    })
+    : await invokeAI({
+      module: "finance.ai_parse.text",
+      prompt,
+      responseFormat: "json",
+      maxTokens: 420,
+      timeoutMs: Number(process.env.FINANCE_AI_PARSE_TIMEOUT_MS || 6_500)
+    });
+  const modelJson = extractJsonObject(ai.text);
+  const parsed = normalizeParsedResult(modelJson, fallback);
+  return saveParsedResult(parsed, ai.invocationLogId ?? null);
 }
 
 export async function confirmParsedFinanceRecord(parseLogId: string, input: FinanceRecordInput) {

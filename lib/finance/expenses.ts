@@ -799,7 +799,7 @@ export async function createExpenseApprovalRule(input: {
 export async function getExpenseDashboard() {
   const [reports, financeRecords, budgets, canApprove, canManage, canPay] = await Promise.all([
     getExpenseReports({ limit: 300 }),
-    getFinanceRecords({ status: "pending_approval", limit: 300 }),
+    getFinanceRecords({ status: "pending_approval", limit: 300, include_attachments: true }),
     getDepartmentBudgets(),
     hasPermission("finance.expense.approve"),
     hasPermission("finance.expense.manage"),

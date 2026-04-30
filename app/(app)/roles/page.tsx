@@ -1,9 +1,7 @@
-import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/ui/confirm-button";
 import { getRolesAndPermissions } from "@/lib/data/queries";
 import { getRolePermissionKeys } from "@/lib/permissions";
 
@@ -15,7 +13,7 @@ export default async function RolesPage() {
       <PageHeader
         title="Roles 权限与角色"
         description="默认角色不可删除；自定义角色复用同一套 permissions、role_permissions、member_permissions。"
-        action={<Button><Plus className="h-4 w-4" />创建角色</Button>}
+        action={<Button disabled variant="outline">自定义角色稍后开放</Button>}
       />
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <div className="space-y-3">
@@ -31,7 +29,9 @@ export default async function RolesPage() {
                 <p>{role.description}</p>
                 <div className="flex items-center justify-between">
                   <span>Risk rank {role.risk_rank}</span>
-                  <ConfirmButton label="删除" confirmText="系统角色不可删除；删除自定义角色前需确认无成员绑定。" />
+                  <Button disabled variant="outline" size="sm">
+                    {role.is_system ? "系统角色保护" : "删除稍后开放"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -64,7 +64,13 @@ export default async function RolesPage() {
                         const checked = keys.includes("*") || keys.includes(permission.key);
                         return (
                           <td key={role.id} className="px-3 py-3">
-                            <input type="checkbox" defaultChecked={checked} aria-label={`${role.name} ${permission.key}`} />
+                            <input
+                              type="checkbox"
+                              defaultChecked={checked}
+                              disabled
+                              aria-label={`${role.name} ${permission.key}`}
+                              className="cursor-not-allowed"
+                            />
                           </td>
                         );
                       })}

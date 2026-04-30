@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/ui/status";
@@ -28,6 +28,7 @@ export default async function AgentsPage() {
       <PageHeader
         title="Agents Agent 档案"
         description="Agent 是组织内受控操作者：必须绑定负责人、分级授权、运行留痕，高风险动作进入审批。"
+        action={<Button asChild><Link href="/ai-workforce/agents">进入新版 Agent 管理</Link></Button>}
       />
       <div className="mb-4 grid gap-3 md:grid-cols-5">
         {levels.map(([level, text]) => (
@@ -45,28 +46,30 @@ export default async function AgentsPage() {
             <CardTitle>创建 Agent</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">名称</Label>
-                <Input id="name" placeholder="财务分析 Agent" />
+                <Input id="name" disabled placeholder="财务分析 Agent" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="owner">负责人 user_id</Label>
-                <Input id="owner" placeholder="user_ops" />
+                <Input id="owner" disabled placeholder="user_ops" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="level">权限等级</Label>
-                <Input id="level" placeholder="L1 / L2 / L3 / L4 / L5" />
+                <Input id="level" disabled placeholder="L1 / L2 / L3 / L4 / L5" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="desc">描述</Label>
-                <Textarea id="desc" placeholder="Agent 职责、允许模块和工具边界" />
+                <Textarea id="desc" disabled placeholder="Agent 职责、允许模块和工具边界" />
               </div>
-              <Button type="submit" className="w-full">
-                <Plus className="h-4 w-4" />
-                创建 Agent
+              <Button asChild className="w-full">
+                <Link href="/ai-workforce/agents">
+                  <Plus className="h-4 w-4" />
+                  去新版页面创建 Agent
+                </Link>
               </Button>
-            </form>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -99,7 +102,9 @@ export default async function AgentsPage() {
                     </TableCell>
                     <TableCell><StatusBadge value={agent.status} /></TableCell>
                     <TableCell className="space-x-2 text-right">
-                      <ConfirmButton label="暂停" confirmText="暂停 Agent 会阻止后续自动动作，确认继续？" />
+                      <Button asChild variant="outline" size="sm">
+                        <Link href="/ai-workforce/agents">管理</Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

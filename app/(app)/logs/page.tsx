@@ -7,8 +7,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getAuditLogs } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
 
-export default async function LogsPage() {
-  const logs = await getAuditLogs();
+export default async function LogsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ module?: string; actor?: string; action?: string }>;
+}) {
+  const filters = await searchParams;
+  const logs = await getAuditLogs({
+    module: filters.module,
+    actor: filters.actor,
+    action: filters.action,
+    limit: 300
+  });
 
   return (
     <>
@@ -20,11 +30,13 @@ export default async function LogsPage() {
         <CardHeader>
           <CardTitle>筛选</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
-          <Input placeholder="模块，例如 agents" />
-          <Input placeholder="操作者 ID" />
-          <Input placeholder="动作，例如 create" />
-          <Button variant="outline"><Filter className="h-4 w-4" />筛选</Button>
+        <CardContent>
+          <form className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
+            <Input name="module" defaultValue={filters.module ?? ""} placeholder="模块，例如 agents" />
+            <Input name="actor" defaultValue={filters.actor ?? ""} placeholder="操作者类型 human / agent / system" />
+            <Input name="action" defaultValue={filters.action ?? ""} placeholder="动作，例如 create" />
+            <Button type="submit" variant="outline"><Filter className="h-4 w-4" />筛选</Button>
+          </form>
         </CardContent>
       </Card>
       <Card className="mt-4">

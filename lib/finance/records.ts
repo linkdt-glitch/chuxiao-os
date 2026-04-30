@@ -164,6 +164,7 @@ export async function getFinanceRecords(filters?: {
   category_id?: string;
   member_id?: string;
   limit?: number;
+  include_attachments?: boolean;
 }) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -189,7 +190,7 @@ export async function getFinanceRecords(filters?: {
   const { data, error } = await query;
   if (error) throw error;
   const records = (data ?? []).map((item) => normalizeRecord(item));
-  return hydrateFinanceRecordAttachments(records);
+  return filters?.include_attachments ? hydrateFinanceRecordAttachments(records) : records;
 }
 
 export async function getFinanceRecord(id: string) {

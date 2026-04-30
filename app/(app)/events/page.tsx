@@ -7,8 +7,17 @@ import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getSystemEvents } from "@/lib/data/queries";
 
-export default async function EventsPage() {
-  const events = await getSystemEvents();
+export default async function EventsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ module?: string; status?: string }>;
+}) {
+  const filters = await searchParams;
+  const events = await getSystemEvents({
+    module: filters.module,
+    status: filters.status,
+    limit: 300
+  });
 
   return (
     <>
@@ -20,9 +29,12 @@ export default async function EventsPage() {
         <CardHeader>
           <CardTitle>按模块筛选</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <Input placeholder="例如 finance、projects、ai_workforce" />
-          <Button variant="outline"><Filter className="h-4 w-4" />筛选</Button>
+        <CardContent>
+          <form className="grid gap-3 md:grid-cols-[1fr_180px_auto]">
+            <Input name="module" defaultValue={filters.module ?? ""} placeholder="例如 finance、projects、ai_workforce" />
+            <Input name="status" defaultValue={filters.status ?? ""} placeholder="状态 new / processed / failed" />
+            <Button type="submit" variant="outline"><Filter className="h-4 w-4" />筛选</Button>
+          </form>
         </CardContent>
       </Card>
       <Card className="mt-4">

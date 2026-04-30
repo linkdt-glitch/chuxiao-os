@@ -178,29 +178,55 @@ export async function getApprovalCenterData() {
   };
 }
 
-export async function getAuditLogs() {
+export async function getAuditLogs(filters?: {
+  module?: string;
+  actor?: string;
+  action?: string;
+  limit?: number;
+}) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
-  if (!supabase) return demoAuditLogs;
+  if (!supabase) return demoAuditLogs.slice(0, filters?.limit ?? 300);
 
-  const { data } = await supabase
+  let query = supabase
     .from("audit_logs")
     .select("*")
     .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(filters?.limit ?? 300);
+
+  if (filters?.module) query = query.ilike("module", `%${filters.module}%`);
+  if (filters?.action) query = query.ilike("action", `%${filters.action}%`);
+
+  const { data } = await query;
+  const actor = filters?.actor?.trim().toLowerCase();
+  if (actor && ["human", "agent", "system"].includes(actor)) {
+    return (data ?? []).filter((log) => log.actor_type === actor);
+  }
+
   return data ?? [];
 }
 
-export async function getSystemEvents() {
+export async function getSystemEvents(filters?: {
+  module?: string;
+  status?: string;
+  limit?: number;
+}) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
-  if (!supabase) return demoEvents;
+  if (!supabase) return demoEvents.slice(0, filters?.limit ?? 300);
 
-  const { data } = await supabase
+  let query = supabase
     .from("system_events")
     .select("*")
     .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(filters?.limit ?? 300);
+
+  if (filters?.module) query = query.ilike("module", `%${filters.module}%`);
+  if (filters?.status) query = query.eq("status", filters.status);
+
+  const { data } = await query;
   return data ?? [];
 }
 

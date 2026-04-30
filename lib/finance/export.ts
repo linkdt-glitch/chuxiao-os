@@ -5,6 +5,7 @@ import { emitEvent } from "@/lib/events";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { getFinanceRecords } from "@/lib/finance/records";
 import { canExportFinance } from "@/lib/finance/permissions";
+import { runAfter } from "@/lib/server/after";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FinanceExportType, FinanceRecord } from "@/lib/finance/types";
 
@@ -40,9 +41,10 @@ async function buildWorkbook(input: {
     views: [{ state: "frozen", ySplit: 2 }]
   });
 
+  const detailHeader = input.exportType === "income" ? "收入明细" : input.exportType === "reimbursement" ? "报销明细" : "支出明细";
   const headers = input.exportType === "all"
     ? ["编号", "日期", "类型", "明细", "用途", "数量", "总金额", "经手人", "状态", "备注"]
-    : ["编号", "日期", input.exportType === "income" ? "收入明细" : "支出明细", "用途", "数量", "总金额", "经手人", "备注"];
+    : ["编号", "日期", detailHeader, "用途", "数量", "总金额", "经手人", "备注"];
 
   sheet.mergeCells(1, 1, 1, headers.length);
   const title = sheet.getCell(1, 1);
@@ -153,6 +155,7 @@ export async function exportFinanceRecordsExcel(filters?: {
   export_type?: FinanceExportType;
   date_from?: string;
   date_to?: string;
+  archive?: boolean;
 }) {
   if (!(await canExportFinance())) throw new Error("Missing permission: finance.export");
   const member = await getCurrentMember();
@@ -160,36 +163,53 @@ export async function exportFinanceRecordsExcel(filters?: {
   const records = await getFinanceRecords({
     record_type: exportType === "all" ? "all" : exportType,
     date_from: filters?.date_from,
-    date_to: filters?.date_to
+    date_to: filters?.date_to,
+    include_attachments: false
   });
   const month = monthTitle();
-  const title = exportType === "income" ? `${month}公司收入一览表` : exportType === "expense" ? `${month}公司支出一览表` : `${month}公司流水一览表`;
-  const baseName = exportType === "income" ? "公司收入一览表" : exportType === "expense" ? "公司支出一览表" : "公司流水一览表";
+  const title = exportType === "income"
+    ? `${month}公司收入一览表`
+    : exportType === "expense"
+      ? `${month}公司支出一览表`
+      : exportType === "reimbursement"
+        ? `${month}报销明细表`
+        : `${month}公司流水一览表`;
+  const baseName = exportType === "income"
+    ? "公司收入一览表"
+    : exportType === "expense"
+      ? "公司支出一览表"
+      : exportType === "reimbursement"
+        ? "报销明细表"
+        : "公司流水一览表";
   const fileName = `${baseName}_${month}.xlsx`;
   const buffer = await buildWorkbook({ title, records, exportedBy: member.display_name, exportType });
-  const archived = await uploadFile({
-    body: buffer,
-    file_name: fileName,
-    storage_path: `finance/exports/${new Date().toISOString().slice(0, 10)}/${Date.now()}-${fileName}`,
-    mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    size_bytes: buffer.byteLength,
-    asset_type: "finance_export",
-    metadata: {
-      asset_type: "finance_export",
-      export_type: exportType,
-      date_from: filters?.date_from ?? null,
-      date_to: filters?.date_to ?? null
-    }
-  });
-  await recordExport({
-    exportType,
-    title,
-    fileName,
-    fileId: "id" in archived ? archived.id : null,
-    dateFrom: filters?.date_from,
-    dateTo: filters?.date_to,
-    records
-  });
+  if (filters?.archive !== false) {
+    runAfter("finance.export.archive", async () => {
+      const archived = await uploadFile({
+        body: buffer,
+        file_name: fileName,
+        storage_path: `finance/exports/${new Date().toISOString().slice(0, 10)}/${Date.now()}-${fileName}`,
+        mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        size_bytes: buffer.byteLength,
+        asset_type: "finance_export",
+        metadata: {
+          asset_type: "finance_export",
+          export_type: exportType,
+          date_from: filters?.date_from ?? null,
+          date_to: filters?.date_to ?? null
+        }
+      });
+      await recordExport({
+        exportType,
+        title,
+        fileName,
+        fileId: "id" in archived ? archived.id : null,
+        dateFrom: filters?.date_from,
+        dateTo: filters?.date_to,
+        records
+      });
+    });
+  }
   return { buffer, fileName };
 }
 

@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { createApproval } from "@/lib/approvals";
+import { approveApproval, createApproval, rejectApproval } from "@/lib/approvals";
 import { logAction } from "@/lib/audit";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { emitEvent } from "@/lib/events";
@@ -25,6 +25,7 @@ import type {
   TaskStatus
 } from "@/lib/projects/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ApprovalRequest } from "@/lib/types/core";
 
 function clampProgress(value?: number) {
   if (!Number.isFinite(value)) return 0;
@@ -413,6 +414,75 @@ export async function archiveTask(id: string) {
   revalidatePath(`/projects/${before.project_id}/tasks`);
   revalidatePath(`/projects/${before.project_id}/tasks/${id}`);
   return before as ProjectTask;
+}
+
+export type ProjectApprovalRequest = ApprovalRequest & {
+  task?: ProjectTask | null;
+};
+
+export async function getProjectApprovalRequests(filters?: {
+  status?: string;
+  limit?: number;
+}): Promise<ProjectApprovalRequest[]> {
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) return [];
+
+  let query = supabase
+    .from("approval_requests")
+    .select("*")
+    .eq("organization_id", organization.id)
+    .in("related_module", ["tasks", "projects"])
+    .order("created_at", { ascending: false })
+    .limit(filters?.limit ?? 50);
+
+  if (filters?.status && filters.status !== "all") query = query.eq("status", filters.status);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const approvals = (data ?? []) as ApprovalRequest[];
+  const taskIds = Array.from(
+    new Set(
+      approvals
+        .filter((approval) => approval.related_record_type === "task" && approval.related_record_id)
+        .map((approval) => approval.related_record_id as string)
+    )
+  );
+
+  const taskMap = new Map<string, ProjectTask>();
+  if (taskIds.length) {
+    const { data: tasks, error: taskError } = await supabase
+      .from("tasks")
+      .select("*, project:projects!tasks_project_id_fkey(id,name,status,due_date), assignee:organization_members!tasks_assigned_to_fkey(id,display_name,email,member_type), task_comments(count), task_files(count)")
+      .eq("organization_id", organization.id)
+      .in("id", taskIds);
+
+    if (taskError) throw taskError;
+    for (const task of tasks ?? []) {
+      const normalized = normalizeTask(task as Record<string, unknown>);
+      taskMap.set(normalized.id, normalized);
+    }
+  }
+
+  return approvals.map((approval) => ({
+    ...approval,
+    task: approval.related_record_id ? taskMap.get(approval.related_record_id) ?? null : null
+  }));
+}
+
+export async function approveProjectApproval(id: string) {
+  await approveApproval(id);
+  revalidatePath("/projects");
+  revalidatePath("/projects/tasks");
+  return { ok: true };
+}
+
+export async function rejectProjectApproval(id: string) {
+  await rejectApproval(id);
+  revalidatePath("/projects");
+  revalidatePath("/projects/tasks");
+  return { ok: true };
 }
 
 export async function getTaskComments(taskId: string) {

@@ -21,8 +21,8 @@ export default async function ConfirmationsPage() {
   return (
     <>
       <PageHeader
-        title="人工确认中心"
-        description="高风险 AI 动作必须由人类确认。L3/L4 动作、对外发送、重要数据修改和大量任务创建都会进入这里。"
+        title="AI 审批与人工确认"
+        description="高风险 AI 动作统一留在智能劳动力中心处理。L3/L4 动作、对外发送、重要数据修改和大量任务创建都必须由人类确认。"
       />
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -68,7 +68,7 @@ export default async function ConfirmationsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>确认事项</CardTitle>
+            <CardTitle>AI 审批事项</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>

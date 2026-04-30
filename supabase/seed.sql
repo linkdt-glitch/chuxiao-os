@@ -85,7 +85,7 @@ values
   ('40000000-0000-4000-8000-000000000002', 'organization', 'Organization 组织与成员', '组织信息、人类员工与 Agent 成员管理。', 'Building2', 'core', 'active', '/organization', 'organization.manage'),
   ('40000000-0000-4000-8000-000000000003', 'roles', 'Roles 权限与角色', '统一角色、权限矩阵与授权规则。', 'ShieldCheck', 'core', 'active', '/roles', 'roles.manage'),
   ('40000000-0000-4000-8000-000000000004', 'modules', 'Modules 模块管理', '模块注册、启用停用与模块设置。', 'Blocks', 'core', 'active', '/modules', 'modules.manage'),
-  ('40000000-0000-4000-8000-000000000005', 'approvals', 'Approvals 审批中心', '风险操作审批和审批策略预留。', 'ClipboardCheck', 'core', 'active', '/approvals', 'approvals.manage'),
+  ('40000000-0000-4000-8000-000000000005', 'approvals', '审批底层记录（已迁移）', '审批入口已迁移到财务中心、智能劳动力中心和项目中心；本模块仅保留底层兼容记录。', 'ClipboardCheck', 'system', 'disabled', '/governance', 'governance.view'),
   ('40000000-0000-4000-8000-000000000006', 'logs', 'Logs 操作日志', '关键操作审计追踪。', 'ScrollText', 'system', 'active', '/logs', 'logs.read'),
   ('40000000-0000-4000-8000-000000000007', 'events', 'Events 事件中心', '统一事件收集、处理状态与 payload。', 'RadioTower', 'system', 'active', '/events', 'events.read'),
   ('40000000-0000-4000-8000-000000000008', 'files', 'Files 文件中心', '文件资产、权限和多对象关联。', 'FolderOpen', 'core', 'active', '/files', 'files.manage'),
@@ -114,7 +114,7 @@ values (
   '读取授权财务与审批数据，生成预算分析建议。',
   '00000000-0000-4000-8000-000000000003',
   'L2',
-  '["dashboard","approvals","files"]'::jsonb,
+  '["dashboard","finance","files"]'::jsonb,
   '["summarize","draft_report"]'::jsonb,
   '{"require_human_confirm":true}'::jsonb,
   'active'
@@ -140,7 +140,7 @@ insert into public.system_events (organization_id, event_key, event_source, acto
 values
   ('10000000-0000-4000-8000-000000000001', 'organization.created', 'system', null, 'system', 'organization', '{"organization":"启明时刻 AI 公司"}'::jsonb, 'processed'),
   ('10000000-0000-4000-8000-000000000001', 'member.created', 'human', '00000000-0000-4000-8000-000000000001', 'human', 'organization', '{"member":"管理员"}'::jsonb, 'processed'),
-  ('10000000-0000-4000-8000-000000000001', 'approval.created', 'human', '00000000-0000-4000-8000-000000000003', 'human', 'approvals', '{"approval":"采购预算审批"}'::jsonb, 'new'),
+  ('10000000-0000-4000-8000-000000000001', 'finance.approval.created', 'human', '00000000-0000-4000-8000-000000000003', 'human', 'finance', '{"approval":"采购预算审批"}'::jsonb, 'new'),
   ('10000000-0000-4000-8000-000000000001', 'agent.created', 'human', '00000000-0000-4000-8000-000000000003', 'human', 'agents', '{"agent":"财务分析 Agent"}'::jsonb, 'processed'),
   ('10000000-0000-4000-8000-000000000001', 'ai.provider.created', 'human', '00000000-0000-4000-8000-000000000002', 'human', 'ai-settings', '{"provider":"OpenAI"}'::jsonb, 'processed');
 
@@ -357,9 +357,9 @@ values
   ('prompt.publish', '发布 Prompt', 'ai_workforce', 'publish', 'high', '发布组织正式 Prompt。'),
   ('prompt.archive', '归档 Prompt', 'ai_workforce', 'archive', 'high', '归档 Prompt。'),
   ('prompt.test', '测试 Prompt', 'ai_workforce', 'test', 'medium', '调用 AI Provider 测试 Prompt。'),
-  ('ai_confirmation.view', '查看人工确认', 'ai_workforce', 'view', 'medium', '查看 AI 人工确认事项。'),
-  ('ai_confirmation.approve', '批准人工确认', 'ai_workforce', 'approve', 'high', '批准 AI 建议动作。'),
-  ('ai_confirmation.reject', '驳回人工确认', 'ai_workforce', 'reject', 'high', '驳回 AI 建议动作。'),
+  ('ai_confirmation.view', '查看 AI 审批', 'ai_workforce', 'view', 'medium', '查看 AI 审批与人工确认事项。'),
+  ('ai_confirmation.approve', '批准 AI 审批', 'ai_workforce', 'approve', 'high', '批准 AI 建议动作。'),
+  ('ai_confirmation.reject', '驳回 AI 审批', 'ai_workforce', 'reject', 'high', '驳回 AI 建议动作。'),
   ('ai_feedback.create', '创建 AI 反馈', 'ai_workforce', 'create', 'low', '对 Agent、Prompt、确认和 AI 调用评分反馈。'),
   ('ai_feedback.view', '查看 AI 反馈', 'ai_workforce', 'view', 'low', '查看 AI 反馈评分。')
 on conflict (key) do update set
@@ -445,7 +445,7 @@ on conflict (agent_id, prompt_template_id, prompt_version_id) do nothing;
 insert into public.ai_confirmation_requests (id, organization_id, agent_id, prompt_template_id, requester_id, requester_type, related_module, related_record_type, related_record_id, action_type, risk_level, title, description, input_data, proposed_output, status)
 values
   ('a3000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000101', 'agent', 'projects', 'task_suggestion', 'seed-task-suggestion-001', 'create_tasks', 'medium', 'Agent 建议创建 3 个任务', '项目助理 Agent 基于延期风险建议创建 3 个内部任务。', '{"project":"官网改版"}'::jsonb, '{"tasks":["补齐验收标准","确认设计稿冻结时间","安排上线前回归测试"]}'::jsonb, 'pending'),
-  ('a3000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000101', 'agent', 'marketing', 'external_content', 'seed-content-001', 'publish_external_content', 'high', 'Agent 建议发布一段对外内容草稿', '对外发布前必须由人类确认，高风险可进入审批中心。', '{"channel":"公众号"}'::jsonb, '{"draft":"本周我们完成了智能劳动力中心 MVP 的核心能力升级。"}'::jsonb, 'pending')
+  ('a3000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000101', 'a1000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000101', 'agent', 'marketing', 'external_content', 'seed-content-001', 'publish_external_content', 'high', 'Agent 建议发布一段对外内容草稿', '对外发布前必须在智能劳动力中心由人类确认。', '{"channel":"公众号"}'::jsonb, '{"draft":"本周我们完成了智能劳动力中心 MVP 的核心能力升级。"}'::jsonb, 'pending')
 on conflict (id) do nothing;
 
 insert into public.finance_categories (organization_id, name, type, code, description, is_system, sort_order)

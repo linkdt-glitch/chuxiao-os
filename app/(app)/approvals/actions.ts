@@ -25,7 +25,7 @@ export async function createApprovalAction(formData: FormData) {
     related_record_id: value(formData, "related_record_id"),
     risk_level,
   });
-  revalidatePath("/approvals");
+  revalidateApprovalSurfaces(related_module);
 }
 
 async function getApproval(approvalId: string) {
@@ -44,12 +44,19 @@ async function getApproval(approvalId: string) {
   return data as ApprovalRequest;
 }
 
-function revalidateApprovalSurfaces() {
-  revalidatePath("/approvals");
+function revalidateApprovalSurfaces(moduleKey?: string | null) {
+  revalidatePath("/governance");
   revalidatePath("/finance");
   revalidatePath("/finance/records");
   revalidatePath("/finance/reimbursements");
+  revalidatePath("/ai-workforce");
+  revalidatePath("/ai-workforce/confirmations");
+  revalidatePath("/projects");
+  revalidatePath("/projects/tasks");
   revalidatePath("/dashboard");
+  if (moduleKey === "finance") revalidatePath("/finance/records");
+  if (moduleKey === "ai_workforce") revalidatePath("/ai-workforce/confirmations");
+  if (moduleKey === "tasks" || moduleKey === "projects") revalidatePath("/projects/tasks");
 }
 
 function getFinanceRecordId(approval: ApprovalRequest | null) {
@@ -68,7 +75,7 @@ export async function approveApprovalAction(formData: FormData) {
   } else {
     await approveApproval(id);
   }
-  revalidateApprovalSurfaces();
+  revalidateApprovalSurfaces(approval?.related_module);
 }
 
 export async function rejectApprovalAction(formData: FormData) {
@@ -81,12 +88,13 @@ export async function rejectApprovalAction(formData: FormData) {
   } else {
     await rejectApproval(id);
   }
-  revalidateApprovalSurfaces();
+  revalidateApprovalSurfaces(approval?.related_module);
 }
 
 export async function cancelApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
   if (!id) throw new Error("缺少审批 ID");
+  const approval = await getApproval(id);
   await cancelApproval(id);
-  revalidateApprovalSurfaces();
+  revalidateApprovalSurfaces(approval?.related_module);
 }

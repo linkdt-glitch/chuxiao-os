@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { CalendarClock, CheckCircle2, ListFilter, Plus, Rows3, Search } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardCheck, ListFilter, Plus, Rows3, Search } from "lucide-react";
+import { approveProjectApprovalAction, rejectProjectApprovalAction } from "@/app/(app)/projects/actions";
+import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { TaskTable } from "@/components/projects/task-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { getMembers } from "@/lib/data/queries";
-import { getProjects, getTasks } from "@/lib/projects";
+import { getProjectApprovalRequests, getProjects, getTasks } from "@/lib/projects";
+import { formatDate } from "@/lib/utils";
 
 function activeTasks(tasks: Awaited<ReturnType<typeof getTasks>>) {
   return tasks.filter((task) => task.status !== "completed" && task.status !== "archived");
@@ -29,7 +34,7 @@ export default async function ProjectTasksWorkbenchPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [tasks, members, projects] = await Promise.all([
+  const [tasks, members, projects, projectApprovals] = await Promise.all([
     getTasks({
       q: params.q,
       status: params.status ?? "all",
@@ -39,14 +44,17 @@ export default async function ProjectTasksWorkbenchPage({
       due: params.due ?? "all"
     }),
     getMembers(),
-    getProjects()
+    getProjects(),
+    getProjectApprovalRequests({ status: "pending", limit: 20 })
   ]);
+  const pendingProjectApprovals = projectApprovals.filter((approval) => approval.status === "pending");
 
   const cards = [
     { label: "全部任务", value: tasks.length, icon: Rows3 },
     { label: "进行中", value: activeTasks(tasks).length, icon: CalendarClock },
     { label: "已完成", value: tasks.filter((task) => task.status === "completed").length, icon: CheckCircle2 },
-    { label: "已逾期", value: overdueTasks(tasks).length, icon: ListFilter }
+    { label: "已逾期", value: overdueTasks(tasks).length, icon: ListFilter },
+    { label: "任务审批", value: pendingProjectApprovals.length, icon: ClipboardCheck }
   ];
 
   return (
@@ -57,7 +65,7 @@ export default async function ProjectTasksWorkbenchPage({
         action={<Button asChild><Link href="/projects"><Plus className="h-4 w-4" />从项目创建任务</Link></Button>}
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         {cards.map((item) => {
           const Icon = item.icon;
           return (
@@ -73,6 +81,57 @@ export default async function ProjectTasksWorkbenchPage({
           );
         })}
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            项目内审批
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingProjectApprovals.length ? (
+            <div className="space-y-3">
+              {pendingProjectApprovals.map((approval) => (
+                <div key={approval.id} className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <RiskBadge value={approval.risk_level} />
+                        <StatusBadge value={approval.status} />
+                        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+                          {approval.metadata?.action === "archive_task" ? "任务归档" : approval.related_module}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-base font-semibold text-slate-950">{approval.title}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {approval.task?.project?.name ?? "项目"} · {approval.task?.name ?? approval.description ?? "待处理任务审批"} · {formatDate(approval.created_at)}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {approval.task ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/projects/${approval.task.project_id}/tasks/${approval.task.id}`}>查看任务</Link>
+                        </Button>
+                      ) : null}
+                      <form action={approveProjectApprovalAction}>
+                        <input type="hidden" name="approval_id" value={approval.id} />
+                        <ConfirmSubmitButton confirmText="确认通过这个项目审批？" variant="secondary">通过</ConfirmSubmitButton>
+                      </form>
+                      <form action={rejectProjectApprovalAction}>
+                        <input type="hidden" name="approval_id" value={approval.id} />
+                        <ConfirmSubmitButton confirmText="确认驳回这个项目审批？" variant="destructive">驳回</ConfirmSubmitButton>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="暂无项目审批" description="任务归档、关键项目变更等审批会留在项目中心处理。" />
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>

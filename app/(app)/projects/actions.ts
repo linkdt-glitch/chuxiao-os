@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   archiveTask,
+  approveProjectApproval,
   createProject,
   createTask,
   createTaskComment,
   createTaskFile,
+  rejectProjectApproval,
   updateProject,
   updateTask,
   upsertProjectReview
@@ -104,6 +106,20 @@ export async function archiveTaskAction(formData: FormData) {
   if (!id) throw new Error("Missing task id");
   await archiveTask(id);
   if (projectId) revalidatePath(`/projects/${projectId}/tasks`);
+}
+
+export async function approveProjectApprovalAction(formData: FormData) {
+  const id = value(formData, "approval_id");
+  if (!id) throw new Error("缺少项目审批 ID");
+  await approveProjectApproval(id);
+  revalidatePath("/projects/tasks");
+}
+
+export async function rejectProjectApprovalAction(formData: FormData) {
+  const id = value(formData, "approval_id");
+  if (!id) throw new Error("缺少项目审批 ID");
+  await rejectProjectApproval(id);
+  revalidatePath("/projects/tasks");
 }
 
 export async function createTaskCommentAction(formData: FormData) {

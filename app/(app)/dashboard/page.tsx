@@ -69,7 +69,7 @@ export default async function DashboardPage() {
             </div>
             <div className="rounded-md border p-4">
               <div className="text-muted-foreground">组织底座</div>
-              <div className="mt-2 font-medium">权限、审批、日志、事件统一可追溯</div>
+              <div className="mt-2 font-medium">权限、分模块审批、日志、事件统一可追溯</div>
             </div>
           </CardContent>
         </Card>
@@ -79,7 +79,9 @@ export default async function DashboardPage() {
             <CardTitle>待处理事项</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Todo label="待审批" value={data.stats.pendingApprovals} href="/approvals" />
+            <Todo label="财务审批" value={data.stats.financePendingApprovals} href="/finance/records?status=pending_approval" />
+            <Todo label="AI 确认" value={data.stats.aiPendingConfirmations} href="/ai-workforce/confirmations" />
+            <Todo label="项目审批" value={data.stats.projectPendingApprovals} href="/projects/tasks" />
             <Todo label="未处理事件" value={data.stats.unprocessedEvents} href="/events" />
             <Todo label="我的待办任务" value="预留" href="/projects" muted />
           </CardContent>

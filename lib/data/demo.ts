@@ -114,7 +114,7 @@ export const demoModules: ModuleDefinition[] = [
   { id: "mod_organization", key: "organization", name: "Organization 组织与成员", description: "组织信息、人类员工与 Agent 成员管理。", icon: "Building2", category: "core", status: "active", route: "/organization", required_permission: "organization.manage", created_at: now, updated_at: now },
   { id: "mod_roles", key: "roles", name: "Roles 权限与角色", description: "统一角色、权限矩阵与授权规则。", icon: "ShieldCheck", category: "core", status: "active", route: "/roles", required_permission: "roles.manage", created_at: now, updated_at: now },
   { id: "mod_modules", key: "modules", name: "Modules 模块管理", description: "模块注册、启用停用与模块设置。", icon: "Blocks", category: "core", status: "active", route: "/modules", required_permission: "modules.manage", created_at: now, updated_at: now },
-  { id: "mod_approvals", key: "approvals", name: "Approvals 审批中心", description: "风险操作审批和审批策略预留。", icon: "ClipboardCheck", category: "core", status: "active", route: "/approvals", required_permission: "approvals.manage", created_at: now, updated_at: now },
+  { id: "mod_approvals", key: "approvals", name: "审批底层记录（已迁移）", description: "审批入口已迁移到财务中心、智能劳动力中心和项目中心；本模块仅保留兼容记录。", icon: "ClipboardCheck", category: "system", status: "disabled", route: "/governance", required_permission: "governance.view", created_at: now, updated_at: now },
   { id: "mod_logs", key: "logs", name: "Logs 操作日志", description: "关键操作审计追踪。", icon: "ScrollText", category: "system", status: "active", route: "/logs", required_permission: "logs.read", created_at: now, updated_at: now },
   { id: "mod_events", key: "events", name: "Events 事件中心", description: "统一事件收集、处理状态与 payload。", icon: "RadioTower", category: "system", status: "active", route: "/events", required_permission: "events.read", created_at: now, updated_at: now },
   { id: "mod_files", key: "files", name: "Files 文件中心", description: "文件资产、权限和多对象关联。", icon: "FolderOpen", category: "core", status: "active", route: "/files", required_permission: "files.manage", created_at: now, updated_at: now },
@@ -162,7 +162,7 @@ export const demoApprovals: ApprovalRequest[] = [
 export const demoEvents: SystemEvent[] = [
   { id: "evt_org", organization_id: demoOrganization.id, event_key: "organization.created", event_source: "system", actor_type: "system", module: "organization", payload: { organization: demoOrganization.name }, status: "processed", created_at: now, updated_at: now },
   { id: "evt_member", organization_id: demoOrganization.id, event_key: "member.created", event_source: "human", actor_id: "user_founder", actor_type: "human", module: "organization", payload: { member: "管理员" }, status: "processed", created_at: now, updated_at: now },
-  { id: "evt_approval", organization_id: demoOrganization.id, event_key: "approval.created", event_source: "human", actor_id: "user_ops", actor_type: "human", module: "approvals", payload: { approval: "采购预算审批" }, status: "new", created_at: now, updated_at: now },
+  { id: "evt_approval", organization_id: demoOrganization.id, event_key: "finance.approval.created", event_source: "human", actor_id: "user_ops", actor_type: "human", module: "finance", payload: { approval: "采购预算审批" }, status: "new", created_at: now, updated_at: now },
   { id: "evt_agent", organization_id: demoOrganization.id, event_key: "agent.created", event_source: "human", actor_id: "user_ops", actor_type: "human", module: "agents", payload: { agent: "财务分析 Agent" }, status: "processed", created_at: now, updated_at: now },
   { id: "evt_provider", organization_id: demoOrganization.id, event_key: "ai.provider.created", event_source: "human", actor_id: "user_admin", actor_type: "human", module: "ai-settings", payload: { provider: "OpenAI" }, status: "processed", created_at: now, updated_at: now }
 ];
@@ -191,7 +191,7 @@ export const demoAIInvocationLogs: AIInvocationLog[] = [
 ];
 
 export const demoAgents: Agent[] = [
-  { id: "agent_finance", organization_id: demoOrganization.id, name: "财务分析 Agent", description: "读取授权财务与审批数据，生成预算分析建议。", owner_user_id: "user_ops", permission_level: "L2", allowed_modules: ["dashboard", "approvals", "files"], allowed_tools: ["summarize", "draft_report"], config: { require_human_confirm: true }, status: "active", created_at: now, updated_at: now }
+  { id: "agent_finance", organization_id: demoOrganization.id, name: "财务分析 Agent", description: "读取授权财务与审批数据，生成预算分析建议。", owner_user_id: "user_ops", permission_level: "L2", allowed_modules: ["dashboard", "finance", "files"], allowed_tools: ["summarize", "draft_report"], config: { require_human_confirm: true }, status: "active", created_at: now, updated_at: now }
 ];
 
 export const demoAgentRunLogs: AgentRunLog[] = [

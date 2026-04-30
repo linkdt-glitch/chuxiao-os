@@ -5,6 +5,24 @@ import { emitEvent } from "@/lib/events";
 import { logAction } from "@/lib/audit";
 import type { ApprovalStatus, RiskLevel } from "@/lib/types/core";
 
+function approvalModulePaths(moduleKey: string) {
+  const paths = new Set(["/dashboard", "/governance"]);
+  if (moduleKey === "finance") {
+    paths.add("/finance");
+    paths.add("/finance/records");
+    paths.add("/finance/reimbursements");
+  }
+  if (moduleKey === "ai_workforce" || moduleKey === "agents") {
+    paths.add("/ai-workforce");
+    paths.add("/ai-workforce/confirmations");
+  }
+  if (moduleKey === "tasks" || moduleKey === "projects") {
+    paths.add("/projects");
+    paths.add("/projects/tasks");
+  }
+  return Array.from(paths);
+}
+
 export async function createApproval(input: {
   title: string;
   description?: string;
@@ -39,8 +57,19 @@ export async function createApproval(input: {
     .single();
 
   if (error) throw error;
-  await emitEvent({ event_key: "approval.created", module: "approvals", payload: { id: data.id } });
-  await logAction({ event_key: "approval.created", action: "create", module: "approvals", related_record_type: "approval_request", related_record_id: data.id });
+  await emitEvent({
+    event_key: `${input.related_module}.approval.created`,
+    module: input.related_module,
+    payload: { id: data.id, related_record_type: input.related_record_type, related_record_id: input.related_record_id }
+  });
+  await logAction({
+    event_key: `${input.related_module}.approval.created`,
+    action: "create",
+    module: input.related_module,
+    related_record_type: "approval_request",
+    related_record_id: data.id
+  });
+  approvalModulePaths(input.related_module).forEach((path) => revalidatePath(path));
   return data;
 }
 
@@ -65,8 +94,14 @@ async function setApprovalStatus(id: string, status: ApprovalStatus) {
     .eq("id", id);
 
   if (error) throw error;
-  await logAction({ event_key: `approval.${status}`, action: status, module: "approvals", related_record_type: "approval_request", related_record_id: id });
-  revalidatePath("/approvals");
+  await logAction({
+    event_key: `${approval.related_module}.approval.${status}`,
+    action: status,
+    module: approval.related_module,
+    related_record_type: "approval_request",
+    related_record_id: id
+  });
+  approvalModulePaths(approval.related_module).forEach((path) => revalidatePath(path));
 
   if (
     status === "approved" &&

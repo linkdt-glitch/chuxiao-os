@@ -16,7 +16,9 @@ export async function getEnabledModules() {
     .eq("organization_id", organization.id)
     .eq("is_enabled", true);
 
-  return (data ?? []).map((item) => ({ ...item, module: item.modules }));
+  return (data ?? [])
+    .map((item) => ({ ...item, module: item.modules }))
+    .filter((item) => item.module?.key !== "approvals");
 }
 
 export async function getNavigationModules() {
@@ -43,19 +45,21 @@ export async function getNavigationModules() {
   const roleKey = member.role?.key ?? "member";
   const permissionKeys = getRolePermissionKeys(roleKey);
 
-  const visible = modules.map((module) => ({
-    ...module,
-    canAccess:
-      module.required_permission.endsWith(".read") ||
-      permissionKeys.includes("*") ||
-      permissionKeys.includes(module.required_permission),
+  const visible = modules
+    .filter((module) => module.key !== "approvals")
+    .map((module) => ({
+      ...module,
+      canAccess:
+        module.required_permission.endsWith(".read") ||
+        permissionKeys.includes("*") ||
+        permissionKeys.includes(module.required_permission),
       isEnabled:
-      module.status === "coming_soon" ||
-      Boolean((module as { isEnabled?: boolean }).isEnabled) ||
-      demoOrganizationModules.some(
-        (item) => item.module_id === module.id && item.is_enabled
-      )
-  }));
+        module.status === "coming_soon" ||
+        Boolean((module as { isEnabled?: boolean }).isEnabled) ||
+        demoOrganizationModules.some(
+          (item) => item.module_id === module.id && item.is_enabled
+        )
+    }));
 
   return visible.filter((module) => module.canAccess && module.isEnabled);
 }

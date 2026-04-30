@@ -117,6 +117,18 @@ export async function createConfirmationRequest(input: {
     .single();
 
   if (error) throw error;
+  if (approvalRequestId) {
+    const { error: approvalLinkError } = await supabase
+      .from("approval_requests")
+      .update({
+        related_module: "ai_workforce",
+        related_record_type: "ai_confirmation_request",
+        related_record_id: data.id
+      })
+      .eq("organization_id", organization.id)
+      .eq("id", approvalRequestId);
+    if (approvalLinkError) throw approvalLinkError;
+  }
   await recordAIWorkforceEvent({
     event_key: "ai_workforce.confirmation.created",
     action: "create",

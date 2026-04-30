@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/status";
 import { getAllModulesWithOrganizationState } from "@/lib/modules";
 
 export default async function ModulesPage() {
-  const modules = await getAllModulesWithOrganizationState();
+  const modules = (await getAllModulesWithOrganizationState()).filter((item) => item.module?.key !== "approvals");
 
   return (
     <>

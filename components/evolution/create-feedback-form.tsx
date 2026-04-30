@@ -48,7 +48,7 @@ export function CreateFeedbackForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="module">关联模块</Label>
-            <Input id="module" name="module" placeholder="finance / agents / approvals" />
+            <Input id="module" name="module" placeholder="finance / projects / ai_workforce" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rating">评分（1-5）</Label>

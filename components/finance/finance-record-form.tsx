@@ -41,7 +41,7 @@ export function FinanceRecordForm({
     <Card>
       <CardHeader>
         <CardTitle>记账信息</CardTitle>
-        <p className="text-sm text-muted-foreground">先把核心信息记录清楚；需要审批的支出或报销会自动进入审批中心。</p>
+        <p className="text-sm text-muted-foreground">先把核心信息记录清楚；需要审批的支出或报销会留在财务中心处理。</p>
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-4 md:grid-cols-2">

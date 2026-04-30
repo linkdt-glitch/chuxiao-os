@@ -31,7 +31,7 @@ export default async function AIWorkforcePage() {
     <>
       <PageHeader
         title="智能劳动力中心"
-        description="管理 AI 员工、Prompt、AI 调用、权限等级、运行记录和人工确认。让 AI 成为可管理、可评估、可进化、可控风险的数字同事。"
+        description="管理 AI 员工、Prompt、AI 调用、权限等级、运行记录和 AI 审批。让 AI 成为可管理、可评估、可进化、可控风险的数字同事。"
         action={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline"><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话</Link></Button>
@@ -46,7 +46,7 @@ export default async function AIWorkforcePage() {
         <Metric label="活跃 Agent" value={agents.filter((agent) => agent.status === "active").length} icon={BrainCircuit} />
         <Metric label="Prompt 数量" value={prompts.length} icon={FileText} />
         <Metric label="本月 AI 调用" value={monthlyInvocations.length} icon={Sparkles} />
-        <Metric label="待人工确认" value={pendingConfirmations.length} icon={CheckSquare} />
+        <Metric label="待 AI 审批" value={pendingConfirmations.length} icon={CheckSquare} />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -96,7 +96,7 @@ export default async function AIWorkforcePage() {
               <Button asChild><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话助手</Link></Button>
               <Button asChild><Link href="/ai-workforce/agents/new"><Bot className="h-4 w-4" />创建 Agent</Link></Button>
               <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建 Prompt</Link></Button>
-              <Button asChild variant="outline"><Link href="/ai-workforce/confirmations"><CheckSquare className="h-4 w-4" />人工确认</Link></Button>
+              <Button asChild variant="outline"><Link href="/ai-workforce/confirmations"><CheckSquare className="h-4 w-4" />AI 审批</Link></Button>
             </CardContent>
           </Card>
           <Card>
@@ -159,7 +159,7 @@ export default async function AIWorkforcePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>待人工确认</CardTitle>
+            <CardTitle>待 AI 审批</CardTitle>
             <Button asChild variant="outline" size="sm"><Link href="/ai-workforce/confirmations">处理</Link></Button>
           </CardHeader>
           <CardContent>
@@ -176,7 +176,7 @@ export default async function AIWorkforcePage() {
                 ))}
               </div>
             ) : (
-              <EmptyState title="没有待确认事项" description="L3/L4 动作、对外发送和重要数据修改会进入这里。" />
+              <EmptyState title="没有待审批事项" description="L3/L4 动作、对外发送和重要数据修改会进入这里。" />
             )}
           </CardContent>
         </Card>

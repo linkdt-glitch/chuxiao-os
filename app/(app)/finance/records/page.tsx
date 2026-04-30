@@ -34,6 +34,7 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
   const income = booked.filter((record) => record.record_type === "income").reduce((sum, record) => sum + Number(record.amount), 0);
   const expense = booked.filter((record) => ["expense", "reimbursement"].includes(record.record_type)).reduce((sum, record) => sum + Number(record.amount), 0);
   const pending = records.filter((record) => record.status === "pending_approval").length;
+  const pendingRecords = records.filter((record) => record.status === "pending_approval");
   const unclassified = records.filter((record) => !record.category_id).length;
 
   return (
@@ -123,6 +124,22 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
           </form>
         </CardContent>
       </Card>
+      {pendingRecords.length ? (
+        <Card className="mb-4 border-amber-200/80 bg-amber-50/30">
+          <CardHeader>
+            <CardTitle>财务审批</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FinanceRecordsTable
+              records={pendingRecords}
+              showActions
+              highlightId={params.highlight}
+              emptyTitle="暂无待审批财务记录"
+              emptyDescription="需要审批的支出、报销和付款会留在财务中心处理。"
+            />
+          </CardContent>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>流水列表</CardTitle>

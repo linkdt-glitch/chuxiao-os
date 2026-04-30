@@ -218,7 +218,7 @@ export async function createConfirmationAction(formData: FormData) {
     related_record_id: value(formData, "related_record_id") ?? null,
     action_type: value(formData, "action_type") ?? "manual_confirmation",
     risk_level: (value(formData, "risk_level") ?? "medium") as RiskLevel,
-    title: value(formData, "title") ?? "人工确认事项",
+    title: value(formData, "title") ?? "AI 审批事项",
     description: value(formData, "description") ?? null,
     input_data: jsonObject(formData, "input_data"),
     proposed_output: jsonObject(formData, "proposed_output")

@@ -57,7 +57,7 @@ export function CreateReviewForm() {
               <option value="other">other — 其他</option>
             </select>
           </div>
-          <Field name="related_module" label="关联模块" placeholder="finance / agents / approvals" />
+          <Field name="related_module" label="关联模块" placeholder="finance / projects / ai_workforce" />
           <Area name="summary" label="总结" placeholder="本次复盘的核心结论" />
           <Area name="what_worked" label="做得好的" placeholder="哪些做法有效" />
           <Area name="what_failed" label="问题与不足" placeholder="哪些地方出了问题" />

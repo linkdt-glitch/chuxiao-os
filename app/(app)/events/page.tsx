@@ -21,7 +21,7 @@ export default async function EventsPage() {
           <CardTitle>按模块筛选</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <Input placeholder="例如 approvals、agents、ai-settings" />
+          <Input placeholder="例如 finance、projects、ai_workforce" />
           <Button variant="outline"><Filter className="h-4 w-4" />筛选</Button>
         </CardContent>
       </Card>

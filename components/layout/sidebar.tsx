@@ -30,13 +30,13 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
     <aside className="surface-gradient fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-white/70 shadow-[18px_0_45px_rgba(15,23,42,0.06)] lg:block">
       <div className="flex h-20 items-center border-b border-white/70 px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="brand-mark-frame flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+          <div className="brand-mark-frame flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
             <Image
               src="/brand/kairosmini-mark.svg"
               alt="初晓 OS"
               width={512}
               height={512}
-              className="h-full w-full object-contain p-0.5"
+              className="h-full w-full object-contain"
             />
           </div>
           <div className="min-w-0">

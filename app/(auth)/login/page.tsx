@@ -41,7 +41,7 @@ export default async function LoginPage({
                     width={512}
                     height={512}
                     priority
-                    className="h-16 w-16 object-contain"
+                    className="h-[72px] w-[72px] object-contain"
                   />
                 </div>
               </div>

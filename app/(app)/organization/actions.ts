@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/lib/auth";
@@ -186,6 +187,62 @@ export async function createHumanMemberAction(
     };
   } catch (error) {
     return { ok: false, message: getErrorMessage(error) };
+  }
+}
+
+export async function resetMemberPasswordAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    await requirePermission("organization.manage");
+
+    const member_id = value(formData, "member_id");
+    const password = value(formData, "password");
+
+    if (!member_id) return { ok: false, message: "缺少成员 ID。" };
+    if (!password || password.length < 12) return { ok: false, message: "密码至少需要 12 位。" };
+
+    const supabase = await createSupabaseServerClient();
+    const admin = createSupabaseAdminClient();
+
+    // Demo mode: persist new password to cookie map
+    if (!supabase || !admin) {
+      const jar = await cookies();
+      const raw = jar.get("demo_member_passwords")?.value;
+      const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+      map[member_id] = password;
+      jar.set("demo_member_passwords", JSON.stringify(map), { path: "/", maxAge: 60 * 60 * 24 * 7 });
+      revalidatePath("/organization");
+      return { ok: true, message: "演示模式：密码已更新（仅本会话有效）。" };
+    }
+
+    // Production: find user_id from member, update auth password
+    const organization = await getCurrentOrganization();
+    const { data: member } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("id", member_id)
+      .eq("organization_id", organization.id)
+      .single();
+
+    if (!member?.user_id) return { ok: false, message: "未找到对应成员账号。" };
+
+    const { error } = await admin.auth.admin.updateUserById(member.user_id, { password });
+    if (error) throw error;
+
+    await logAction({
+      event_key: "member.password_reset",
+      action: "update",
+      module: "organization",
+      related_record_type: "organization_member",
+      related_record_id: member_id,
+      after_data: { password_reset: true }
+    });
+
+    revalidatePath("/organization");
+    return { ok: true, message: "密码已重置，成员下次登录使用新密码。" };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "密码重置失败。" };
   }
 }
 

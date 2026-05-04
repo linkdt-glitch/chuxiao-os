@@ -23,7 +23,7 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: formData.get("email"),
+        identifier: formData.get("identifier"),
         password: formData.get("password")
       })
     });
@@ -51,8 +51,15 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
       className="space-y-4"
     >
       <div className="space-y-2">
-        <Label htmlFor="email">邮箱</Label>
-        <Input id="email" name="email" type="email" placeholder="founder@company.com" required />
+        <Label htmlFor="identifier">邮箱 / 手机号</Label>
+        <Input
+          id="identifier"
+          name="identifier"
+          type="text"
+          placeholder="founder@company.com 或 18800000001"
+          autoComplete="username"
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">密码</Label>
@@ -76,7 +83,7 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
       </div>
       <Button className="w-full" type="submit" disabled={Boolean(pendingAction)}>
         <KeyRound className="h-4 w-4" />
-        {pendingAction === "password" ? "登录中..." : "邮箱密码登录"}
+        {pendingAction === "password" ? "登录中..." : "登录"}
       </Button>
       {message ? (
         <p className={isError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>

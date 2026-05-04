@@ -144,13 +144,23 @@ export const demoOrganizationModules: OrganizationModule[] = demoModules.map((mo
   module
 }));
 
+// Demo mode initial passwords (plaintext only for demo display, never use in production)
+export const demoMemberPasswords: Record<string, string> = {
+  mem_founder: "Qiming@2026",
+  mem_admin: "Qiming@2026",
+  mem_ops: "Qiming@2026",
+  mem_member: "Qiming@2026",
+  mem_designer: "Qiming@2026",
+  mem_backend: "Qiming@2026"
+};
+
 export const demoMembers: OrganizationMember[] = [
-  { id: "mem_founder", organization_id: demoOrganization.id, user_id: "user_founder", role_id: "role_owner", member_type: "human", display_name: "创始人", email: "founder@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[0] },
-  { id: "mem_admin", organization_id: demoOrganization.id, user_id: "user_admin", role_id: "role_admin", member_type: "human", display_name: "管理员", email: "admin@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[1] },
-  { id: "mem_ops", organization_id: demoOrganization.id, user_id: "user_ops", role_id: "role_manager", member_type: "human", display_name: "运营负责人", email: "ops@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[2] },
-  { id: "mem_member", organization_id: demoOrganization.id, user_id: "user_member", role_id: "role_member", member_type: "human", display_name: "普通成员", email: "member@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
-  { id: "mem_designer", organization_id: demoOrganization.id, user_id: "user_designer", role_id: "role_member", member_type: "human", display_name: "Designer", email: "designer@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
-  { id: "mem_backend", organization_id: demoOrganization.id, user_id: "user_backend", role_id: "role_member", member_type: "human", display_name: "Backend Dev", email: "backend@qiming.ai", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
+  { id: "mem_founder", organization_id: demoOrganization.id, user_id: "user_founder", role_id: "role_owner", member_type: "human", display_name: "创始人", email: "founder@qiming.ai", phone: "18800000001", status: "active", created_at: now, updated_at: now, role: demoRoles[0] },
+  { id: "mem_admin", organization_id: demoOrganization.id, user_id: "user_admin", role_id: "role_admin", member_type: "human", display_name: "管理员", email: "admin@qiming.ai", phone: "18800000002", status: "active", created_at: now, updated_at: now, role: demoRoles[1] },
+  { id: "mem_ops", organization_id: demoOrganization.id, user_id: "user_ops", role_id: "role_manager", member_type: "human", display_name: "运营负责人", email: "ops@qiming.ai", phone: "18800000003", status: "active", created_at: now, updated_at: now, role: demoRoles[2] },
+  { id: "mem_member", organization_id: demoOrganization.id, user_id: "user_member", role_id: "role_member", member_type: "human", display_name: "普通成员", email: "member@qiming.ai", phone: "18800000004", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
+  { id: "mem_designer", organization_id: demoOrganization.id, user_id: "user_designer", role_id: "role_member", member_type: "human", display_name: "Designer", email: "designer@qiming.ai", phone: "18800000005", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
+  { id: "mem_backend", organization_id: demoOrganization.id, user_id: "user_backend", role_id: "role_member", member_type: "human", display_name: "Backend Dev", email: "backend@qiming.ai", phone: "18800000006", status: "active", created_at: now, updated_at: now, role: demoRoles[3] },
   { id: "mem_agent_finance", organization_id: demoOrganization.id, agent_id: "agent_finance", role_id: "role_agent", member_type: "agent", display_name: "财务分析 Agent", status: "active", owner_user_id: "user_ops", created_at: now, updated_at: now, role: demoRoles[4] }
 ];
 

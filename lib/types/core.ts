@@ -49,6 +49,7 @@ export type OrganizationMember = {
   member_type: ActorType;
   display_name: string;
   email?: string | null;
+  phone?: string | null;
   status: "active" | "disabled" | "invited";
   owner_user_id?: string | null;
   created_at: string;

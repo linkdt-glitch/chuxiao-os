@@ -1,17 +1,23 @@
 import { UserPlus, UserRoundX } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { AddMemberForm } from "@/components/organization/add-member-form";
+import { MemberCredentialCell } from "@/components/organization/member-credential-cell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCurrentOrganization } from "@/lib/auth";
+import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { getMembers } from "@/lib/data/queries";
 import { disableMemberAction } from "./actions";
 
 export default async function OrganizationPage() {
-  const [organization, members] = await Promise.all([getCurrentOrganization(), getMembers()]);
+  const [organization, members, currentMember] = await Promise.all([
+    getCurrentOrganization(),
+    getMembers(),
+    getCurrentMember()
+  ]);
+  const isOwner = currentMember.role?.key === "owner";
 
   return (
     <>
@@ -49,6 +55,7 @@ export default async function OrganizationPage() {
                 <TableHead>名称</TableHead>
                 <TableHead>类型</TableHead>
                 <TableHead>角色</TableHead>
+                <TableHead>登录账号</TableHead>
                 <TableHead>负责人</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">操作</TableHead>
@@ -63,6 +70,16 @@ export default async function OrganizationPage() {
                   </TableCell>
                   <TableCell>{member.member_type}</TableCell>
                   <TableCell>{member.role?.name}</TableCell>
+                  <TableCell>
+                    {member.member_type === "human" ? (
+                      <MemberCredentialCell
+                        memberId={member.id}
+                        email={member.email}
+                        phone={member.phone}
+                        isOwner={isOwner}
+                      />
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell>{member.owner_user_id ?? "-"}</TableCell>
                   <TableCell><StatusBadge value={member.status} /></TableCell>
                   <TableCell className="text-right">

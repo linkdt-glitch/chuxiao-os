@@ -20,8 +20,9 @@ export default async function OrganizationPage() {
   ]);
   const isOwner = currentMember.role?.key === "owner";
 
-  const humanMembers = members.filter((m) => m.member_type === "human");
-  const agentMembers = members.filter((m) => m.member_type !== "human");
+  // Use agent_id as discriminator — more reliable than member_type string matching
+  const humanMembers = members.filter((m) => !m.agent_id);
+  const agentMembers = members.filter((m) => Boolean(m.agent_id));
 
   return (
     <>

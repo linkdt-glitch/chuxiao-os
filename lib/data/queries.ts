@@ -104,13 +104,29 @@ export async function getMembers() {
   const organization = await getCurrentOrganization();
   if (!supabase) return demoMembers;
 
-  const { data } = await supabase
-    .from("organization_members")
-    .select("*, roles(*)")
-    .eq("organization_id", organization.id)
-    .order("created_at");
+  // Fetch members and roles separately to avoid silent join failures
+  const [{ data: members, error: membersError }, { data: roles }] = await Promise.all([
+    supabase
+      .from("organization_members")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .order("created_at"),
+    supabase
+      .from("roles")
+      .select("*")
+      .eq("organization_id", organization.id)
+  ]);
 
-  return (data ?? []).map((item) => ({ ...item, role: item.roles }));
+  if (membersError) {
+    console.error("[getMembers] error:", membersError.message);
+    return demoMembers;
+  }
+
+  const rolesById = new Map((roles ?? []).map((r) => [r.id, r]));
+  return (members ?? []).map((item) => ({
+    ...item,
+    role: rolesById.get(item.role_id) ?? null
+  }));
 }
 
 export async function getRolesAndPermissions() {

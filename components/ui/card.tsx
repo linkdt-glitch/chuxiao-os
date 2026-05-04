@@ -5,7 +5,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "panel-gradient mac-window rounded-lg text-card-foreground transition-shadow duration-200 hover:shadow-[0_24px_70px_rgba(14,165,233,0.08)]",
+        "panel-gradient mac-window rounded-lg text-card-foreground transition-shadow duration-200 hover:shadow-[0_24px_70px_rgba(238,97,25,0.08)]",
         className
       )}
       {...props}

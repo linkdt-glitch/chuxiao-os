@@ -30,7 +30,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
     <aside className="surface-gradient fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-white/70 shadow-[18px_0_45px_rgba(15,23,42,0.06)] lg:block">
       <div className="flex h-20 items-center border-b border-white/70 px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="brand-mark-frame flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+          <div className="brand-mark-frame flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
             <Image
               src="/brand/kairosmini-mark.svg"
               alt="初晓 OS"
@@ -40,7 +40,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
             />
           </div>
           <div className="min-w-0">
-            <div className="truncate bg-gradient-to-r from-slate-950 via-cyan-700 to-indigo-500 bg-clip-text text-sm font-semibold text-transparent">
+            <div className="truncate bg-gradient-to-r from-slate-950 via-orange-600 to-red-500 bg-clip-text text-sm font-semibold text-transparent">
               初晓 OS 系统
             </div>
             <div className="text-xs text-muted-foreground">Kairosmini · AI 自进化组织系统</div>
@@ -91,12 +91,12 @@ function NavSection({
             className={cn(
               "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm transition-all",
               active
-                ? "bg-gradient-to-r from-white/90 via-cyan-50/82 to-indigo-50/72 text-slate-950 shadow-[0_12px_28px_rgba(14,165,233,0.12)] ring-1 ring-cyan-100/90"
+                ? "bg-gradient-to-r from-white/90 via-orange-50/80 to-rose-50/70 text-slate-950 shadow-[0_12px_28px_rgba(249,115,22,0.12)] ring-1 ring-orange-100/90"
                 : "text-muted-foreground hover:bg-white/66 hover:text-foreground hover:shadow-sm hover:ring-1 hover:ring-white/75",
               disabled && "cursor-not-allowed opacity-60 hover:bg-transparent hover:text-muted-foreground hover:shadow-none"
             )}
           >
-            <Icon className={cn("h-4 w-4 shrink-0", active && "text-cyan-700")} />
+            <Icon className={cn("h-4 w-4 shrink-0", active && "text-orange-600")} />
             <span className="min-w-0 flex-1 truncate">{module.name}</span>
             {module.status === "coming_soon" ? <Badge variant="warning">Soon</Badge> : null}
           </div>

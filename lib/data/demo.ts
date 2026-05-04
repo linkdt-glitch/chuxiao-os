@@ -26,7 +26,7 @@ export const demoOrganization: Organization = {
   id: "org_qiming",
   name: "启明时刻 AI 公司",
   slug: "qiming-ai",
-  settings: { timezone: "Asia/Shanghai", security_review_required: true },
+  settings: { timezone: "Asia/Shanghai", security_review_required: true, announcements: ["系统正常运行中", "今日 AI 调用量正常", "欢迎使用初晓 OS 系统", "数据安全加密保护中"] },
   created_at: now,
   updated_at: now
 };

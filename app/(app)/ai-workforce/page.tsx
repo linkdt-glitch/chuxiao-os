@@ -14,6 +14,7 @@ import { getPrompts } from "@/lib/ai-workforce/prompts";
 import { getAgentRuns } from "@/lib/ai-workforce/runs";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
+import { ImageGenWidget } from "@/components/ai-workforce/image-gen-widget";
 
 export default async function AIWorkforcePage() {
   const [agents, prompts, confirmations, runs, aiSettings] = await Promise.all([
@@ -166,7 +167,7 @@ export default async function AIWorkforcePage() {
             {pendingConfirmations.length ? (
               <div className="space-y-2">
                 {pendingConfirmations.slice(0, 5).map((item) => (
-                  <Link key={item.id} href="/ai-workforce/confirmations" className="block rounded-md border border-slate-200/70 bg-white/60 p-3 hover:bg-sky-50/60">
+                  <Link key={item.id} href="/ai-workforce/confirmations" className="block rounded-md border border-slate-200/70 bg-white/60 p-3 hover:bg-orange-50/60">
                     <div className="flex items-center justify-between gap-3">
                       <div className="font-medium">{item.title}</div>
                       <Badge variant={item.risk_level === "high" || item.risk_level === "critical" ? "danger" : "warning"}>{item.risk_level}</Badge>
@@ -180,6 +181,10 @@ export default async function AIWorkforcePage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <ImageGenWidget />
       </div>
     </>
   );

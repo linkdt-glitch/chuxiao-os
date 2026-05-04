@@ -1,4 +1,4 @@
-import { KeyRound, ServerCog } from "lucide-react";
+import { ExternalLink, ImageIcon, KeyRound, ServerCog } from "lucide-react";
 import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
@@ -11,6 +11,8 @@ import { activateProviderAction, disableProviderAction } from "./actions";
 
 export default async function AISettingsPage() {
   const { providers, logs } = await getAISettingsData();
+  const falConfigured = Boolean(process.env.FAL_AI_API_KEY);
+  const falModel = process.env.FAL_AI_IMAGE_MODEL ?? "fal-ai/flux/schnell";
 
   return (
     <>
@@ -44,6 +46,42 @@ export default async function AISettingsPage() {
             </CardContent>
           </Card>
           <ProviderTestCard />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-sky-500" />
+                图片生成配置
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div className="flex items-center justify-between rounded-lg border bg-white/70 p-3">
+                <span className="font-medium text-foreground">fal.ai 状态</span>
+                <span className={falConfigured ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
+                  {falConfigured ? "已配置 ✓" : "未配置"}
+                </span>
+              </div>
+              <div className="rounded-lg border bg-white/70 p-4 font-mono text-xs space-y-1.5">
+                <div className="text-muted-foreground mb-2 font-sans font-medium text-foreground not-italic">在 .env.local 中配置：</div>
+                <div>FAL_AI_API_KEY=...</div>
+                <div>FAL_AI_IMAGE_MODEL={falModel}</div>
+              </div>
+              {falConfigured && (
+                <div className="rounded-lg border border-green-200 bg-green-50/60 p-3 text-xs text-green-700">
+                  当前模型：<span className="font-mono font-medium">{falModel}</span>
+                </div>
+              )}
+              <p>图片生成功能独立于聊天 Provider，专用于 AI 劳动中心的图片生成窗口。</p>
+              <a
+                href="https://fal.ai/dashboard/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                前往 fal.ai 获取 API Key
+              </a>
+            </CardContent>
+          </Card>
         </div>
         <Card>
           <CardHeader>

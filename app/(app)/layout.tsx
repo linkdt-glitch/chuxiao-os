@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
+import { AnnouncementBanner } from "@/components/dashboard/announcement-banner";
 import {
   getCurrentMember,
   getCurrentOrganization,
@@ -32,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar modules={modules} />
       <div className="lg:pl-72">
         <Topbar organization={organization} member={member} user={user} />
+        <AnnouncementBanner announcements={organization.settings?.announcements as string[] | undefined} />
         <EnergyProvider>
           <main className="mx-auto w-full max-w-7xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 animate-app-page-in lg:px-8 lg:py-7">
             {children}

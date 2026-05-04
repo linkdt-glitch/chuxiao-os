@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoMembers, demoOrganization, demoUser } from "@/lib/data/demo";
 
@@ -46,12 +47,24 @@ export async function getCurrentUser() {
   }
 }
 
+async function getDemoOrganizationWithCookie() {
+  try {
+    const jar = await cookies();
+    const raw = jar.get("demo_announcements")?.value;
+    if (raw) {
+      const announcements = JSON.parse(raw) as string[];
+      return { ...demoOrganization, settings: { ...demoOrganization.settings, announcements } };
+    }
+  } catch {}
+  return demoOrganization;
+}
+
 export async function getCurrentOrganization() {
   try {
     const supabase = await createSupabaseServerClient();
     const user = await getSessionUser();
-    if (!supabase) return demoOrganization;
-    if (!user) return demoOrganization;
+    if (!supabase) return await getDemoOrganizationWithCookie();
+    if (!user) return await getDemoOrganizationWithCookie();
 
     const { data } = await supabase
       .from("organization_members")
@@ -64,9 +77,9 @@ export async function getCurrentOrganization() {
     const organization = data?.organizations;
     return Array.isArray(organization)
       ? organization[0]
-      : organization ?? demoOrganization;
+      : organization ?? await getDemoOrganizationWithCookie();
   } catch {
-    return demoOrganization;
+    return getDemoOrganizationWithCookie();
   }
 }
 

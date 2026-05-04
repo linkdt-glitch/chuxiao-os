@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --background: 205 65% 98%;
-  --foreground: 220 28% 10%;
+  --background: 22 65% 98%;
+  --foreground: 20 28% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 220 28% 10%;
-  --primary: 193 88% 38%;
+  --card-foreground: 20 28% 10%;
+  --primary: 20 88% 50%;
   --primary-foreground: 0 0% 98%;
-  --secondary: 210 46% 96%;
-  --secondary-foreground: 220 24% 15%;
-  --muted: 214 42% 95%;
-  --muted-foreground: 216 12% 44%;
-  --accent: 258 76% 66%;
+  --secondary: 28 46% 96%;
+  --secondary-foreground: 20 24% 15%;
+  --muted: 25 40% 95%;
+  --muted-foreground: 22 12% 44%;
+  --accent: 8 80% 58%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 214 42% 88%;
-  --input: 214 42% 88%;
-  --ring: 187 76% 42%;
+  --border: 25 32% 88%;
+  --input: 25 32% 88%;
+  --ring: 20 88% 50%;
   --radius: 8px;
 }
 
@@ -31,11 +31,11 @@ body {
   @apply bg-background text-foreground antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   background:
-    radial-gradient(circle at 10% 8%, rgba(125, 211, 252, 0.22), transparent 32rem),
-    radial-gradient(circle at 82% 4%, rgba(196, 181, 253, 0.2), transparent 28rem),
-    radial-gradient(circle at 80% 78%, rgba(153, 246, 228, 0.18), transparent 34rem),
-    radial-gradient(circle at 14% 86%, rgba(253, 186, 116, 0.12), transparent 30rem),
-    linear-gradient(145deg, rgba(247, 253, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 38%, rgba(247, 249, 255, 0.96) 68%, rgba(241, 253, 250, 0.92) 100%);
+    radial-gradient(circle at 10% 8%, rgba(251, 146, 60, 0.20), transparent 32rem),
+    radial-gradient(circle at 82% 4%, rgba(252, 165, 165, 0.18), transparent 28rem),
+    radial-gradient(circle at 80% 78%, rgba(253, 186, 116, 0.16), transparent 34rem),
+    radial-gradient(circle at 14% 86%, rgba(244, 114, 182, 0.10), transparent 30rem),
+    linear-gradient(145deg, rgba(255, 251, 248, 0.96) 0%, rgba(255, 255, 255, 0.98) 38%, rgba(255, 250, 246, 0.96) 68%, rgba(255, 248, 243, 0.92) 100%);
   min-height: 100vh;
 }
 
@@ -53,7 +53,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.26);
+  background: rgba(249, 115, 22, 0.24);
 }
 
 .scrollbar-thin {
@@ -62,19 +62,19 @@ textarea {
 
 .surface-gradient {
   background:
-    radial-gradient(circle at 20% 0%, rgba(103, 232, 249, 0.18), transparent 18rem),
-    radial-gradient(circle at 92% 18%, rgba(167, 139, 250, 0.13), transparent 16rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 252, 255, 0.72)),
-    linear-gradient(135deg, rgba(219, 246, 255, 0.48), rgba(243, 240, 255, 0.38) 50%, rgba(235, 253, 250, 0.42));
+    radial-gradient(circle at 20% 0%, rgba(251, 146, 60, 0.16), transparent 18rem),
+    radial-gradient(circle at 92% 18%, rgba(239, 68, 68, 0.11), transparent 16rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 252, 249, 0.72)),
+    linear-gradient(135deg, rgba(255, 237, 213, 0.46), rgba(255, 228, 220, 0.36) 50%, rgba(255, 243, 232, 0.40));
   backdrop-filter: blur(24px) saturate(1.35);
 }
 
 .panel-gradient {
   background:
-    radial-gradient(circle at 12% 0%, rgba(103, 232, 249, 0.12), transparent 18rem),
-    radial-gradient(circle at 96% 12%, rgba(196, 181, 253, 0.11), transparent 14rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(249, 253, 255, 0.76)),
-    linear-gradient(135deg, rgba(223, 247, 255, 0.36), rgba(245, 241, 255, 0.3) 54%, rgba(237, 253, 250, 0.32));
+    radial-gradient(circle at 12% 0%, rgba(251, 146, 60, 0.10), transparent 18rem),
+    radial-gradient(circle at 96% 12%, rgba(239, 68, 68, 0.08), transparent 14rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 252, 249, 0.76)),
+    linear-gradient(135deg, rgba(255, 237, 213, 0.34), rgba(255, 228, 220, 0.28) 54%, rgba(255, 243, 232, 0.30));
   backdrop-filter: blur(18px) saturate(1.22);
 }
 
@@ -82,32 +82,32 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
     0 22px 60px rgba(15, 23, 42, 0.075),
-    0 8px 28px rgba(14, 165, 233, 0.045),
+    0 8px 28px rgba(249, 115, 22, 0.04),
     0 1px 0 rgba(255, 255, 255, 0.86) inset;
 }
 
 .brand-glow {
   box-shadow:
-    0 16px 38px rgba(15, 118, 178, 0.14),
+    0 16px 38px rgba(234, 88, 12, 0.14),
     0 0 0 1px rgba(255, 255, 255, 0.82) inset;
 }
 
 .brand-mark-frame {
   background:
-    radial-gradient(circle at 54% 48%, rgba(34, 211, 238, 0.12), transparent 48%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 253, 255, 0.94));
+    radial-gradient(circle at 54% 48%, rgba(249, 115, 22, 0.12), transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 247, 0.94));
   box-shadow:
-    0 14px 34px rgba(15, 118, 178, 0.12),
+    0 14px 34px rgba(234, 88, 12, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.88) inset,
-    0 0 0 1px rgba(14, 165, 233, 0.12);
+    0 0 0 1px rgba(249, 115, 22, 0.12);
 }
 
 .brand-wordmark-frame {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.78);
   background:
-    radial-gradient(circle at 50% 24%, rgba(34, 211, 238, 0.12), transparent 18rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 253, 255, 0.72));
+    radial-gradient(circle at 50% 24%, rgba(249, 115, 22, 0.10), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 251, 247, 0.72));
   box-shadow:
     0 18px 48px rgba(15, 23, 42, 0.06),
     0 1px 0 rgba(255, 255, 255, 0.86) inset;
@@ -230,6 +230,15 @@ textarea {
 
 .animate-app-sheet-in {
   animation: app-sheet-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 22s linear infinite;
 }
 
 @media (max-width: 640px) {

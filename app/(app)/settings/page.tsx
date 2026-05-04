@@ -1,13 +1,20 @@
-import { Save } from "lucide-react";
+import { Megaphone, Save } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { getCurrentOrganization } from "@/lib/auth";
+import { saveAnnouncementsAction } from "./actions";
 
 export default async function SettingsPage() {
   const organization = await getCurrentOrganization();
+  const announcements = (organization.settings?.announcements as string[] | undefined) ?? [
+    "系统正常运行中",
+    "今日 AI 调用量正常",
+    "欢迎使用初晓 OS 系统"
+  ];
 
   return (
     <>
@@ -35,6 +42,32 @@ export default async function SettingsPage() {
             </form>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-orange-500" />
+              首页公告管理
+            </CardTitle>
+            <CardDescription>每行一条公告，最多 10 条，实时滚动展示在首页横幅。</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={saveAnnouncementsAction} className="space-y-4">
+              <Textarea
+                name="announcements"
+                defaultValue={announcements.join("\n")}
+                rows={6}
+                placeholder={"系统正常运行中\n今日 AI 调用量正常\n欢迎使用初晓 OS 系统"}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                当前 {announcements.length} 条 · 最多 10 条 · 保存后首页立即生效
+              </p>
+              <Button type="submit"><Save className="h-4 w-4" />保存公告</Button>
+            </form>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>安全设置占位</CardTitle>
@@ -46,6 +79,7 @@ export default async function SettingsPage() {
             <div className="rounded-md border p-3">Agent L5 动作禁止自动执行，只能由 human 操作者完成。</div>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>审批规则占位</CardTitle>
@@ -55,7 +89,8 @@ export default async function SettingsPage() {
             当前版本已经准备 approval_requests、approval_steps、approval_policies 三张表，业务模块可按 risk_level 接入。
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>模块设置入口</CardTitle>
             <CardDescription>organization_modules.settings 为每个模块保留 jsonb 配置。</CardDescription>

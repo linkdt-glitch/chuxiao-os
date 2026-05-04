@@ -95,14 +95,14 @@ export function AssistantChat() {
             <div key={`${message.role}-${index}`} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <div className="flex max-w-[82%] gap-3">
                 {message.role === "assistant" ? (
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-700">
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
                     <Bot className="h-4 w-4" />
                   </div>
                 ) : null}
                 <div
                   className={
                     message.role === "user"
-                      ? "rounded-lg bg-gradient-to-b from-cyan-500 to-sky-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
+                      ? "rounded-lg bg-gradient-to-b from-orange-400 to-orange-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
                       : "rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm"
                   }
                 >
@@ -154,7 +154,7 @@ export function AssistantChat() {
               <button
                 key={prompt}
                 type="button"
-                className="w-full rounded-md border border-slate-200/70 bg-white/70 p-3 text-left text-sm text-slate-700 transition hover:border-cyan-200 hover:bg-cyan-50/70"
+                className="w-full rounded-md border border-slate-200/70 bg-white/70 p-3 text-left text-sm text-slate-700 transition hover:border-orange-200 hover:bg-orange-50/70"
                 onClick={() => {
                   setInput(prompt);
                   inputRef.current?.focus();

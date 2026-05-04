@@ -85,12 +85,12 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
                             className={cn(
                               "flex min-h-14 items-center gap-3 rounded-2xl border px-3 text-sm transition active:scale-[0.98]",
                               active
-                                ? "border-cyan-200 bg-white/92 text-slate-950 shadow-[0_14px_34px_rgba(14,165,233,0.12)]"
+                                ? "border-orange-200 bg-white/92 text-slate-950 shadow-[0_14px_34px_rgba(238,97,25,0.12)]"
                                 : "border-white/70 bg-white/58 text-slate-600 shadow-sm",
                               disabled && "opacity-55"
                             )}
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0", active && "text-cyan-700")} />
+                            <Icon className={cn("h-4 w-4 shrink-0", active && "text-orange-600")} />
                             <span className="min-w-0 flex-1 truncate">{module.name}</span>
                             {disabled ? <Badge variant="warning">Soon</Badge> : null}
                           </div>
@@ -124,7 +124,7 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition active:scale-95",
                   active
-                    ? "bg-gradient-to-b from-white via-cyan-50 to-indigo-50 text-cyan-800 shadow-[0_10px_24px_rgba(14,165,233,0.16)] ring-1 ring-cyan-100"
+                    ? "bg-gradient-to-b from-white via-orange-50 to-amber-50 text-orange-700 shadow-[0_10px_24px_rgba(238,97,25,0.16)] ring-1 ring-orange-100"
                     : "text-slate-500 hover:bg-white/60"
                 )}
               >
@@ -139,7 +139,7 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
             className={cn(
               "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition active:scale-95",
               moreActive
-                ? "bg-gradient-to-b from-white via-cyan-50 to-indigo-50 text-cyan-800 shadow-[0_10px_24px_rgba(14,165,233,0.16)] ring-1 ring-cyan-100"
+                ? "bg-gradient-to-b from-white via-orange-50 to-amber-50 text-orange-700 shadow-[0_10px_24px_rgba(238,97,25,0.16)] ring-1 ring-orange-100"
                 : "text-slate-500 hover:bg-white/60"
             )}
             aria-label="打开更多模块"

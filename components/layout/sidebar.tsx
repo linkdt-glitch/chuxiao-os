@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleDefinition } from "@/lib/types/core";
 import { iconMap, type IconName } from "@/components/layout/icons";
+import { NeuralPulse } from "@/components/effects/neural-pulse";
 
 export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAccess?: boolean; isEnabled?: boolean }> }) {
   const pathname = usePathname();
@@ -89,7 +90,8 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
       </div>
 
       {/* Navigation */}
-      <nav className="relative h-[calc(100vh-5rem)] overflow-y-auto p-3 scrollbar-thin">
+      <nav className="relative flex h-[calc(100vh-5rem)] flex-col overflow-y-auto scrollbar-thin">
+        <div className="flex-1 p-3">
         {sections.map((section) =>
           section.modules.length ? (
             <div key={section.title} className="mb-5">
@@ -117,6 +119,15 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
             <NavSection modules={fallback} pathname={pathname} />
           </div>
         ) : null}
+        </div>
+
+        {/* Spacer pushes neural pulse to bottom */}
+        <div className="flex-1" />
+
+        {/* Always-animating neural core */}
+        <div style={{ borderTop: "1px solid rgba(249,115,22,0.08)" }}>
+          <NeuralPulse />
+        </div>
       </nav>
     </aside>
   );

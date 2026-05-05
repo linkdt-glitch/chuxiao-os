@@ -3,77 +3,144 @@
 import { useEffect } from "react";
 
 /**
- * SciFiEffects — global interactive visual engine
+ * SciFiEffects — global interactive + ambient visual engine
  *
- * 1. Cursor glow orb   – soft 360px orange radial gradient that trails the cursor
- * 2. Card spotlight     – inner light that follows mouse inside [data-spotlight] cards
- * 3. Click ripple       – expanding neon ring on every click
- * 4. Interactive boost  – cursor orb intensifies when hovering buttons / links
+ * 1. Particle constellation  – 40 floating dots with connecting lines (always running)
+ * 2. Cursor glow orb         – soft 380px orange radial gradient trails the cursor
+ * 3. Card spotlight           – inner light follows mouse inside [data-spotlight] cards
+ * 4. Click ripple             – expanding neon ring on every click
+ * 5. Interactive boost        – orb intensifies near buttons / links
  */
 export function SciFiEffects() {
   useEffect(() => {
-    // ── 1. Cursor glow orb ──────────────────────────────────────────
-    const SIZE = 380;
-    const HALF = SIZE / 2;
+    // ── 1. Particle constellation canvas ──────────────────────────
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = `
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none; user-select: none;
+      opacity: 1;
+    `;
+    document.body.appendChild(canvas);
 
+    const ctx = canvas.getContext("2d")!;
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+
+    type Particle = { x: number; y: number; vx: number; vy: number; r: number; o: number };
+    const N = 45;
+    const particles: Particle[] = Array.from({ length: N }, () => ({
+      x:  Math.random() * canvas.width,
+      y:  Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      r:  Math.random() * 1.4 + 0.4,
+      o:  Math.random() * 0.45 + 0.12,
+    }));
+
+    let particleRaf: number;
+    const LINK_DIST = 130;
+
+    const drawParticles = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Lines between nearby particles
+      for (let i = 0; i < N; i++) {
+        for (let j = i + 1; j < N; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const d  = Math.sqrt(dx * dx + dy * dy);
+          if (d < LINK_DIST) {
+            const alpha = 0.09 * (1 - d / LINK_DIST);
+            ctx.strokeStyle = `rgba(249,115,22,${alpha.toFixed(3)})`;
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Dots
+      for (const p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(249,115,22,${p.o.toFixed(2)})`;
+        ctx.fill();
+
+        // Soft glow halo
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
+        g.addColorStop(0, `rgba(249,115,22,${(p.o * 0.35).toFixed(2)})`);
+        g.addColorStop(1, "rgba(249,115,22,0)");
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < -10)              p.x = canvas.width  + 10;
+        if (p.x > canvas.width + 10) p.x = -10;
+        if (p.y < -10)              p.y = canvas.height + 10;
+        if (p.y > canvas.height + 10) p.y = -10;
+      }
+
+      particleRaf = requestAnimationFrame(drawParticles);
+    };
+    drawParticles();
+
+    // ── 2. Cursor glow orb ──────────────────────────────────────────
+    const ORB = 400;
     const orb = document.createElement("div");
     orb.id = "__sci_orb";
     orb.style.cssText = `
       position: fixed; top: 0; left: 0; z-index: 9990;
-      width: ${SIZE}px; height: ${SIZE}px; border-radius: 50%;
+      width: ${ORB}px; height: ${ORB}px; border-radius: 50%;
       pointer-events: none; user-select: none;
       background: radial-gradient(circle,
         rgba(249,115,22,0.10) 0%,
-        rgba(249,115,22,0.05) 38%,
-        transparent 68%
+        rgba(249,115,22,0.05) 40%,
+        transparent 70%
       );
       transform: translate(-9999px, -9999px);
       will-change: transform;
-      transition: background 0.4s ease, width 0.4s ease, height 0.4s ease;
+      transition: background 0.35s ease;
     `;
     document.body.appendChild(orb);
 
-    let ox = -9999, oy = -9999;
-    let tx = -9999, ty = -9999;
-    let rafId: number;
+    let ox = -9999, oy = -9999, tx = -9999, ty = -9999;
     let boosted = false;
+    let orbRaf: number;
 
-    const onMouseMove = (e: MouseEvent) => {
-      tx = e.clientX;
-      ty = e.clientY;
-    };
+    const onMouseMove = (e: MouseEvent) => { tx = e.clientX; ty = e.clientY; };
 
     const setBoost = (on: boolean) => {
       if (boosted === on) return;
       boosted = on;
-      if (on) {
-        orb.style.background = `radial-gradient(circle,
-          rgba(249,115,22,0.18) 0%,
-          rgba(249,115,22,0.09) 38%,
-          transparent 68%
-        )`;
-      } else {
-        orb.style.background = `radial-gradient(circle,
-          rgba(249,115,22,0.10) 0%,
-          rgba(249,115,22,0.05) 38%,
-          transparent 68%
-        )`;
-      }
+      orb.style.background = on
+        ? `radial-gradient(circle, rgba(249,115,22,0.20) 0%, rgba(249,115,22,0.10) 40%, transparent 70%)`
+        : `radial-gradient(circle, rgba(249,115,22,0.10) 0%, rgba(249,115,22,0.05) 40%, transparent 70%)`;
     };
 
     const onMouseOver = (e: MouseEvent) => {
-      const el = e.target as HTMLElement;
-      setBoost(Boolean(el.closest("button, a[href], [role='button'], [data-interactive]")));
+      setBoost(Boolean((e.target as HTMLElement).closest(
+        "button, a[href], [role='button'], [data-interactive]"
+      )));
     };
 
     const animateOrb = () => {
       ox += (tx - ox) * 0.07;
       oy += (ty - oy) * 0.07;
-      orb.style.transform = `translate(${ox - HALF}px, ${oy - HALF}px)`;
-      rafId = requestAnimationFrame(animateOrb);
+      orb.style.transform = `translate(${ox - ORB / 2}px, ${oy - ORB / 2}px)`;
+      orbRaf = requestAnimationFrame(animateOrb);
     };
 
-    // ── 2. Card spotlight ──────────────────────────────────────────
+    // ── 3. Card spotlight ──────────────────────────────────────────
     const onSpotMove = (e: MouseEvent) => {
       const card = (e.target as HTMLElement).closest<HTMLElement>("[data-spotlight]");
       if (!card) return;
@@ -82,70 +149,77 @@ export function SciFiEffects() {
       card.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
       card.style.setProperty("--spot-o", "1");
     };
-
     const onSpotLeave = (e: MouseEvent) => {
       const card = (e.target as HTMLElement).closest<HTMLElement>("[data-spotlight]");
       if (card) card.style.setProperty("--spot-o", "0");
     };
 
-    // ── 3. Click ripple ────────────────────────────────────────────
+    // ── 4. Click ripple ────────────────────────────────────────────
     const onClickRipple = (e: MouseEvent) => {
-      const skip = (e.target as HTMLElement).closest(
+      if ((e.target as HTMLElement).closest(
         "input, textarea, select, [data-radix-popper-content-wrapper], [role='dialog'], [role='listbox']"
-      );
-      if (skip) return;
+      )) return;
 
-      const el = document.createElement("div");
-      el.className = "__sci_ripple";
-      el.style.cssText = `
+      // Primary expanding ring
+      const ring = document.createElement("div");
+      ring.style.cssText = `
         position: fixed;
         left: ${e.clientX}px; top: ${e.clientY}px;
-        width: 4px; height: 4px;
-        border-radius: 50%;
-        pointer-events: none; user-select: none;
-        z-index: 9989;
+        width: 4px; height: 4px; border-radius: 50%;
+        pointer-events: none; z-index: 9989;
         transform: translate(-50%, -50%);
-        border: 1.5px solid rgba(249,115,22,0.9);
-        box-shadow: 0 0 8px rgba(249,115,22,0.6), 0 0 16px rgba(249,115,22,0.3);
-        animation: __sci_ripple_anim 700ms cubic-bezier(0.2,0.8,0.2,1) forwards;
+        border: 1.5px solid rgba(249,115,22,0.95);
+        box-shadow: 0 0 10px rgba(249,115,22,0.7), 0 0 22px rgba(249,115,22,0.35);
+        animation: __sci_ripple_a 750ms cubic-bezier(0.2,0.8,0.2,1) forwards;
       `;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 720);
+      // Secondary delayed ring
+      const ring2 = document.createElement("div");
+      ring2.style.cssText = `
+        position: fixed;
+        left: ${e.clientX}px; top: ${e.clientY}px;
+        width: 4px; height: 4px; border-radius: 50%;
+        pointer-events: none; z-index: 9989;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(249,115,22,0.45);
+        animation: __sci_ripple_a 900ms cubic-bezier(0.2,0.8,0.2,1) 120ms forwards;
+      `;
+      document.body.appendChild(ring);
+      document.body.appendChild(ring2);
+      setTimeout(() => { ring.remove(); ring2.remove(); }, 1050);
     };
 
     // ── Style injection ────────────────────────────────────────────
     const style = document.createElement("style");
     style.id = "__sci_styles";
     style.textContent = `
-      @keyframes __sci_ripple_anim {
-        0%   { width: 4px; height: 4px; opacity: 1; }
-        60%  { opacity: 0.6; }
-        100% { width: 88px; height: 88px; opacity: 0; }
+      @keyframes __sci_ripple_a {
+        0%   { width: 4px;  height: 4px;  opacity: 1; }
+        55%  { opacity: 0.7; }
+        100% { width: 100px; height: 100px; opacity: 0; }
       }
     `;
     document.head.appendChild(style);
 
-    // ── Bind ──────────────────────────────────────────────────────
+    // ── Bind all listeners ────────────────────────────────────────
     window.addEventListener("mousemove", onMouseMove, { passive: true });
     window.addEventListener("mousemove", onSpotMove,  { passive: true });
     window.addEventListener("mouseover", onMouseOver, { passive: true });
     window.addEventListener("click",     onClickRipple);
-
-    // Delegated mouseleave via document
     document.addEventListener("mouseleave", onSpotLeave, { capture: true, passive: true });
-
-    rafId = requestAnimationFrame(animateOrb);
+    orbRaf = requestAnimationFrame(animateOrb);
 
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mousemove", onSpotMove);
       window.removeEventListener("mouseover", onMouseOver);
       window.removeEventListener("click",     onClickRipple);
+      window.removeEventListener("resize",    resize);
       document.removeEventListener("mouseleave", onSpotLeave, { capture: true });
-      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(particleRaf);
+      cancelAnimationFrame(orbRaf);
+      canvas.remove();
       orb.remove();
       style.remove();
-      document.querySelectorAll(".__sci_ripple").forEach((el) => el.remove());
     };
   }, []);
 

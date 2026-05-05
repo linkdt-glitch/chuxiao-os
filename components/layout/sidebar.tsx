@@ -76,22 +76,34 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
                 animation: "logo-ring-spin 2.8s linear infinite reverse",
               }}
             />
-            {/* Logo frame with breathing glow */}
+            {/* Logo frame */}
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl"
+              className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden"
               style={{
-                background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.25), rgba(3,7,18,0.97))",
-                animation: "logo-glow-pulse 2.5s ease-in-out infinite",
+                background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), rgba(3,7,18,0.97))",
+                animation: "logo-glow-pulse 3s ease-in-out infinite",
               }}
             >
-              <Image
-                src="/brand/kairosmini-mark.svg"
-                alt="初晓 OS"
-                width={512}
-                height={512}
-                className="h-full w-full object-contain"
-                style={{ animation: "logo-float 4s ease-in-out infinite" }}
-              />
+              {/* The sphere itself — 3D gyro tilt + energy pulse + glitch */}
+              <div
+                style={{
+                  width: "100%", height: "100%",
+                  animation: "logo-sphere-3d 8s ease-in-out infinite",
+                  transformOrigin: "center center",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <Image
+                  src="/brand/kairosmini-mark.svg"
+                  alt="初晓 OS"
+                  width={512}
+                  height={512}
+                  className="h-full w-full object-contain"
+                  style={{
+                    animation: "logo-sphere-energy 3.2s ease-in-out infinite",
+                  }}
+                />
+              </div>
             </div>
           </div>
 

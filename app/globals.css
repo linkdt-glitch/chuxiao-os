@@ -264,17 +264,58 @@ textarea {
 
 @keyframes logo-glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 18px rgba(249,115,22,0.32), 0 0 0 1px rgba(249,115,22,0.22);
+    box-shadow: 0 0 18px rgba(249,115,22,0.30), 0 0 0 1px rgba(249,115,22,0.20);
   }
   50% {
-    box-shadow: 0 0 38px rgba(249,115,22,0.62), 0 0 0 1px rgba(249,115,22,0.48),
-                0 0 65px rgba(249,115,22,0.22);
+    box-shadow: 0 0 42px rgba(249,115,22,0.65), 0 0 0 1px rgba(249,115,22,0.50),
+                0 0 80px rgba(249,115,22,0.25);
   }
 }
 
-@keyframes logo-float {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50%       { transform: translateY(-2px) scale(1.04); }
+/* 3-D gyroscope tilt — makes the sphere look like it's rotating in space */
+@keyframes logo-sphere-3d {
+  0%   { transform: perspective(90px) rotateX(0deg)   rotateY(0deg)   scale(1); }
+  10%  { transform: perspective(90px) rotateX(10deg)  rotateY(14deg)  scale(1.04); }
+  22%  { transform: perspective(90px) rotateX(-7deg)  rotateY(10deg)  scale(0.97); }
+  35%  { transform: perspective(90px) rotateX(-13deg) rotateY(-11deg) scale(1.03); }
+  48%  { transform: perspective(90px) rotateX(5deg)   rotateY(-15deg) scale(0.96); }
+  60%  { transform: perspective(90px) rotateX(13deg)  rotateY(-4deg)  scale(1.04); }
+  72%  { transform: perspective(90px) rotateX(3deg)   rotateY(9deg)   scale(1.00); }
+  /* Holographic glitch burst */
+  84%  { transform: perspective(90px) rotateX(1deg)   rotateY(2deg)   scale(1.00) translateX(0); }
+  85%  { transform: perspective(90px) rotateX(2deg)   rotateY(4deg)   scale(1.10) translateX(4px) skewX(6deg); }
+  86%  { transform: perspective(90px) rotateX(0deg)   rotateY(-2deg)  scale(0.94) translateX(-3px) skewX(-4deg); }
+  87%  { transform: perspective(90px) rotateX(1deg)   rotateY(1deg)   scale(1.04) translateX(2px); }
+  88%  { transform: perspective(90px) rotateX(0deg)   rotateY(0deg)   scale(1.00) translateX(0); }
+  100% { transform: perspective(90px) rotateX(0deg)   rotateY(0deg)   scale(1); }
+}
+
+/* Energy glow — brightness, color, drop-shadow breathing */
+@keyframes logo-sphere-energy {
+  0%, 100% {
+    filter: brightness(1.00) saturate(1.0) drop-shadow(0 0 5px rgba(249,115,22,0.55));
+  }
+  18% {
+    filter: brightness(1.50) saturate(1.6) drop-shadow(0 0 18px rgba(249,115,22,1))
+            drop-shadow(0 0 36px rgba(249,115,22,0.55));
+  }
+  40% {
+    filter: brightness(0.80) saturate(0.8) drop-shadow(0 0 2px rgba(249,115,22,0.20));
+  }
+  62% {
+    filter: brightness(1.30) saturate(1.4) drop-shadow(0 0 12px rgba(249,115,22,0.85));
+  }
+  /* Flash white-hot on glitch (roughly synced ~85%) */
+  79% {
+    filter: brightness(1.00) saturate(1.0) drop-shadow(0 0 5px rgba(249,115,22,0.55));
+  }
+  82% {
+    filter: brightness(2.40) saturate(2.0) drop-shadow(0 0 28px rgba(249,115,22,1))
+            drop-shadow(0 0 56px rgba(255,200,100,0.7));
+  }
+  86% {
+    filter: brightness(1.00) saturate(1.0) drop-shadow(0 0 8px rgba(249,115,22,0.70));
+  }
 }
 
 @keyframes shimmer-line {

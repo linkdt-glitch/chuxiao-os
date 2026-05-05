@@ -489,6 +489,89 @@ textarea {
   color-scheme: dark;
 }
 
+/* Native <select> in dark theme */
+main select {
+  background-color: rgba(8, 13, 28, 0.85) !important;
+  color: rgb(226, 232, 240);
+  border-color: rgba(249, 115, 22, 0.18);
+}
+main select:focus-visible {
+  border-color: rgba(249, 115, 22, 0.55);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+main select option {
+  background: #0a1020;
+  color: rgb(226, 232, 240);
+}
+
+/* ─── Legacy light-surface safety net inside (app) ───── */
+/* Many older page-level utilities still use bg-white/X, border-slate-200,
+   text-slate-700/800/900 — promote them to dark-friendly equivalents
+   when they appear inside the main app area. */
+
+main [class*="bg-white/"] {
+  background-color: rgba(8, 13, 28, 0.55) !important;
+}
+main [class*="bg-white/"][class*="hover:"]:hover {
+  background-color: rgba(249, 115, 22, 0.06) !important;
+}
+
+main [class*="border-slate-200"],
+main [class*="border-white/"] {
+  border-color: rgba(249, 115, 22, 0.14) !important;
+}
+
+main .text-slate-700,
+main .text-slate-800,
+main .text-slate-900,
+main .text-gray-700,
+main .text-gray-800,
+main .text-gray-900,
+main .text-foreground {
+  color: rgb(226, 232, 240) !important; /* slate-200 */
+}
+
+/* Light pastel utility backgrounds → soft dark accent */
+main [class*="bg-amber-50"],
+main [class*="bg-orange-50"],
+main [class*="bg-sky-50"],
+main [class*="bg-emerald-50"],
+main [class*="bg-cyan-50"],
+main [class*="bg-rose-50"],
+main [class*="bg-red-50"],
+main [class*="bg-purple-50"],
+main [class*="bg-slate-50"],
+main [class*="bg-gray-50"] {
+  background-color: rgba(8, 13, 28, 0.45) !important;
+}
+
+main [class*="bg-amber-100"],
+main [class*="bg-orange-100"],
+main [class*="bg-sky-100"],
+main [class*="bg-emerald-100"] {
+  background-color: rgba(249, 115, 22, 0.08) !important;
+}
+
+/* Pastel text colors in dark theme — bump saturation */
+main .text-orange-600,
+main .text-orange-700 { color: #fb923c !important; }
+main .text-amber-600,
+main .text-amber-700 { color: #fbbf24 !important; }
+main .text-emerald-600,
+main .text-emerald-700,
+main .text-green-600,
+main .text-green-700 { color: #34d399 !important; }
+main .text-red-600,
+main .text-red-700,
+main .text-rose-600,
+main .text-rose-700 { color: #f87171 !important; }
+main .text-sky-600,
+main .text-sky-700,
+main .text-cyan-600,
+main .text-cyan-700 { color: #38bdf8 !important; }
+main .text-purple-600,
+main .text-purple-700 { color: #c084fc !important; }
+
 /* ─── Responsive ────────────────────────────────────── */
 
 @media (max-width: 640px) {

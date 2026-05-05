@@ -27,14 +27,14 @@ export default async function AISettingsPage() {
               <CardTitle>Provider 安全配置</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="rounded-lg border bg-white/70 p-4">
+              <div className="rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4">
                 <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
                   <ServerCog className="h-4 w-4" />
                   API Key 只放在服务端环境变量
                 </div>
                 <p>当前页面只负责选择启用哪个 Provider，不在浏览器里保存或展示密钥。</p>
               </div>
-              <div className="space-y-2 rounded-lg border bg-white/70 p-4 font-mono text-xs">
+              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4 font-mono text-xs text-slate-300">
                 <div>DEEPSEEK_API_KEY=...</div>
                 <div>SILICONFLOW_API_KEY=...</div>
                 <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
@@ -49,24 +49,24 @@ export default async function AISettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-sky-500" />
+                <ImageIcon className="h-4 w-4 text-orange-400" />
                 图片生成配置
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="flex items-center justify-between rounded-lg border bg-white/70 p-3">
-                <span className="font-medium text-foreground">fal.ai 状态</span>
-                <span className={falConfigured ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
+              <div className="flex items-center justify-between rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-3">
+                <span className="font-medium text-slate-200">fal.ai 状态</span>
+                <span className={falConfigured ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
                   {falConfigured ? "已配置 ✓" : "未配置"}
                 </span>
               </div>
-              <div className="rounded-lg border bg-white/70 p-4 font-mono text-xs space-y-1.5">
-                <div className="text-muted-foreground mb-2 font-sans font-medium text-foreground not-italic">在 .env.local 中配置：</div>
+              <div className="rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4 font-mono text-xs space-y-1.5 text-slate-300">
+                <div className="mb-2 font-sans font-medium text-slate-200 not-italic">在 .env.local 中配置：</div>
                 <div>FAL_AI_API_KEY=...</div>
                 <div>FAL_AI_IMAGE_MODEL={falModel}</div>
               </div>
               {falConfigured && (
-                <div className="rounded-lg border border-green-200 bg-green-50/60 p-3 text-xs text-green-700">
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.10] p-3 text-xs text-emerald-300">
                   当前模型：<span className="font-mono font-medium">{falModel}</span>
                 </div>
               )}
@@ -75,7 +75,7 @@ export default async function AISettingsPage() {
                 href="https://fal.ai/dashboard/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 hover:underline"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 前往 fal.ai 获取 API Key

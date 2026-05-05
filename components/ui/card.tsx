@@ -6,15 +6,16 @@ export function Card({ className, style: styleProp, ...props }: React.HTMLAttrib
     <div
       data-spotlight
       className={cn(
-        "rounded-lg text-card-foreground transition-all duration-300",
+        "relative rounded-xl text-card-foreground transition-all duration-300 hover:-translate-y-0.5",
         className
       )}
       style={{
-        background: "linear-gradient(180deg, rgba(10,16,32,0.90), rgba(7,12,24,0.86))",
-        border: "1px solid rgba(249,115,22,0.13)",
+        background:
+          "linear-gradient(180deg, rgba(12,18,36,0.92) 0%, rgba(7,12,24,0.88) 100%)",
+        border: "1px solid rgba(249,115,22,0.14)",
         boxShadow:
-          "0 0 0 1px rgba(249,115,22,0.05) inset, 0 24px 60px rgba(0,0,0,0.50)",
-        backdropFilter: "blur(18px)",
+          "inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(249,115,22,0.04) inset, 0 18px 40px rgba(0,0,0,0.45)",
+        backdropFilter: "blur(20px) saturate(1.1)",
         ...styleProp,
       }}
       {...props}
@@ -29,14 +30,14 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-semibold text-slate-100", className)}
+      className={cn("text-base font-semibold text-slate-100 tracking-tight", className)}
       {...props}
     />
   );
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-muted-foreground", className)} {...props} />;
+  return <p className={cn("text-sm text-slate-400", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

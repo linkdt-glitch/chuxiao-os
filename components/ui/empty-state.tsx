@@ -2,12 +2,31 @@ import { Inbox } from "lucide-react";
 
 export function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-orange-200/80 bg-gradient-to-br from-white/76 via-orange-50/52 to-amber-50/34 p-8 text-center shadow-[0_16px_40px_rgba(238,97,25,0.045)]">
-      <div className="mb-3 rounded-xl border border-white/80 bg-white/70 p-2 shadow-sm">
-        <Inbox className="h-6 w-6 text-orange-600" />
+    <div
+      className="flex min-h-40 flex-col items-center justify-center rounded-lg p-8 text-center"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(8,13,28,0.55) 0%, rgba(4,8,20,0.45) 100%)",
+        border: "1px dashed rgba(249,115,22,0.22)",
+        boxShadow:
+          "inset 0 0 24px rgba(249,115,22,0.04), 0 12px 32px rgba(0,0,0,0.35)"
+      }}
+    >
+      <div
+        className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), rgba(3,7,18,0.92))",
+          boxShadow:
+            "0 0 16px rgba(249,115,22,0.18), 0 0 0 1px rgba(249,115,22,0.22)"
+        }}
+      >
+        <Inbox className="h-5 w-5 text-orange-400" />
       </div>
-      <div className="text-sm font-medium">{title}</div>
-      {description ? <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p> : null}
+      <div className="text-sm font-medium text-slate-200">{title}</div>
+      {description ? (
+        <p className="mt-1 max-w-md text-sm text-slate-400">{description}</p>
+      ) : null}
     </div>
   );
 }

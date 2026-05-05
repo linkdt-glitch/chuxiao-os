@@ -3,17 +3,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium tracking-wide transition-colors",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-gradient-to-r from-orange-500 to-red-500 text-primary-foreground",
-        secondary: "border-slate-200 bg-white/70 text-secondary-foreground",
-        outline: "border-slate-200/80 bg-white/45 text-foreground",
-        success: "border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700",
-        warning: "border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700",
-        danger: "border-red-200 bg-gradient-to-r from-red-50 to-rose-50 text-red-700",
-        info: "border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700"
+        default:
+          "border-transparent bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.35)]",
+        secondary:
+          "border-white/10 bg-white/[0.04] text-slate-300",
+        outline:
+          "border-white/15 bg-transparent text-slate-300",
+        success:
+          "border-emerald-500/30 bg-emerald-500/[0.12] text-emerald-300",
+        warning:
+          "border-amber-500/30 bg-amber-500/[0.12] text-amber-300",
+        danger:
+          "border-red-500/30 bg-red-500/[0.12] text-red-300",
+        info:
+          "border-orange-500/30 bg-orange-500/[0.10] text-orange-300"
       }
     },
     defaultVariants: {

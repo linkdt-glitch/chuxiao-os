@@ -53,21 +53,46 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
       >
         <div className="flex min-w-0 items-center gap-3">
-          {/* Logo mark */}
-          <div
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl"
-            style={{
-              background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.22), rgba(3,7,18,0.96))",
-              boxShadow: "0 0 20px rgba(249,115,22,0.32), 0 0 0 1px rgba(249,115,22,0.22)",
-            }}
-          >
-            <Image
-              src="/brand/kairosmini-mark.svg"
-              alt="初晓 OS"
-              width={512}
-              height={512}
-              className="h-full w-full object-contain"
+          {/* Logo mark — always animating */}
+          <div className="relative h-10 w-10 shrink-0">
+            {/* Outer dashed ring — slow clockwise */}
+            <div
+              className="pointer-events-none absolute"
+              style={{
+                inset: -5, borderRadius: 20,
+                border: "1px dashed rgba(249,115,22,0.38)",
+                animation: "logo-ring-spin 7s linear infinite",
+              }}
             />
+            {/* Inner partial arc — fast counter-clockwise */}
+            <div
+              className="pointer-events-none absolute"
+              style={{
+                inset: -2, borderRadius: 15,
+                borderTop: "1.5px solid rgba(249,115,22,0.75)",
+                borderRight: "1.5px solid rgba(249,115,22,0.20)",
+                borderBottom: "1.5px solid transparent",
+                borderLeft: "1.5px solid transparent",
+                animation: "logo-ring-spin 2.8s linear infinite reverse",
+              }}
+            />
+            {/* Logo frame with breathing glow */}
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-xl"
+              style={{
+                background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.25), rgba(3,7,18,0.97))",
+                animation: "logo-glow-pulse 2.5s ease-in-out infinite",
+              }}
+            >
+              <Image
+                src="/brand/kairosmini-mark.svg"
+                alt="初晓 OS"
+                width={512}
+                height={512}
+                className="h-full w-full object-contain"
+                style={{ animation: "logo-float 4s ease-in-out infinite" }}
+              />
+            </div>
           </div>
 
           {/* Brand text */}

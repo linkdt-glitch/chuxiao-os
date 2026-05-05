@@ -17,58 +17,75 @@ export function AnnouncementBanner({ announcements }: { announcements?: string[]
       className="relative overflow-hidden"
       aria-label="系统公告"
       style={{
-        background: "rgba(2,5,16,0.97)",
-        borderBottom: "1px solid rgba(249,115,22,0.20)",
-        boxShadow: "0 1px 0 rgba(249,115,22,0.06) inset",
+        background: "linear-gradient(90deg, rgba(5,10,22,0.98) 0%, rgba(8,14,28,0.96) 50%, rgba(5,10,22,0.98) 100%)",
+        borderBottom: "1px solid rgba(249,115,22,0.18)",
       }}
     >
-      {/* Scan shimmer line */}
+      {/* Top shimmer line */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.5) 50%, transparent 100%)",
-          animation: "shimmer-line 3s ease-in-out infinite",
+          background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.6) 50%, transparent 100%)",
+          animation: "shimmer-line 4s ease-in-out infinite",
         }}
       />
 
-      {/* Left label */}
+      {/* Left: live dot only — no text label */}
       <div
-        className="absolute left-0 top-0 z-10 flex h-full items-center pl-3 pr-10"
+        className="absolute left-0 top-0 z-10 flex h-full items-center px-3"
         style={{
-          background: "linear-gradient(90deg, rgba(2,5,16,1) 72%, transparent 100%)",
+          background: "linear-gradient(90deg, rgba(5,10,22,0.99) 55%, transparent 100%)",
+          minWidth: 28,
         }}
       >
-        <span className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.2em]"
-              style={{ color: "rgba(249,115,22,0.9)", textShadow: "0 0 10px rgba(249,115,22,0.6)" }}>
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full bg-green-400"
-            style={{ boxShadow: "0 0 8px rgba(74,222,128,1)", animation: "neon-dot-pulse 1.5s ease-in-out infinite" }}
-          />
-          SYS://
-        </span>
+        <div
+          style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: "#4ade80",
+            boxShadow: "0 0 8px rgba(74,222,128,1), 0 0 16px rgba(74,222,128,0.6)",
+            animation: "neon-dot-pulse 1.8s ease-in-out infinite",
+          }}
+        />
       </div>
 
       {/* Right fade */}
       <div
-        className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20"
-        style={{ background: "linear-gradient(270deg, rgba(2,5,16,0.99) 0%, transparent 100%)" }}
+        className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16"
+        style={{
+          background: "linear-gradient(270deg, rgba(5,10,22,0.99) 0%, transparent 100%)",
+        }}
       />
 
       {/* Ticker */}
-      <div className="flex pl-[4.5rem] py-[6px]">
-        <div className="animate-marquee flex shrink-0 whitespace-nowrap">
+      <div className="flex overflow-hidden" style={{ paddingLeft: 28 }}>
+        <div className="animate-marquee flex shrink-0 whitespace-nowrap py-2">
           {items.map((text, i) => (
             <span
               key={i}
-              className="mr-10 font-mono text-[12px] font-medium"
-              style={{
-                color: "rgba(226,232,240,0.92)",
-                textShadow: "0 0 12px rgba(249,115,22,0.25)",
-              }}
+              className="inline-flex items-center"
+              style={{ marginRight: 48 }}
             >
-              <span style={{ color: "rgba(249,115,22,0.65)", marginRight: "8px" }}>›</span>
-              {text}
-              <span style={{ color: "rgba(249,115,22,0.20)", marginLeft: "40px" }}>║</span>
+              {/* Divider dot */}
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 3, height: 3,
+                  borderRadius: "50%",
+                  background: "rgba(249,115,22,0.5)",
+                  marginRight: 14,
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "rgba(226,232,240,0.95)",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {text}
+              </span>
             </span>
           ))}
         </div>

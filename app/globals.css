@@ -255,6 +255,28 @@ textarea {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Logo animations ─────────────────────────────────── */
+
+@keyframes logo-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes logo-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(249,115,22,0.32), 0 0 0 1px rgba(249,115,22,0.22);
+  }
+  50% {
+    box-shadow: 0 0 38px rgba(249,115,22,0.62), 0 0 0 1px rgba(249,115,22,0.48),
+                0 0 65px rgba(249,115,22,0.22);
+  }
+}
+
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-2px) scale(1.04); }
+}
+
 @keyframes shimmer-line {
   0%   { transform: translateX(-100%); opacity: 0; }
   20%  { opacity: 1; }

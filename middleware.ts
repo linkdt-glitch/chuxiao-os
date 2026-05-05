@@ -5,7 +5,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 const PUBLIC_API_PATHS = [
   "/api/auth/request-link",
   "/api/auth/password-login",
-  "/api/auth/bootstrap-owner"
+  "/api/auth/bootstrap-owner",
+  "/api/auth/change-password"
 ];
 
 // 页面路由中不需要登录校验的公开页面
@@ -13,7 +14,8 @@ const PUBLIC_PAGE_PATHS = [
   "/login",
   "/auth/callback",
   "/auth/magic-link",
-  "/auth/setup"
+  "/auth/setup",
+  "/auth/change-password"
 ];
 
 function isPublicPath(pathname: string) {

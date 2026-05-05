@@ -28,6 +28,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getNavigationModules()
   ]);
 
+  // Force password change if flagged by admin
+  if (!isDemoModeEnabled() && user?.must_change_password) {
+    redirect("/auth/change-password");
+  }
+
   return (
     <div className="min-h-screen">
       <Sidebar modules={modules} />

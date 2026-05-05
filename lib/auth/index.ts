@@ -31,7 +31,7 @@ export async function getCurrentUser() {
 
     const { data: profile } = await supabase
       .from("user_profiles")
-      .select("*")
+      .select("id, email, full_name, avatar_url, must_change_password, created_at, updated_at")
       .eq("id", data.user.id)
       .single();
 
@@ -39,6 +39,7 @@ export async function getCurrentUser() {
       id: data.user.id,
       email: data.user.email ?? "",
       full_name: data.user.email ?? "User",
+      must_change_password: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

@@ -158,6 +158,12 @@ export async function createHumanMemberAction(
 
     if (error) throw error;
 
+    // Force password change on first login
+    await admin
+      .from("user_profiles")
+      .update({ must_change_password: true })
+      .eq("id", user_id);
+
     await logAction({
       event_key: existingMember?.id ? "member.updated" : "member.created",
       action: existingMember?.id ? "update" : "create",
@@ -277,9 +283,12 @@ export async function updateMemberAction(
       if (authError) throw authError;
     }
 
-    // Update user_profile name
+    // Update user_profile name (and flag must_change_password if admin changed the password)
     if (member.user_id) {
-      await admin.from("user_profiles").update({ full_name: display_name, ...(email ? { email } : {}) }).eq("id", member.user_id);
+      const profileUpdate: Record<string, unknown> = { full_name: display_name };
+      if (email) profileUpdate.email = email;
+      if (password) profileUpdate.must_change_password = true;
+      await admin.from("user_profiles").update(profileUpdate).eq("id", member.user_id);
     }
 
     await logAction({
@@ -338,6 +347,12 @@ export async function resetMemberPasswordAction(
     const { error } = await admin.auth.admin.updateUserById(member.user_id, { password });
     if (error) throw error;
 
+    // Force user to change password on next login
+    await admin
+      .from("user_profiles")
+      .update({ must_change_password: true })
+      .eq("id", member.user_id);
+
     await logAction({
       event_key: "member.password_reset",
       action: "update",
@@ -348,7 +363,7 @@ export async function resetMemberPasswordAction(
     });
 
     revalidatePath("/organization");
-    return { ok: true, message: "密码已重置，成员下次登录使用新密码。" };
+    return { ok: true, message: "密码已重置，成员下次登录时将被要求修改密码。" };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "密码重置失败。" };
   }
@@ -373,8 +388,17 @@ export async function disableMemberAction(formData: FormData) {
   if (!member_id) throw new Error("缺少成员 ID");
 
   const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return;
+
+  // Fetch user_id before disabling
+  const { data: memberRow } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("id", member_id)
+    .eq("organization_id", organization.id)
+    .maybeSingle();
 
   const { error } = await supabase
     .from("organization_members")
@@ -383,6 +407,11 @@ export async function disableMemberAction(formData: FormData) {
     .eq("organization_id", organization.id);
 
   if (error) throw error;
+
+  // Revoke all active sessions immediately
+  if (admin && memberRow?.user_id) {
+    await admin.auth.admin.signOut(memberRow.user_id, "global");
+  }
 
   await logAction({
     event_key: "member.disabled",

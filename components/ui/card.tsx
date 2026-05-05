@@ -5,9 +5,17 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "panel-gradient mac-window rounded-lg text-card-foreground transition-shadow duration-200 hover:shadow-[0_24px_70px_rgba(238,97,25,0.08)]",
+        "relative rounded-lg text-card-foreground transition-all duration-300",
         className
       )}
+      style={{
+        background: "linear-gradient(180deg, rgba(10,16,32,0.90), rgba(7,12,24,0.86))",
+        border: "1px solid rgba(249,115,22,0.13)",
+        boxShadow:
+          "0 0 0 1px rgba(249,115,22,0.05) inset, 0 24px 60px rgba(0,0,0,0.50), 0 0 40px rgba(249,115,22,0.03)",
+        backdropFilter: "blur(18px)",
+        ...(props.style ?? {}),
+      }}
       {...props}
     />
   );
@@ -18,7 +26,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("text-base font-semibold", className)} {...props} />;
+  return <h3 className={cn("text-base font-semibold text-slate-100", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {

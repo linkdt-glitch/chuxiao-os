@@ -12,18 +12,18 @@ import type { ModuleDefinition } from "@/lib/types/core";
 type NavigationModule = ModuleDefinition & { canAccess?: boolean; isEnabled?: boolean };
 
 const primaryTabs = [
-  { key: "dashboard", label: "首页", icon: Home },
-  { key: "finance", label: "财务", icon: WalletCards },
-  { key: "projects", label: "项目", icon: ListTodo },
-  { key: "ai_workforce", label: "AI", icon: BrainCircuit }
+  { key: "dashboard",    label: "首页", icon: Home },
+  { key: "finance",      label: "财务", icon: WalletCards },
+  { key: "projects",     label: "项目", icon: ListTodo },
+  { key: "ai_workforce", label: "AI",   icon: BrainCircuit },
 ];
 
 const menuSections = [
-  { title: "核心入口", keys: ["dashboard"] },
-  { title: "核心业务舱", keys: ["finance", "projects", "ai_workforce"] },
-  { title: "底座能力", keys: ["governance", "knowledge"] },
-  { title: "进化机制", keys: ["evolution", "energy"] },
-  { title: "系统管理", keys: ["organization", "modules", "ai-settings", "settings"] }
+  { title: "CORE",      keys: ["dashboard"] },
+  { title: "MODULES",   keys: ["finance", "projects", "ai_workforce"] },
+  { title: "PLATFORM",  keys: ["governance", "knowledge"] },
+  { title: "EVOLUTION", keys: ["evolution", "energy"] },
+  { title: "SYSTEM",    keys: ["organization", "modules", "ai-settings", "settings"] },
 ];
 
 function isActive(pathname: string, route: string) {
@@ -33,64 +33,122 @@ function isActive(pathname: string, route: string) {
 export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const moduleByKey = useMemo(() => new Map(modules.map((module) => [module.key, module])), [modules]);
+  const moduleByKey = useMemo(
+    () => new Map(modules.map((m) => [m.key, m])),
+    [modules]
+  );
   const primaryModules = primaryTabs
     .map((tab) => ({ ...tab, module: moduleByKey.get(tab.key) }))
     .filter((item) => item.module);
   const moreActive = modules.some(
-    (module) => !primaryTabs.some((tab) => tab.key === module.key) && isActive(pathname, module.route)
+    (m) => !primaryTabs.some((t) => t.key === m.key) && isActive(pathname, m.route)
   );
 
   return (
     <>
-      {open ? (
+      {/* Full-screen module picker */}
+      {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
+          {/* Backdrop */}
           <button
-            className="absolute inset-0 bg-slate-950/18 backdrop-blur-[2px]"
+            className="absolute inset-0"
+            style={{ background: "rgba(1,3,12,0.75)", backdropFilter: "blur(4px)" }}
             aria-label="关闭移动导航"
             onClick={() => setOpen(false)}
           />
-          <div className="surface-gradient fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-h-[72vh] overflow-hidden rounded-[28px] border border-white/80 shadow-[0_28px_80px_rgba(15,23,42,0.18)] animate-app-sheet-in">
-            <div className="flex items-center justify-between border-b border-white/70 px-4 py-3">
+
+          {/* Sheet */}
+          <div
+            className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-h-[72vh] overflow-hidden rounded-[20px] animate-app-sheet-in"
+            style={{
+              background: "rgba(4,8,22,0.96)",
+              border: "1px solid rgba(249,115,22,0.18)",
+              boxShadow:
+                "0 -24px 60px rgba(0,0,0,0.65), 0 0 40px rgba(249,115,22,0.08)",
+              backdropFilter: "blur(28px)",
+            }}
+          >
+            {/* Sheet header */}
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
+            >
               <div>
-                <div className="text-sm font-semibold text-slate-950">全部入口</div>
-                <div className="text-xs text-muted-foreground">像 App 一样快速切换模块</div>
+                <div className="text-sm font-semibold text-slate-100">全部入口</div>
+                <div className="font-mono text-[10px] tracking-wider text-orange-500/45">
+                  SELECT MODULE
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-slate-600 shadow-sm ring-1 ring-white/80 transition active:scale-95"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-200 active:scale-95"
+                style={{
+                  background: "rgba(249,115,22,0.08)",
+                  border: "1px solid rgba(249,115,22,0.18)",
+                }}
                 aria-label="关闭"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Module grid */}
             <div className="max-h-[calc(72vh-4.5rem)] overflow-y-auto px-3 py-4">
               {menuSections.map((section) => {
                 const sectionModules = section.keys
-                  .map((key) => moduleByKey.get(key))
+                  .map((k) => moduleByKey.get(k))
                   .filter(Boolean) as NavigationModule[];
                 if (!sectionModules.length) return null;
 
                 return (
                   <div key={section.title} className="mb-5 last:mb-1">
-                    <div className="mb-2 px-2 text-xs font-medium text-muted-foreground">{section.title}</div>
+                    {/* Section label */}
+                    <div className="mb-2 flex items-center gap-2 px-1">
+                      <span className="font-mono text-[10px] font-medium tracking-[0.2em] text-orange-500/40">
+                        {section.title}
+                      </span>
+                      <div
+                        className="flex-1"
+                        style={{ height: "1px", background: "rgba(249,115,22,0.08)" }}
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       {sectionModules.map((module) => {
                         const Icon = iconMap[module.icon as IconName] ?? LayoutGrid;
                         const disabled = module.status === "coming_soon";
                         const active = isActive(pathname, module.route);
+
                         const content = (
                           <div
                             className={cn(
-                              "flex min-h-14 items-center gap-3 rounded-2xl border px-3 text-sm transition active:scale-[0.98]",
-                              active
-                                ? "border-orange-200 bg-white/92 text-slate-950 shadow-[0_14px_34px_rgba(238,97,25,0.12)]"
-                                : "border-white/70 bg-white/58 text-slate-600 shadow-sm",
-                              disabled && "opacity-55"
+                              "flex min-h-14 items-center gap-3 rounded-xl px-3 text-sm transition-all duration-200 active:scale-[0.97]",
+                              disabled && "opacity-45 cursor-not-allowed"
                             )}
+                            style={
+                              active
+                                ? {
+                                    background: "rgba(249,115,22,0.12)",
+                                    border: "1px solid rgba(249,115,22,0.30)",
+                                    boxShadow: "0 0 16px rgba(249,115,22,0.12)",
+                                    color: "#fb923c",
+                                  }
+                                : {
+                                    background: "rgba(249,115,22,0.04)",
+                                    border: "1px solid rgba(249,115,22,0.10)",
+                                    color: "#94a3b8",
+                                  }
+                            }
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0", active && "text-orange-600")} />
+                            <Icon
+                              className="h-4 w-4 shrink-0"
+                              style={
+                                active
+                                  ? { filter: "drop-shadow(0 0 4px rgba(249,115,22,0.7))" }
+                                  : undefined
+                              }
+                            />
                             <span className="min-w-0 flex-1 truncate">{module.name}</span>
                             {disabled ? <Badge variant="warning">Soon</Badge> : null}
                           </div>
@@ -111,9 +169,18 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/75 bg-white/72 px-2 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_46px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:hidden">
+      {/* Bottom navigation bar */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 px-2 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 lg:hidden"
+        style={{
+          background: "rgba(2,5,16,0.92)",
+          borderTop: "1px solid rgba(249,115,22,0.14)",
+          boxShadow: "0 -12px 40px rgba(0,0,0,0.55)",
+          backdropFilter: "blur(28px)",
+        }}
+      >
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
           {primaryModules.map(({ key, label, icon: Icon, module }) => {
             const active = module ? isActive(pathname, module.route) : false;
@@ -122,26 +189,49 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
                 key={key}
                 href={module!.route}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition active:scale-95",
-                  active
-                    ? "bg-gradient-to-b from-white via-orange-50 to-amber-50 text-orange-700 shadow-[0_10px_24px_rgba(238,97,25,0.16)] ring-1 ring-orange-100"
-                    : "text-slate-500 hover:bg-white/60"
+                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium transition-all duration-200 active:scale-95"
                 )}
+                style={
+                  active
+                    ? {
+                        background: "rgba(249,115,22,0.12)",
+                        border: "1px solid rgba(249,115,22,0.28)",
+                        color: "#fb923c",
+                        boxShadow: "0 0 14px rgba(249,115,22,0.15)",
+                      }
+                    : {
+                        color: "#475569",
+                      }
+                }
               >
-                <Icon className="h-5 w-5" />
+                <Icon
+                  className="h-5 w-5"
+                  style={
+                    active
+                      ? { filter: "drop-shadow(0 0 5px rgba(249,115,22,0.7))" }
+                      : undefined
+                  }
+                />
                 <span>{label}</span>
               </Link>
             );
           })}
+
+          {/* More button */}
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className={cn(
-              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition active:scale-95",
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium transition-all duration-200 active:scale-95"
+            style={
               moreActive
-                ? "bg-gradient-to-b from-white via-orange-50 to-amber-50 text-orange-700 shadow-[0_10px_24px_rgba(238,97,25,0.16)] ring-1 ring-orange-100"
-                : "text-slate-500 hover:bg-white/60"
-            )}
+                ? {
+                    background: "rgba(249,115,22,0.12)",
+                    border: "1px solid rgba(249,115,22,0.28)",
+                    color: "#fb923c",
+                    boxShadow: "0 0 14px rgba(249,115,22,0.15)",
+                  }
+                : { color: "#475569" }
+            }
             aria-label="打开更多模块"
           >
             <MoreHorizontal className="h-5 w-5" />

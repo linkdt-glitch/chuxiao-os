@@ -229,7 +229,13 @@ export async function updateMemberAction(
         const raw = jar.get("demo_member_passwords")?.value;
         const map: Record<string, string> = (() => { try { return JSON.parse(raw ?? "{}"); } catch { return {}; } })();
         map[member_id] = password;
-        jar.set("demo_member_passwords", JSON.stringify(map), { path: "/", maxAge: 60 * 60 * 24 * 7 });
+        jar.set("demo_member_passwords", JSON.stringify(map), {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production"
+      });
       }
       revalidatePath("/organization");
       return { ok: true, message: `已更新成员信息${password ? "（含密码）" : ""}。演示模式下部分变更仅在当前会话有效。` };
@@ -328,7 +334,13 @@ export async function resetMemberPasswordAction(
       const raw = jar.get("demo_member_passwords")?.value;
       const map: Record<string, string> = raw ? JSON.parse(raw) : {};
       map[member_id] = password;
-      jar.set("demo_member_passwords", JSON.stringify(map), { path: "/", maxAge: 60 * 60 * 24 * 7 });
+      jar.set("demo_member_passwords", JSON.stringify(map), {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production"
+      });
       revalidatePath("/organization");
       return { ok: true, message: "演示模式：密码已更新（仅本会话有效）。" };
     }

@@ -71,7 +71,8 @@ export async function POST(request: Request) {
       const listed = await admin.auth.admin.listUsers();
       user = listed.data.users.find((item) => item.email?.toLowerCase() === configuredEmail) ?? null;
       if (!user) {
-        return NextResponse.json({ error: created.error.message }, { status: 400 });
+        console.error("[bootstrap-owner] createUser failed", created.error);
+        return NextResponse.json({ error: "首次初始化失败，请检查 Supabase 配置后重试。" }, { status: 400 });
       }
       const updated = await admin.auth.admin.updateUserById(user.id, {
         password: configuredPassword,
@@ -82,7 +83,8 @@ export async function POST(request: Request) {
         }
       });
       if (updated.error) {
-        return NextResponse.json({ error: updated.error.message }, { status: 400 });
+        console.error("[bootstrap-owner] updateUserById failed", updated.error);
+        return NextResponse.json({ error: "首次初始化失败，请检查 Supabase 配置后重试。" }, { status: 400 });
       }
       user = updated.data.user;
     } else {
@@ -100,12 +102,13 @@ export async function POST(request: Request) {
       password: configuredPassword
     });
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      console.error("[bootstrap-owner] signIn failed", error);
+      return NextResponse.json({ error: "首次登录失败，请稍后重试。" }, { status: 401 });
     }
 
     return NextResponse.json({ message: "Owner 账号已就绪，正在进入工作台。", redirectTo: "/dashboard" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "初始化 Owner 失败，请稍后重试。";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[bootstrap-owner] unexpected error", error);
+    return NextResponse.json({ error: "初始化 Owner 失败，请稍后重试。" }, { status: 500 });
   }
 }

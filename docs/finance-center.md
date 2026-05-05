@@ -12,7 +12,7 @@ supabase db push
 
 - `supabase/migrations/202604250002_finance_center.sql`
 - `supabase/migrations/202604280001_finance_hardening.sql`
-- `supabase/migrations/202604280002_finance_essential_categories.sql`
+- `supabase/migrations/202604280003_finance_essential_categories.sql`
 
 这些迁移会创建财务表、索引、RLS 策略、finance 权限、finance 模块注册，并为现有组织 seed 默认财务类目和账户。硬化迁移额外提供：
 

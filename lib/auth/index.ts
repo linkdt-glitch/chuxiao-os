@@ -3,10 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoMembers, demoOrganization, demoUser } from "@/lib/data/demo";
 
 export function isDemoModeEnabled() {
-  return (
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true" ||
-    process.env.ENABLE_DEMO_MODE === "true"
-  );
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
 }
 
 export async function getSessionUser() {

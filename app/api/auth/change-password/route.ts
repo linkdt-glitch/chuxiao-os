@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
 
     const { error: updateError } = await admin.auth.admin.updateUserById(user.id, { password });
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
+      console.error("[change-password] updateUserById failed", updateError);
+      return NextResponse.json({ error: "密码更新失败，请重试。" }, { status: 400 });
     }
 
     // Clear the must_change_password flag

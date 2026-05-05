@@ -55,25 +55,33 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex min-w-0 items-center gap-3">
           {/* Logo mark — always animating */}
           <div className="relative h-10 w-10 shrink-0">
-            {/* Outer dashed ring — slow clockwise */}
+            {/* Soft rotating scanner sweep (blurred conic arc, no harsh line) */}
             <div
               className="pointer-events-none absolute"
               style={{
-                inset: -5, borderRadius: 20,
-                border: "1px dashed rgba(249,115,22,0.38)",
-                animation: "logo-ring-spin 7s linear infinite",
+                inset: -6, borderRadius: 20,
+                background: "conic-gradient(from 0deg, rgba(249,115,22,0.55) 0deg, rgba(249,115,22,0.12) 50deg, transparent 110deg, transparent 360deg)",
+                filter: "blur(3px)",
+                animation: "logo-ring-spin 4s linear infinite",
               }}
             />
-            {/* Inner partial arc — fast counter-clockwise */}
+            {/* Sonar pulse ring 1 */}
             <div
-              className="pointer-events-none absolute"
+              className="pointer-events-none absolute rounded-xl"
               style={{
-                inset: -2, borderRadius: 15,
-                borderTop: "1.5px solid rgba(249,115,22,0.75)",
-                borderRight: "1.5px solid rgba(249,115,22,0.20)",
-                borderBottom: "1.5px solid transparent",
-                borderLeft: "1.5px solid transparent",
-                animation: "logo-ring-spin 2.8s linear infinite reverse",
+                inset: 0,
+                border: "1px solid rgba(249,115,22,0.65)",
+                animation: "logo-sonar 2.2s ease-out infinite",
+              }}
+            />
+            {/* Sonar pulse ring 2 — staggered */}
+            <div
+              className="pointer-events-none absolute rounded-xl"
+              style={{
+                inset: 0,
+                border: "1px solid rgba(249,115,22,0.40)",
+                animation: "logo-sonar 2.2s ease-out infinite",
+                animationDelay: "1.1s",
               }}
             />
             {/* Logo frame */}

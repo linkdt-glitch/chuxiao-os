@@ -38,6 +38,7 @@ body {
     linear-gradient(160deg, #020617 0%, #050d1a 35%, #020617 65%, #030a16 100%);
   background-size: 28px 28px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
   min-height: 100vh;
+  animation: bg-drift 100s linear infinite;
 }
 
 html {
@@ -126,6 +127,64 @@ textarea {
   text-shadow: 0 0 10px rgba(249,115,22,0.65), 0 0 24px rgba(249,115,22,0.32);
 }
 
+/* ─── Card spotlight (mouse-tracked inner glow) ─────── */
+
+[data-spotlight] {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Inner spotlight follows mouse via JS-set CSS vars */
+[data-spotlight]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    300px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(249, 115, 22, 0.10),
+    transparent 65%
+  );
+  opacity: var(--spot-o, 0);
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Sci-fi corner brackets on hover */
+[data-spotlight]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background:
+    /* TL — horizontal */
+    linear-gradient(to right, rgba(249,115,22,0.55), transparent) top left / 14px 1px no-repeat,
+    /* TL — vertical */
+    linear-gradient(to bottom, rgba(249,115,22,0.55), transparent) top left / 1px 14px no-repeat,
+    /* TR — horizontal */
+    linear-gradient(to left, rgba(249,115,22,0.55), transparent) top right / 14px 1px no-repeat,
+    /* TR — vertical */
+    linear-gradient(to bottom, rgba(249,115,22,0.55), transparent) top right / 1px 14px no-repeat,
+    /* BL — horizontal */
+    linear-gradient(to right, rgba(249,115,22,0.55), transparent) bottom left / 14px 1px no-repeat,
+    /* BL — vertical */
+    linear-gradient(to top, rgba(249,115,22,0.55), transparent) bottom left / 1px 14px no-repeat,
+    /* BR — horizontal */
+    linear-gradient(to left, rgba(249,115,22,0.55), transparent) bottom right / 14px 1px no-repeat,
+    /* BR — vertical */
+    linear-gradient(to top, rgba(249,115,22,0.55), transparent) bottom right / 1px 14px no-repeat;
+}
+[data-spotlight]:hover::after {
+  opacity: 1;
+}
+
+/* ─── Subtle scanline overlay ──────────────────────── */
+
 /* Subtle scanline overlay */
 .scan-overlay::after {
   content: "";
@@ -160,6 +219,11 @@ textarea {
 }
 
 /* ─── Keyframes ─────────────────────────────────────── */
+
+@keyframes bg-drift {
+  from { background-position: 0 0, 0 0, 100% 100%, 50% 50%, 0 0; }
+  to   { background-position: 28px 28px, 0 0, 100% 100%, 50% 50%, 0 0; }
+}
 
 @keyframes scan-sweep {
   0%   { top: -1px; }
@@ -262,6 +326,42 @@ textarea {
 .animate-app-page-in      { animation: app-page-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .animate-app-sheet-in     { animation: app-sheet-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .animate-marquee          { animation: marquee-scroll 24s linear infinite; }
+
+/* ─── Table row hover ───────────────────────────────── */
+
+tbody tr {
+  transition: background 0.15s ease;
+}
+tbody tr:hover {
+  background: rgba(249, 115, 22, 0.04) !important;
+}
+
+/* ─── Neon focus ring for all focusable elements ────── */
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(249,115,22,0.7), 0 0 12px rgba(249,115,22,0.3);
+}
+
+/* ─── Link hover underline trace ────────────────────── */
+
+a[href]:not([class]) {
+  position: relative;
+  color: rgba(249,115,22,0.85);
+  text-decoration: none;
+}
+a[href]:not([class])::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -1px;
+  height: 1px;
+  width: 0;
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  transition: width 0.25s ease;
+}
+a[href]:not([class]):hover::after {
+  width: 100%;
+}
 
 /* ─── Form dark mode hints ──────────────────────────── */
 

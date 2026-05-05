@@ -4,6 +4,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
 import { AnnouncementBanner } from "@/components/dashboard/announcement-banner";
+import { SciFiEffects } from "@/components/effects/sci-fi-effects";
 import {
   getCurrentMember,
   getCurrentOrganization,
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
+      <SciFiEffects />
       <Sidebar modules={modules} />
       <div className="lg:pl-72">
         <Topbar organization={organization} member={member} user={user} />

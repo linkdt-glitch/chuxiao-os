@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoMembers, demoOrganization, demoUser } from "@/lib/data/demo";
@@ -6,36 +7,43 @@ export function isDemoModeEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
 }
 
-export async function getSessionUser() {
+/**
+ * All four auth helpers are wrapped with React `cache()` so a single
+ * RSC render only triggers ONE `supabase.auth.getUser()` RPC even when
+ * `getCurrentOrganization()` and `getCurrentMember()` both ask for the
+ * session. This was previously costing ~500ms of duplicate roundtrips
+ * on every page load.
+ */
+
+export const getSessionUser = cache(async () => {
   try {
     const supabase = await createSupabaseServerClient();
     if (!supabase) return null;
-
     const { data } = await supabase.auth.getUser();
     return data.user ?? null;
   } catch {
     return null;
   }
-}
+});
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   try {
     const supabase = await createSupabaseServerClient();
     if (!supabase) return demoUser;
 
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return demoUser;
+    const user = await getSessionUser();
+    if (!user) return demoUser;
 
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("id, email, full_name, avatar_url, must_change_password, created_at, updated_at")
-      .eq("id", data.user.id)
+      .eq("id", user.id)
       .single();
 
     return profile ?? {
-      id: data.user.id,
-      email: data.user.email ?? "",
-      full_name: data.user.email ?? "User",
+      id: user.id,
+      email: user.email ?? "",
+      full_name: user.email ?? "User",
       must_change_password: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -43,7 +51,7 @@ export async function getCurrentUser() {
   } catch {
     return demoUser;
   }
-}
+});
 
 async function getDemoOrganizationWithCookie() {
   try {
@@ -57,7 +65,7 @@ async function getDemoOrganizationWithCookie() {
   return demoOrganization;
 }
 
-export async function getCurrentOrganization() {
+export const getCurrentOrganization = cache(async () => {
   try {
     const supabase = await createSupabaseServerClient();
     const user = await getSessionUser();
@@ -79,9 +87,9 @@ export async function getCurrentOrganization() {
   } catch {
     return getDemoOrganizationWithCookie();
   }
-}
+});
 
-export async function getCurrentMember() {
+export const getCurrentMember = cache(async () => {
   try {
     const supabase = await createSupabaseServerClient();
     const user = await getSessionUser();
@@ -102,4 +110,4 @@ export async function getCurrentMember() {
   } catch {
     return demoMembers[0];
   }
-}
+});

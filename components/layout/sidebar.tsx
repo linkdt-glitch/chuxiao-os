@@ -60,30 +60,43 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
               className="pointer-events-none absolute"
               style={{
                 inset: -6, borderRadius: 20,
-                background: "conic-gradient(from 0deg, rgba(249,115,22,0.55) 0deg, rgba(249,115,22,0.12) 50deg, transparent 110deg, transparent 360deg)",
+                background: "conic-gradient(from 0deg, rgba(249,115,22,0.45) 0deg, rgba(249,115,22,0.10) 50deg, transparent 110deg, transparent 360deg)",
                 filter: "blur(3px)",
-                animation: "logo-ring-spin 4s linear infinite",
+                animation: "logo-ring-spin 6s linear infinite",
               }}
             />
-            {/* Sonar pulse ring 1 */}
-            <div
-              className="pointer-events-none absolute rounded-xl"
+
+            {/* Orbiting particles — three dots circling at different speeds. */}
+            <span
+              className="pointer-events-none absolute left-1/2 top-1/2 block h-1.5 w-1.5 rounded-full"
               style={{
-                inset: 0,
-                border: "1px solid rgba(249,115,22,0.65)",
-                animation: "logo-sonar 2.2s ease-out infinite",
+                marginLeft: -3, marginTop: -3,
+                background: "rgba(249,200,140,0.95)",
+                boxShadow: "0 0 8px rgba(249,115,22,0.95), 0 0 16px rgba(249,115,22,0.55)",
+                animation: "logo-orbit 6s linear infinite",
               }}
             />
-            {/* Sonar pulse ring 2 — staggered */}
-            <div
-              className="pointer-events-none absolute rounded-xl"
+            <span
+              className="pointer-events-none absolute left-1/2 top-1/2 block h-1 w-1 rounded-full"
               style={{
-                inset: 0,
-                border: "1px solid rgba(249,115,22,0.40)",
-                animation: "logo-sonar 2.2s ease-out infinite",
-                animationDelay: "1.1s",
+                marginLeft: -2, marginTop: -2,
+                background: "rgba(255,180,120,0.85)",
+                boxShadow: "0 0 6px rgba(249,115,22,0.7)",
+                animation: "logo-orbit 8s linear infinite reverse",
+                animationDelay: "-2s",
               }}
             />
+            <span
+              className="pointer-events-none absolute left-1/2 top-1/2 block h-[3px] w-[3px] rounded-full"
+              style={{
+                marginLeft: -1.5, marginTop: -1.5,
+                background: "rgba(255,200,140,0.7)",
+                boxShadow: "0 0 4px rgba(249,115,22,0.5)",
+                animation: "logo-orbit 10s linear infinite",
+                animationDelay: "-4s",
+              }}
+            />
+
             {/* Logo frame */}
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden"

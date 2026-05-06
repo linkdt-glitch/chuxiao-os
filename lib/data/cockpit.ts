@@ -7,6 +7,7 @@
  * with a brief explanation.
  */
 
+import { cache } from "react";
 import { getFinanceRecords } from "@/lib/finance/records";
 import { getFinanceExecutiveDashboard, type FinanceDecision } from "@/lib/finance/reports";
 import { getProjectSummary } from "@/lib/projects";
@@ -111,7 +112,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-export async function getCockpitData(): Promise<CockpitData> {
+/**
+ * Wrapped with React `cache()` so multiple components on the same RSC
+ * render share a single computation. Pure aggregation, no side effects.
+ */
+export const getCockpitData = cache(async (): Promise<CockpitData> => {
   const today = todayISO();
   const sinceISO = new Date(Date.now() - LOOKBACK_DAYS * MS_PER_DAY).toISOString().slice(0, 10);
 
@@ -279,4 +284,4 @@ export async function getCockpitData(): Promise<CockpitData> {
     hasFinanceData: lookbackRecords.length > 0,
     hasProjectFinanceLink: projectRevenue.some((row) => row.projectId !== null)
   };
-}
+});

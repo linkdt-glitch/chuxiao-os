@@ -13,7 +13,15 @@ import { useEffect } from "react";
  */
 export function SciFiEffects() {
   useEffect(() => {
+    // Respect reduced-motion + skip on small devices to save battery / CPU.
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isSmall = typeof window !== "undefined" && window.innerWidth < 640;
+
     // ── 1. Particle constellation canvas ──────────────────────────
+    // Tuned for performance: lower N, no per-frame radial-gradient halos,
+    // squared-distance check (no sqrt), visibility-aware RAF.
     const canvas = document.createElement("canvas");
     canvas.style.cssText = `
       position: fixed; inset: 0; z-index: 0;
@@ -22,7 +30,7 @@ export function SciFiEffects() {
     `;
     document.body.appendChild(canvas);
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d", { alpha: true })!;
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -31,68 +39,80 @@ export function SciFiEffects() {
     window.addEventListener("resize", resize, { passive: true });
 
     type Particle = { x: number; y: number; vx: number; vy: number; r: number; o: number };
-    const N = 45;
+    // 45 → 18 desktop, 0 mobile. Halve N if reduced motion.
+    const N = reducedMotion ? 0 : isSmall ? 0 : 18;
     const particles: Particle[] = Array.from({ length: N }, () => ({
       x:  Math.random() * canvas.width,
       y:  Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r:  Math.random() * 1.4 + 0.4,
-      o:  Math.random() * 0.45 + 0.12,
+      vx: (Math.random() - 0.5) * 0.30,
+      vy: (Math.random() - 0.5) * 0.30,
+      r:  Math.random() * 1.2 + 0.5,
+      o:  Math.random() * 0.40 + 0.15,
     }));
 
-    let particleRaf: number;
+    let particleRaf: number | undefined;
     const LINK_DIST = 130;
+    const LINK_DIST_SQ = LINK_DIST * LINK_DIST;
+
+    // shadowBlur once instead of per-particle radial gradient
+    ctx.shadowColor = "rgba(249,115,22,0.55)";
 
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Lines between nearby particles
+      // Lines between nearby particles — squared distance, no sqrt.
+      ctx.lineWidth = 0.6;
       for (let i = 0; i < N; i++) {
+        const pi = particles[i];
         for (let j = i + 1; j < N; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const d  = Math.sqrt(dx * dx + dy * dy);
-          if (d < LINK_DIST) {
-            const alpha = 0.09 * (1 - d / LINK_DIST);
+          const pj = particles[j];
+          const dx = pi.x - pj.x;
+          const dy = pi.y - pj.y;
+          const dSq = dx * dx + dy * dy;
+          if (dSq < LINK_DIST_SQ) {
+            const alpha = 0.09 * (1 - Math.sqrt(dSq) / LINK_DIST);
             ctx.strokeStyle = `rgba(249,115,22,${alpha.toFixed(3)})`;
-            ctx.lineWidth = 0.6;
             ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.moveTo(pi.x, pi.y);
+            ctx.lineTo(pj.x, pj.y);
             ctx.stroke();
           }
         }
       }
 
-      // Dots
+      // Dots — single fillStyle batch per particle, shadowBlur for halo.
+      ctx.shadowBlur = 6;
       for (const p of particles) {
+        ctx.fillStyle = `rgba(249,115,22,${p.o.toFixed(2)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(249,115,22,${p.o.toFixed(2)})`;
         ctx.fill();
 
-        // Soft glow halo
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-        g.addColorStop(0, `rgba(249,115,22,${(p.o * 0.35).toFixed(2)})`);
-        g.addColorStop(1, "rgba(249,115,22,0)");
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-
-        // Move
+        // Move + wrap
         p.x += p.vx;
         p.y += p.vy;
-        if (p.x < -10)              p.x = canvas.width  + 10;
-        if (p.x > canvas.width + 10) p.x = -10;
-        if (p.y < -10)              p.y = canvas.height + 10;
-        if (p.y > canvas.height + 10) p.y = -10;
+        if (p.x < -10) p.x = canvas.width + 10;
+        else if (p.x > canvas.width + 10) p.x = -10;
+        if (p.y < -10) p.y = canvas.height + 10;
+        else if (p.y > canvas.height + 10) p.y = -10;
       }
+      ctx.shadowBlur = 0;
 
       particleRaf = requestAnimationFrame(drawParticles);
     };
-    drawParticles();
+
+    // Pause animation when tab is hidden — meaningful CPU saving.
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (particleRaf) cancelAnimationFrame(particleRaf);
+        particleRaf = undefined;
+      } else if (!particleRaf && N > 0) {
+        drawParticles();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    if (N > 0) drawParticles();
 
     // ── 2. Cursor glow orb ──────────────────────────────────────────
     const ORB = 400;
@@ -215,7 +235,8 @@ export function SciFiEffects() {
       window.removeEventListener("click",     onClickRipple);
       window.removeEventListener("resize",    resize);
       document.removeEventListener("mouseleave", onSpotLeave, { capture: true });
-      cancelAnimationFrame(particleRaf);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (particleRaf) cancelAnimationFrame(particleRaf);
       cancelAnimationFrame(orbRaf);
       canvas.remove();
       orb.remove();

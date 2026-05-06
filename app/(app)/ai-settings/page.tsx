@@ -1,10 +1,11 @@
-import { ExternalLink, ImageIcon, KeyRound, ServerCog } from "lucide-react";
+import { ExternalLink, ImageIcon, KeyRound, Lock, ServerCog, Shield } from "lucide-react";
 import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { IMAGE_MODELS, formatPriceCny, getDefaultModel } from "@/lib/ai/image-models";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
 import { activateProviderAction, disableProviderAction } from "./actions";
@@ -12,7 +13,9 @@ import { activateProviderAction, disableProviderAction } from "./actions";
 export default async function AISettingsPage() {
   const { providers, logs } = await getAISettingsData();
   const falConfigured = Boolean(process.env.FAL_AI_API_KEY);
-  const falModel = process.env.FAL_AI_IMAGE_MODEL ?? "fal-ai/flux/schnell";
+  const configuredModelId = process.env.FAL_AI_IMAGE_MODEL ?? getDefaultModel().id;
+  const configuredModel =
+    IMAGE_MODELS.find((m) => m.id === configuredModelId) ?? getDefaultModel();
 
   return (
     <>
@@ -53,24 +56,119 @@ export default async function AISettingsPage() {
                 图片生成配置
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="flex items-center justify-between rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-3">
-                <span className="font-medium text-slate-200">fal.ai 状态</span>
-                <span className={falConfigured ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
-                  {falConfigured ? "已配置 ✓" : "未配置"}
+            <CardContent className="space-y-4 text-sm text-slate-400">
+              {/* status row */}
+              <div
+                className="flex items-center justify-between rounded-lg p-3"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <span className="flex items-center gap-2 font-medium text-slate-200">
+                  <Shield className="h-4 w-4 text-orange-400" />
+                  fal.ai API Key
+                </span>
+                <span
+                  className={
+                    falConfigured
+                      ? "font-mono text-xs font-medium text-emerald-300"
+                      : "font-mono text-xs font-medium text-amber-300"
+                  }
+                >
+                  {falConfigured ? "✓ 已配置" : "✗ 未配置"}
                 </span>
               </div>
-              <div className="rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4 font-mono text-xs space-y-1.5 text-slate-300">
-                <div className="mb-2 font-sans font-medium text-slate-200 not-italic">在 .env.local 中配置：</div>
-                <div>FAL_AI_API_KEY=...</div>
-                <div>FAL_AI_IMAGE_MODEL={falModel}</div>
+
+              {/* security note */}
+              <div
+                className="rounded-lg p-3 text-xs"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-1.5 flex items-center gap-2 font-medium text-slate-200">
+                  <Lock className="h-3.5 w-3.5 text-orange-400" />
+                  密钥保护策略
+                </div>
+                <ul className="ml-1 space-y-1 text-[11px] leading-relaxed">
+                  <li>· 密钥只读取自 Render 服务端环境变量，**永远不会**返回给浏览器</li>
+                  <li>· 客户端只能选择白名单内的 6 个模型，无法绕过传任意 endpoint</li>
+                  <li>· 每用户每分钟最多生成 10 张，超限自动 429</li>
+                  <li>· 每次调用写入 ai_invocation_logs，可在下方调用日志审计</li>
+                  <li>· 失败错误不向客户端泄露 fal.ai 内部细节</li>
+                </ul>
               </div>
+
+              {/* default model */}
               {falConfigured && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.10] p-3 text-xs text-emerald-300">
-                  当前模型：<span className="font-mono font-medium">{falModel}</span>
+                <div
+                  className="rounded-lg p-3 text-xs"
+                  style={{
+                    background: "rgba(16,185,129,0.08)",
+                    border: "1px solid rgba(16,185,129,0.28)"
+                  }}
+                >
+                  <div className="font-medium text-emerald-300">当前默认模型</div>
+                  <div className="mt-1 font-mono text-[11px] text-emerald-200/85">
+                    {configuredModel.label} · {configuredModel.id}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-emerald-200/70">
+                    单张约 {formatPriceCny(configuredModel.pricePerImageCny)} · {configuredModel.approxSeconds}s · 用户在生成界面可临时切换其它模型
+                  </div>
                 </div>
               )}
-              <p>图片生成功能独立于聊天 Provider，专用于 AI 劳动中心的图片生成窗口。</p>
+
+              {/* available models */}
+              <div>
+                <div className="mb-1.5 font-medium text-slate-200">可选模型清单</div>
+                <div className="space-y-1.5">
+                  {IMAGE_MODELS.map((model) => (
+                    <div
+                      key={model.id}
+                      className="flex items-center justify-between gap-3 rounded-md p-2 text-xs"
+                      style={{
+                        background: "rgba(8,13,28,0.45)",
+                        border: "1px solid rgba(249,115,22,0.10)"
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-200">{model.label}</div>
+                        <div className="truncate font-mono text-[10px] text-slate-500">{model.id}</div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="font-mono tabular-nums text-orange-300">
+                          {formatPriceCny(model.pricePerImageCny)}
+                        </div>
+                        <div className="font-mono text-[10px] text-slate-500">
+                          ~{model.approxSeconds}s
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* setup hint */}
+              {!falConfigured && (
+                <div
+                  className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-300/85"
+                  style={{
+                    background: "rgba(251,191,36,0.06)",
+                    border: "1px solid rgba(251,191,36,0.28)"
+                  }}
+                >
+                  <div className="mb-1 font-medium">配置步骤（生产）</div>
+                  <ol className="ml-3 list-decimal space-y-0.5">
+                    <li>打开 Render dashboard → 选 chuxiao-os 服务</li>
+                    <li>左侧 Environment → Add Environment Variable</li>
+                    <li>Key = <span className="font-mono">FAL_AI_API_KEY</span>，Value = 你从 fal.ai 拿到的 key</li>
+                    <li>Save Changes，等约 30s 自动重启</li>
+                  </ol>
+                </div>
+              )}
+
               <a
                 href="https://fal.ai/dashboard/keys"
                 target="_blank"
@@ -78,7 +176,7 @@ export default async function AISettingsPage() {
                 className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 hover:underline"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                前往 fal.ai 获取 API Key
+                前往 fal.ai 获取 / 管理 API Key
               </a>
             </CardContent>
           </Card>

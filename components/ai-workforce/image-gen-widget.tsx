@@ -1,7 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, Download, ImageIcon, Loader2, Sparkles, Wand2, Zap } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Download,
+  ImageIcon,
+  Loader2,
+  Sparkles,
+  Trash2,
+  Upload,
+  Wand2,
+  Zap
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +19,7 @@ import {
   IMAGE_MODELS,
   formatPriceCny,
   getDefaultModel,
+  getModelsByShape,
   type ImageModel
 } from "@/lib/ai/image-models";
 import {
@@ -16,28 +27,19 @@ import {
   buildPromptFromPreset,
   getPresetById,
   getPresetsByCategory,
+  type AmazonAspectRatio,
   type AmazonImageSize,
-  type AmazonPreset,
   type PresetCategory
 } from "@/lib/ai/amazon-presets";
 
-type Mode =
-  | { kind: "amazon"; category: PresetCategory; presetId: string }
-  | { kind: "free" };
+type TabKind = "amazon" | "free";
 
-const TABS: Array<{ value: Mode["kind"]; category?: PresetCategory; label: string; sub: string }> = [
-  { value: "amazon", category: "main", label: "亚马逊主图", sub: "纯白底，强制规格" },
-  { value: "amazon", category: "secondary", label: "亚马逊附图", sub: "生活方式 / 特写 / 场景" },
-  { value: "amazon", category: "aplus", label: "A+ Content", sub: "横幅 / 图标 / 比较卡" },
-  { value: "free", label: "自由生成", sub: "自己写完整 prompt" }
+const TABS: Array<{ kind: TabKind; category?: PresetCategory; label: string; sub: string }> = [
+  { kind: "amazon", category: "main", label: "亚马逊主图", sub: "纯白底 / 抠图" },
+  { kind: "amazon", category: "secondary", label: "亚马逊附图", sub: "厨房 · 生活方式 · 特写" },
+  { kind: "amazon", category: "aplus", label: "A+ Content", sub: "Hero Banner / 图标" },
+  { kind: "free", label: "自由生成", sub: "完整 prompt + 自选模型" }
 ];
-
-type GenerationResult = {
-  url: string;
-  modelLabel: string;
-  costEstimateCny: number;
-  prompt: string;
-};
 
 const FREE_SIZE_OPTIONS: { value: AmazonImageSize; label: string }[] = [
   { value: "square_hd", label: "1024×1024 方形" },
@@ -47,38 +49,110 @@ const FREE_SIZE_OPTIONS: { value: AmazonImageSize; label: string }[] = [
   { value: "portrait_16_9", label: "576×1024 竖屏" }
 ];
 
+const MAX_REFS = 4;
+
+type ReferenceImage = {
+  id: string;
+  url: string; // data URI (jpeg)
+  bytes: number;
+};
+
+type GenerationResult = {
+  url: string;
+  modelLabel: string;
+  costEstimateCny: number;
+  prompt: string;
+};
+
+// ── Client-side compression: max 1280px long edge, JPEG q=0.85 ──────
+async function compressImage(file: File): Promise<{ url: string; bytes: number }> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("decode failed"));
+    el.src = dataUrl;
+  });
+
+  const max = 1280;
+  let { width, height } = img;
+  if (width > max || height > max) {
+    if (width >= height) {
+      height = Math.round((height * max) / width);
+      width = max;
+    } else {
+      width = Math.round((width * max) / height);
+      height = max;
+    }
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas ctx unavailable");
+  ctx.drawImage(img, 0, 0, width, height);
+  const out = canvas.toDataURL("image/jpeg", 0.85);
+  // estimate size from base64
+  const base64 = out.split(",", 2)[1] ?? "";
+  const bytes = Math.round((base64.length * 3) / 4);
+  return { url: out, bytes };
+}
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n}B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)}KB`;
+  return `${(n / 1024 / 1024).toFixed(1)}MB`;
+}
+
 export function ImageGenWidget() {
   const defaultModel = useMemo(() => getDefaultModel(), []);
+  const text2imgModels = useMemo(() => getModelsByShape("text2img"), []);
 
-  // Tab + preset state
-  const [activeTab, setActiveTab] = useState<{ kind: Mode["kind"]; category?: PresetCategory }>(
-    { kind: "amazon", category: "main" }
-  );
+  // ── Tab + preset state ──────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<{ kind: TabKind; category?: PresetCategory }>({
+    kind: "amazon",
+    category: "main"
+  });
   const initialPresetId = useMemo(() => getPresetsByCategory("main")[0]?.id ?? "", []);
   const [presetId, setPresetId] = useState<string>(initialPresetId);
   const [presetValues, setPresetValues] = useState<Record<string, string>>({});
 
-  // Free-mode state
+  // ── Reference image upload state (for img2img presets) ──────────
+  const [refs, setRefs] = useState<ReferenceImage[]>([]);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Free mode state ─────────────────────────────────────────────
   const [freePrompt, setFreePrompt] = useState("");
   const [freeSize, setFreeSize] = useState<AmazonImageSize>("square_hd");
-  const [freeModelId, setFreeModelId] = useState<string>(defaultModel.id);
+  const [freeModelId, setFreeModelId] = useState<string>(
+    text2imgModels[0]?.id ?? defaultModel.id
+  );
 
-  // Generation state (shared)
+  // ── Generation state ────────────────────────────────────────────
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ── Helpers ───────────────────────────────────────────────────────
+  // ── Derived ─────────────────────────────────────────────────────
   const activePresets = activeTab.category ? getPresetsByCategory(activeTab.category) : [];
   const activePreset = activeTab.kind === "amazon" ? getPresetById(presetId) : undefined;
-
-  // The model actually used: preset's recommendation, or free-mode user choice.
   const usedModel: ImageModel =
     activeTab.kind === "amazon" && activePreset
       ? IMAGE_MODELS.find((m) => m.id === activePreset.recommendedModelId) ?? defaultModel
       : IMAGE_MODELS.find((m) => m.id === freeModelId) ?? defaultModel;
 
-  function selectTab(kind: Mode["kind"], category?: PresetCategory) {
+  const presetNeedsUpload = activePreset?.mode === "edit";
+
+  // ── Handlers ────────────────────────────────────────────────────
+  function selectTab(kind: TabKind, category?: PresetCategory) {
     setActiveTab({ kind, category });
     if (kind === "amazon" && category) {
       const first = getPresetsByCategory(category)[0];
@@ -100,13 +174,49 @@ export function ImageGenWidget() {
     setPresetValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  // ── Submit ────────────────────────────────────────────────────────
+  async function handleFiles(files: FileList | null) {
+    if (!files?.length) return;
+    setUploadError("");
+    const remaining = MAX_REFS - refs.length;
+    if (remaining <= 0) {
+      setUploadError(`最多上传 ${MAX_REFS} 张参考图。`);
+      return;
+    }
+    const list = Array.from(files).slice(0, remaining);
+    const next: ReferenceImage[] = [];
+    for (const f of list) {
+      if (!f.type.startsWith("image/")) {
+        setUploadError("只支持图片文件 (JPG / PNG / WEBP)。");
+        continue;
+      }
+      try {
+        const compressed = await compressImage(f);
+        next.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          ...compressed
+        });
+      } catch {
+        setUploadError("图片读取失败，请换一张试试。");
+      }
+    }
+    if (next.length) setRefs((prev) => [...prev, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeRef(id: string) {
+    setRefs((prev) => prev.filter((r) => r.id !== id));
+    setUploadError("");
+  }
+
+  // ── Submit ──────────────────────────────────────────────────────
   async function handleGenerate() {
     if (loading) return;
 
     let prompt = "";
     let modelId = "";
-    let imageSize: AmazonImageSize = "square_hd";
+    let imageSize: AmazonImageSize | undefined;
+    let aspectRatio: AmazonAspectRatio | undefined;
+    let imageUrls: string[] | undefined;
 
     if (activeTab.kind === "amazon" && activePreset) {
       const built = buildPromptFromPreset(activePreset, presetValues);
@@ -116,7 +226,17 @@ export function ImageGenWidget() {
       }
       prompt = built.prompt;
       modelId = activePreset.recommendedModelId;
-      imageSize = activePreset.imageSize;
+
+      if (activePreset.mode === "edit") {
+        if (refs.length === 0) {
+          setError("此场景需要先上传至少 1 张产品照片。");
+          return;
+        }
+        aspectRatio = activePreset.aspectRatio ?? "1:1";
+        imageUrls = refs.map((r) => r.url);
+      } else {
+        imageSize = activePreset.imageSize ?? "square_hd";
+      }
     } else {
       const trimmed = freePrompt.trim();
       if (!trimmed) {
@@ -136,7 +256,13 @@ export function ImageGenWidget() {
       const response = await fetch("/api/ai/image-gen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, model: modelId, image_size: imageSize })
+        body: JSON.stringify({
+          prompt,
+          model: modelId,
+          ...(imageSize ? { image_size: imageSize } : {}),
+          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+          ...(imageUrls ? { image_urls: imageUrls } : {})
+        })
       });
 
       const data = (await response.json()) as {
@@ -164,7 +290,7 @@ export function ImageGenWidget() {
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────
   return (
     <Card>
       <CardHeader>
@@ -172,7 +298,7 @@ export function ImageGenWidget() {
           <Sparkles className="h-4 w-4 text-orange-400" />
           AI 图片生成 · 亚马逊卖家直出
           <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-            FAL.AI · {IMAGE_MODELS.length} 旗舰模型
+            FAL.AI · NANO BANANA + FLUX
           </span>
         </CardTitle>
       </CardHeader>
@@ -181,15 +307,15 @@ export function ImageGenWidget() {
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {TABS.map((tab) => {
             const isActive =
-              tab.value === "free"
+              tab.kind === "free"
                 ? activeTab.kind === "free"
                 : activeTab.kind === "amazon" && activeTab.category === tab.category;
             return (
               <button
-                key={`${tab.value}-${tab.category ?? "free"}`}
+                key={`${tab.kind}-${tab.category ?? "free"}`}
                 type="button"
                 onClick={() =>
-                  tab.value === "free" ? selectTab("free") : selectTab("amazon", tab.category)
+                  tab.kind === "free" ? selectTab("free") : selectTab("amazon", tab.category)
                 }
                 disabled={loading}
                 className="rounded-lg p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -218,13 +344,18 @@ export function ImageGenWidget() {
           })}
         </div>
 
-        {/* ── Amazon mode: preset cards + form ────────────────────── */}
+        {/* ── Amazon mode ─────────────────────────────────────────── */}
         {activeTab.kind === "amazon" && (
           <>
             {/* Preset cards */}
             <div className="space-y-2">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                场景 // PRESET
+              <div className="flex items-baseline justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
+                  场景 // PRESET
+                </span>
+                <span className="font-mono text-[10px] tracking-wide text-slate-500">
+                  📷 = 上传图 ↗ 出图 · ✏️ = 文字生成
+                </span>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {activePresets.map((preset) => {
@@ -255,8 +386,18 @@ export function ImageGenWidget() {
                       <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
                         {preset.blurb}
                       </p>
-                      <div className="mt-1.5 font-mono text-[10px] tracking-wide text-orange-300/80">
-                        {preset.spec}
+                      <div className="mt-1.5 flex items-center justify-between gap-2 font-mono text-[10px] tracking-wide">
+                        <span className="text-orange-300/80">{preset.spec}</span>
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[9px] uppercase"
+                          style={{
+                            background: preset.mode === "edit" ? "rgba(74,222,128,0.10)" : "rgba(249,115,22,0.08)",
+                            color: preset.mode === "edit" ? "#86efac" : "rgba(251,146,60,0.85)",
+                            border: `1px solid ${preset.mode === "edit" ? "rgba(74,222,128,0.30)" : "rgba(249,115,22,0.20)"}`
+                          }}
+                        >
+                          {preset.mode === "edit" ? "图生图" : "文生图"}
+                        </span>
                       </div>
                     </button>
                   );
@@ -264,7 +405,7 @@ export function ImageGenWidget() {
               </div>
             </div>
 
-            {/* Compliance hint for current preset */}
+            {/* Compliance hint for main category */}
             {activePreset?.category === "main" ? (
               <div
                 className="flex items-start gap-2 rounded-lg p-3 text-[11px] leading-relaxed text-amber-200/85"
@@ -275,16 +416,107 @@ export function ImageGenWidget() {
               >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-300" />
                 <div>
-                  <span className="font-medium text-amber-200">亚马逊主图合规提醒</span>
-                  ：纯白底是硬要求；AI 生成后请人工核对背景是否真为 #FFFFFF（必要时用
-                  remove.bg / Photoshop 抹底）。fal 单次最大 1024×1024，建议再用 Topaz Photo AI
-                  或 fal upscaler 放大至 2000+ 才符合亚马逊放大功能。
+                  <span className="font-medium text-amber-200">亚马逊主图合规</span>
+                  ：纯白底 #FFFFFF 是硬要求；AI 生成后请人工核对，必要时用 remove.bg / Photoshop 抹底。
+                  fal 单次最大约 1024×1024，建议再用 Topaz Photo AI 或 fal upscaler 放大至 2000+ 才符合放大功能要求。
                 </div>
               </div>
             ) : null}
 
-            {/* Field form for selected preset */}
-            {activePreset ? (
+            {/* Upload zone (only for edit-mode presets) */}
+            {presetNeedsUpload ? (
+              <div className="space-y-2">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
+                  上传产品照 // REFERENCE PHOTOS
+                  <span className="ml-2 normal-case tracking-normal text-slate-500">
+                    （手机拍的就行 · 自动压缩 · 最多 {MAX_REFS} 张）
+                  </span>
+                </div>
+
+                {/* upload tiles */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {refs.map((r) => (
+                    <div
+                      key={r.id}
+                      className="group relative aspect-square overflow-hidden rounded-lg"
+                      style={{
+                        background: "rgba(8,13,28,0.6)",
+                        border: "1px solid rgba(249,115,22,0.18)"
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.url} alt="reference" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeRef(r.id)}
+                        disabled={loading}
+                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                        style={{
+                          background: "rgba(239,68,68,0.85)",
+                          boxShadow: "0 0 8px rgba(239,68,68,0.5)"
+                        }}
+                        aria-label="移除"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                      <span
+                        className="absolute bottom-0 left-0 right-0 px-2 py-1 font-mono text-[9px] tracking-wide text-slate-300"
+                        style={{ background: "rgba(0,0,0,0.55)" }}
+                      >
+                        {formatBytes(r.bytes)}
+                      </span>
+                    </div>
+                  ))}
+
+                  {refs.length < MAX_REFS ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading}
+                      className="flex aspect-square flex-col items-center justify-center rounded-lg text-orange-400/80 transition-colors hover:text-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        background: "rgba(8,13,28,0.45)",
+                        border: "1px dashed rgba(249,115,22,0.30)"
+                      }}
+                    >
+                      <Upload className="mb-1.5 h-5 w-5" />
+                      <span className="text-xs">上传产品照</span>
+                      <span className="mt-0.5 font-mono text-[9px] text-slate-500">
+                        {refs.length}/{MAX_REFS}
+                      </span>
+                    </button>
+                  ) : null}
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+
+                {uploadError ? (
+                  <div className="text-[11px] text-red-300">{uploadError}</div>
+                ) : null}
+
+                <div
+                  className="rounded-md p-2 text-[11px] leading-relaxed text-slate-400"
+                  style={{
+                    background: "rgba(8,13,28,0.45)",
+                    border: "1px solid rgba(249,115,22,0.10)"
+                  }}
+                >
+                  <span className="text-orange-300">提示：</span>
+                  上传 1 张产品正面清晰照即可。多角度拍 2-3 张能让 AI 更准确还原产品。
+                  图片在你浏览器本地压缩到 1280px 后才发送，**原图不会上传到服务器**。
+                </div>
+              </div>
+            ) : null}
+
+            {/* Field form */}
+            {activePreset && activePreset.fields.length > 0 ? (
               <div className="space-y-3">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
                   填空 // INPUTS
@@ -310,7 +542,6 @@ export function ImageGenWidget() {
                       </div>
                     );
                   }
-                  // select kind
                   return (
                     <div key={field.key} className="space-y-1">
                       <label className="text-xs font-medium text-slate-300">{field.label}</label>
@@ -325,9 +556,7 @@ export function ImageGenWidget() {
                               disabled={loading}
                               className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                               style={{
-                                background: selected
-                                  ? "rgba(249,115,22,0.14)"
-                                  : "rgba(8,13,28,0.55)",
+                                background: selected ? "rgba(249,115,22,0.14)" : "rgba(8,13,28,0.55)",
                                 border: selected
                                   ? "1px solid rgba(249,115,22,0.45)"
                                   : "1px solid rgba(249,115,22,0.12)",
@@ -342,41 +571,42 @@ export function ImageGenWidget() {
                     </div>
                   );
                 })}
+              </div>
+            ) : null}
 
-                {/* Spec recap */}
-                <div
-                  className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
-                  style={{
-                    background: "rgba(8,13,28,0.45)",
-                    border: "1px solid rgba(249,115,22,0.10)"
-                  }}
-                >
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide">
-                    <span className="text-orange-300/80">推荐模型</span>
-                    <span className="text-slate-200">{usedModel.label}</span>
-                    <span className="text-orange-300/80">单张约</span>
-                    <span className="tabular-nums text-emerald-300">
-                      {formatPriceCny(usedModel.pricePerImageCny)}
-                    </span>
-                    <span className="text-orange-300/80">输出</span>
-                    <span className="text-slate-200">{activePreset.dimensionsHint}</span>
-                  </div>
+            {/* Spec recap */}
+            {activePreset ? (
+              <div
+                className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
+                style={{
+                  background: "rgba(8,13,28,0.45)",
+                  border: "1px solid rgba(249,115,22,0.10)"
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide">
+                  <span className="text-orange-300/80">推荐模型</span>
+                  <span className="text-slate-200">{usedModel.label}</span>
+                  <span className="text-orange-300/80">单张约</span>
+                  <span className="tabular-nums text-emerald-300">
+                    {formatPriceCny(usedModel.pricePerImageCny)}
+                  </span>
+                  <span className="text-orange-300/80">输出</span>
+                  <span className="text-slate-200">{activePreset.dimensionsHint}</span>
                 </div>
               </div>
             ) : null}
           </>
         )}
 
-        {/* ── Free mode ────────────────────────────────────────────── */}
+        {/* ── Free mode ───────────────────────────────────────────── */}
         {activeTab.kind === "free" && (
           <>
-            {/* Model picker */}
             <div className="space-y-2">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                模型 // MODEL
+                模型 // MODEL（仅文生图，图生图请用「亚马逊」标签下的 📷 场景）
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {IMAGE_MODELS.map((model) => {
+                {text2imgModels.map((model) => {
                   const active = model.id === freeModelId;
                   return (
                     <button
@@ -432,7 +662,6 @@ export function ImageGenWidget() {
               </div>
             </div>
 
-            {/* Free prompt */}
             <div className="space-y-2">
               <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
                 描述 // PROMPT (英文效果更佳)
@@ -451,7 +680,6 @@ export function ImageGenWidget() {
               </div>
             </div>
 
-            {/* Free size */}
             <div className="space-y-2">
               <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
                 尺寸 // SIZE
@@ -483,12 +711,8 @@ export function ImageGenWidget() {
           </>
         )}
 
-        {/* ── Submit ─────────────────────────────────────────────── */}
-        <Button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="w-full"
-        >
+        {/* ── Submit ───────────────────────────────────────────────── */}
+        <Button onClick={handleGenerate} disabled={loading} className="w-full">
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -497,7 +721,9 @@ export function ImageGenWidget() {
           ) : (
             <>
               <Wand2 className="h-4 w-4" />
-              生成图片 · 本次 ≈ {formatPriceCny(usedModel.pricePerImageCny)}
+              {presetNeedsUpload && refs.length === 0
+                ? "请先上传产品照"
+                : `生成图片 · 本次 ≈ ${formatPriceCny(usedModel.pricePerImageCny)}`}
             </>
           )}
         </Button>
@@ -514,7 +740,6 @@ export function ImageGenWidget() {
           </div>
         )}
 
-        {/* ── Result / placeholder ──────────────────────────────────── */}
         {loading && (
           <div
             className="flex min-h-32 flex-col items-center justify-center rounded-lg p-6"
@@ -593,7 +818,9 @@ export function ImageGenWidget() {
             <ImageIcon className="mb-2 h-8 w-8 text-orange-400/40" />
             <p className="text-sm text-slate-400">
               {activeTab.kind === "amazon"
-                ? "选场景、填关键字、点生成"
+                ? presetNeedsUpload
+                  ? "上传产品照、（可选）填字段、点生成"
+                  : "选场景、填关键字、点生成"
                 : "输入英文描述、选模型与尺寸、点生成"}
             </p>
           </div>

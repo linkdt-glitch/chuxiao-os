@@ -1,29 +1,32 @@
 /**
  * Amazon seller image presets — 直出工作流定义
  *
- * 每个 preset 把"亚马逊场景"翻译成 fal.ai 的：
- *   - 推荐模型 (modelId)
- *   - 推荐图片尺寸 (imageSize)
- *   - prompt 模板（含 {field} 占位符）
- *   - 用户需要填的字段及其选项
+ * 两种工作模式：
+ *  - mode: "edit"  →  用户上传 1+ 张产品照 → Nano Banana edit → 风格化
+ *  - mode: "text"  →  无上传 → 纯文字生成 → Flux / Recraft / Ideogram
  *
- * 前端选 preset → 用户填空 → buildPrompt() 拼出英文 prompt → 调 /api/ai/image-gen
+ * 每个 preset 把"亚马逊场景"翻译成 fal.ai 调用所需的：
+ *   - 推荐模型 (modelId)
+ *   - 图片尺寸 / aspect ratio（按 fal API 形态）
+ *   - prompt 模板（含 {field} 占位符）
+ *   - 用户需要填的字段
+ *
+ * Prompt 风格基于：
+ *  - Amazon 卖家产品摄影社区 2026 通用 prompt
+ *  - "5-element formula"：产品 + 背景 + 光线 + 角度 + 氛围
+ *  - 厨房/小家电品类常用场景：大理石晨光 / 木质农舍 / 北欧极简 / 工业风
  */
 
 export type PresetCategory = "main" | "secondary" | "aplus";
 
+export type PresetMode = "edit" | "text";
+
 export type PresetField = {
-  /** Field key used in prompt template like `{product_name}`. */
   key: string;
-  /** Chinese label shown in UI. */
   label: string;
-  /** "text" — free text; "select" — radio chips. */
   kind: "text" | "select";
-  /** Placeholder hint for text inputs. */
   placeholder?: string;
-  /** For select kind: options + their English mapping for prompt. */
   options?: Array<{ value: string; label: string; promptText: string }>;
-  /** Optional default value. */
   defaultValue?: string;
   required?: boolean;
 };
@@ -36,27 +39,42 @@ export type AmazonImageSize =
   | "landscape_4_3"
   | "landscape_16_9";
 
+/** Nano Banana edit aspect ratios. */
+export type AmazonAspectRatio =
+  | "1:1"
+  | "4:5"
+  | "5:4"
+  | "3:4"
+  | "4:3"
+  | "2:3"
+  | "3:2"
+  | "9:16"
+  | "16:9"
+  | "21:9";
+
 export type AmazonPreset = {
   id: string;
   category: PresetCategory;
-  /** Chinese title shown on the preset card. */
+  /** "edit" needs uploaded reference photos; "text" is pure text-to-image. */
+  mode: PresetMode;
   title: string;
-  /** One-line description shown on card. */
   blurb: string;
-  /** Amazon spec note — surfaced as a hint in the form. */
+  /** Compliance / spec note shown on card. */
   spec: string;
   /** fal endpoint id (must be in IMAGE_MODELS). */
   recommendedModelId: string;
-  /** fal image_size enum. */
-  imageSize: AmazonImageSize;
-  /** Output dimensions hint (for UI). */
+  /** For mode:"text" — fal image_size enum. */
+  imageSize?: AmazonImageSize;
+  /** For mode:"edit" — aspect ratio enum for Nano Banana. */
+  aspectRatio?: AmazonAspectRatio;
+  /** Output dimensions hint (UI). */
   dimensionsHint: string;
   /** prompt template with `{field_key}` placeholders. */
   promptTemplate: string;
-  /** User-fillable fields. */
   fields: PresetField[];
 };
 
+// ── Reusable fields ───────────────────────────────────────────────
 const angleField: PresetField = {
   key: "angle",
   label: "拍摄角度",
@@ -101,17 +119,54 @@ const sceneField: PresetField = {
   ]
 };
 
+const themeField: PresetField = {
+  key: "theme",
+  label: "氛围",
+  kind: "select",
+  defaultValue: "premium",
+  options: [
+    { value: "premium", label: "高端奢华", promptText: "luxurious dark premium" },
+    { value: "warm", label: "温馨家庭", promptText: "warm cozy homey" },
+    { value: "tech", label: "科技未来", promptText: "futuristic tech with blue accent lights" },
+    { value: "natural", label: "自然环保", promptText: "natural earthy with greenery" },
+    { value: "fitness", label: "活力健身", promptText: "energetic fitness with motion" }
+  ]
+};
+
+// ── Constants used in many "edit" prompts to lock the product ────
+const KEEP_INSTRUCTION =
+  "keep the product EXACTLY identical in shape, color, material, proportions and details — do not redraw, restyle or replace it";
+
 export const AMAZON_PRESETS: AmazonPreset[] = [
-  // ── 主图 (Main Image) ─────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────
+  // 主图 (Main Image)
+  // ──────────────────────────────────────────────────────────────
   {
-    id: "main_white",
+    id: "main_edit_white",
     category: "main",
-    title: "标准主图（纯白底）",
-    blurb: "亚马逊强制：纯白背景 #FFFFFF，商品占图 85%，不可有人物 / 文字 / 配件。",
-    spec: "≥1000×1000（推荐 2000+）· 纯白底必须",
+    mode: "edit",
+    title: "📷 上传照 → 抠图换纯白底",
+    blurb: "上传你手机拍的产品照（背景乱也没事），AI 抠图换纯白底 + 加柔和投影，亚马逊主图直出。",
+    spec: "纯白底 #FFFFFF · 1:1 · 主图必用",
+    recommendedModelId: "fal-ai/nano-banana-pro/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024，建议后期 upscale 至 2000+",
+    promptTemplate:
+      "Transform this product photo into a professional Amazon main image: cleanly remove and replace the entire background with PURE WHITE (RGB 255,255,255, no off-white, no gradient), " +
+      KEEP_INSTRUCTION +
+      ", add only a single subtle realistic soft drop shadow directly beneath the product (no other shadows on the white background), sharp focus, perfectly centered, product fills 85% of frame, studio softbox lighting, commercial e-commerce photography, no text, no watermark, no people, no accessories.",
+    fields: []
+  },
+  {
+    id: "main_text_white",
+    category: "main",
+    mode: "text",
+    title: "✏️ 纯文字生成主图（无原图）",
+    blurb: "没有产品照？纯文字描述生成。建议用 Flux Pro Ultra 拿真实感。",
+    spec: "≥1000×1000（推荐 2000+）· 纯白底",
     recommendedModelId: "fal-ai/flux-pro/v1.1-ultra",
     imageSize: "square_hd",
-    dimensionsHint: "1024×1024（建议生成后 upscale 至 2000+）",
+    dimensionsHint: "1024×1024",
     promptTemplate:
       "Professional Amazon main product photography of {product_name}, {extra_details}, isolated on PURE WHITE background (RGB 255,255,255, no shadows on background), studio lighting, soft realistic shadows under product only, sharp focus, perfectly centered, product fills 85% of frame, {angle}, hyperrealistic, commercial e-commerce photography, ultra-detailed, 8k, no text, no watermark, no people, no accessories",
     fields: [
@@ -133,13 +188,131 @@ export const AMAZON_PRESETS: AmazonPreset[] = [
     ]
   },
 
-  // ── 附图 (Secondary Images) ────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────
+  // 附图 — 厨房 / 小家电场景化（图生图）
+  // ──────────────────────────────────────────────────────────────
   {
-    id: "sec_lifestyle",
+    id: "sec_edit_marble_morning",
     category: "secondary",
-    title: "附图 · 生活方式",
-    blurb: "真人使用场景，自然光、环境感，激发购买欲。",
-    spec: "≥1000×1000，背景不限，可以有人和场景",
+    mode: "edit",
+    title: "📷 大理石台面 · 晨光",
+    blurb: "把产品摆在白色大理石厨房台面，窗边晨光，柔和阴影。**厨房小家电首选**。",
+    spec: "1:1 · 厨房品类生活方式",
+    recommendedModelId: "fal-ai/nano-banana-2/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "Place this exact product on a clean white marble kitchen countertop, soft warm morning light streaming in from a large window on the right side, gentle directional shadows under the product, slightly blurred background showing a bright modern kitchen with white cabinets and a hint of greenery, natural daylight, shallow depth of field, photorealistic commercial lifestyle photography, " +
+      KEEP_INSTRUCTION +
+      ", no text, no watermark.",
+    fields: []
+  },
+  {
+    id: "sec_edit_farmhouse_wood",
+    category: "secondary",
+    mode: "edit",
+    title: "📷 木质农舍 · 温暖风",
+    blurb: "产品放温暖木质台面，悬挂铜锅，秋日金色光。**有机/手作/家用厨具风**。",
+    spec: "1:1 · 厨房品类生活方式",
+    recommendedModelId: "fal-ai/nano-banana-2/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "Place this exact product on a rustic warm wooden farmhouse kitchen table with visible wood grain, golden afternoon sunlight streaming from the side, slightly blurred cozy farmhouse kitchen background with hanging copper pots and pans, autumn warm tones, soft directional shadows, photorealistic editorial commercial product photography, shallow depth of field, " +
+      KEEP_INSTRUCTION +
+      ", no text, no watermark.",
+    fields: []
+  },
+  {
+    id: "sec_edit_scandi_minimalist",
+    category: "secondary",
+    mode: "edit",
+    title: "📷 北欧极简 · 浅木+白墙",
+    blurb: "浅橡木台面、白墙、自然柔光，极简性冷淡风。**现代家电品牌偏好**。",
+    spec: "1:1 · 北欧/极简品牌调性",
+    recommendedModelId: "fal-ai/nano-banana-2/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "Place this exact product in a bright Scandinavian minimalist kitchen, light oak wooden countertop, clean white walls, natural soft daylight from a large window, very clean composition with generous negative space, slightly blurred minimalist background with at most one ceramic vase or small plant, neutral color palette, photorealistic commercial photography, shallow depth of field, " +
+      KEEP_INSTRUCTION +
+      ", no text, no watermark.",
+    fields: []
+  },
+  {
+    id: "sec_edit_industrial_chef",
+    category: "secondary",
+    mode: "edit",
+    title: "📷 工业不锈钢 · 主厨级",
+    blurb: "拉丝不锈钢台面、戏剧侧光、暗调背景。**高端厨电、专业感**。",
+    spec: "1:1 · 高端/专业厨房调性",
+    recommendedModelId: "fal-ai/nano-banana-pro/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "Place this exact product on a brushed stainless steel countertop in a professional chef's industrial kitchen, dramatic side lighting from the left, dark moody background with subtle reflections, rim lighting on the product highlighting its premium build, photorealistic high-end commercial product photography emphasizing quality and craftsmanship, " +
+      KEEP_INSTRUCTION +
+      ", no text, no watermark.",
+    fields: []
+  },
+  {
+    id: "sec_edit_in_use_hands",
+    category: "secondary",
+    mode: "edit",
+    title: "📷 手部使用 · 应用场景",
+    blurb: "加一只手在使用产品，自然光厨房，无人脸。**展示功能、操作方式**。",
+    spec: "1:1 · 应用场景图",
+    recommendedModelId: "fal-ai/nano-banana-2/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "Show a hand naturally {hand_action} this exact product in a clean modern kitchen, soft natural lighting from a window, only the hand and product clearly visible, slightly blurred kitchen background with subtle styling, photorealistic candid editorial moment capturing the action, shallow depth of field, " +
+      KEEP_INSTRUCTION +
+      ", no text, no watermark.",
+    fields: [
+      {
+        key: "hand_action",
+        label: "手部动作（英文）",
+        kind: "text",
+        placeholder: "例如：holding gently / pressing the button / pouring coffee from",
+        required: true,
+        defaultValue: "holding"
+      }
+    ]
+  },
+  {
+    id: "sec_edit_freestyle",
+    category: "secondary",
+    mode: "edit",
+    title: "📷 自由风格 · 你描述",
+    blurb: "自己写场景描述（中文/英文都行），产品保持不变，只换环境。",
+    spec: "1:1 · 完全自定义",
+    recommendedModelId: "fal-ai/nano-banana-2/edit",
+    aspectRatio: "1:1",
+    dimensionsHint: "约 1024×1024",
+    promptTemplate:
+      "{custom_scene}, " +
+      KEEP_INSTRUCTION +
+      ", photorealistic commercial product photography, shallow depth of field, no text, no watermark.",
+    fields: [
+      {
+        key: "custom_scene",
+        label: "你想要的场景（英文效果更好）",
+        kind: "text",
+        placeholder: "例如：Place this product on a sun-drenched outdoor patio with greenery, golden hour light",
+        required: true
+      }
+    ]
+  },
+
+  // ── 文生图附图（不需要原图） ─────────────────────────────────────
+  {
+    id: "sec_text_lifestyle",
+    category: "secondary",
+    mode: "text",
+    title: "✏️ 文生图 · 生活方式",
+    blurb: "无原图：纯文字生成真人使用场景。",
+    spec: "1024×1024 · 文生图",
     recommendedModelId: "fal-ai/flux-pro/v1.1",
     imageSize: "square_hd",
     dimensionsHint: "1024×1024",
@@ -158,14 +331,15 @@ export const AMAZON_PRESETS: AmazonPreset[] = [
     ]
   },
   {
-    id: "sec_closeup",
+    id: "sec_text_closeup",
     category: "secondary",
-    title: "附图 · 特写细节",
-    blurb: "强调材质、纹理、工艺、按键、接口等细节卖点。",
-    spec: "≥1000×1000，背景柔和，主体清晰",
+    mode: "text",
+    title: "✏️ 文生图 · 特写细节",
+    blurb: "无原图：宏观特写凸显材质 / 工艺 / 接口卖点。",
+    spec: "1024×1024 · 文生图",
     recommendedModelId: "fal-ai/flux-pro/v1.1-ultra",
     imageSize: "square_hd",
-    dimensionsHint: "1024×1024（建议 upscale 至 2000+）",
+    dimensionsHint: "1024×1024",
     promptTemplate:
       "Macro extreme closeup product photography of {product_name}, highlighting {detail}, ultra-sharp details, shallow depth of field, soft studio lighting, gradient white background, premium commercial product photography, 8k, no text",
     fields: [
@@ -191,80 +365,38 @@ export const AMAZON_PRESETS: AmazonPreset[] = [
       }
     ]
   },
-  {
-    id: "sec_inuse",
-    category: "secondary",
-    title: "附图 · 应用场景（手部）",
-    blurb: "手在使用产品，强调功能、操作方式。比 lifestyle 更聚焦。",
-    spec: "≥1000×1000",
-    recommendedModelId: "fal-ai/flux-pro/v1.1",
-    imageSize: "square_hd",
-    dimensionsHint: "1024×1024",
-    promptTemplate:
-      "Hands using {product_name} for {use_case}, only hands and product visible, photorealistic, professional product photography, soft natural lighting, clean blurred background, focus on the action, commercial editorial style",
-    fields: [
-      {
-        key: "product_name",
-        label: "产品",
-        kind: "text",
-        placeholder: "例如：electric toothbrush",
-        required: true
-      },
-      {
-        key: "use_case",
-        label: "用途/动作",
-        kind: "text",
-        placeholder: "例如：gently brushing teeth in the morning",
-        required: true
-      }
-    ]
-  },
-  {
-    id: "sec_packaging",
-    category: "secondary",
-    title: "附图 · 包装展示",
-    blurb: "产品 + 包装盒，凸显礼品感、品牌质感。",
-    spec: "≥1000×1000",
-    recommendedModelId: "fal-ai/flux-pro/v1.1",
-    imageSize: "square_hd",
-    dimensionsHint: "1024×1024",
-    promptTemplate:
-      "{product_name} together with its {packaging_style} packaging box, both elegantly arranged, soft studio lighting, gradient light gray to white background, premium unboxing presentation, commercial product photography, 8k, no text",
-    fields: [
-      {
-        key: "product_name",
-        label: "产品",
-        kind: "text",
-        placeholder: "例如：bluetooth earbuds",
-        required: true
-      },
-      {
-        key: "packaging_style",
-        label: "包装风格",
-        kind: "select",
-        defaultValue: "premium_giftbox",
-        options: [
-          { value: "premium_giftbox", label: "高端礼盒", promptText: "premium luxury gift box" },
-          { value: "minimalist", label: "极简", promptText: "minimalist clean white box" },
-          { value: "kraft_eco", label: "环保牛皮纸", promptText: "eco-friendly kraft paper packaging" },
-          { value: "colorful", label: "彩色印刷", promptText: "colorful printed retail box" }
-        ]
-      }
-    ]
-  },
 
-  // ── A+ Content ────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────
+  // A+ Content
+  // ──────────────────────────────────────────────────────────────
   {
-    id: "aplus_hero_text",
+    id: "aplus_edit_hero",
     category: "aplus",
-    title: "A+ Hero Banner（带文字）",
-    blurb: "横版主视觉，可叠加 Slogan / 卖点文字。Ideogram v2 文字渲染强。",
-    spec: "横版 16:9，建议 970×600 或 1464×600（需 upscale）",
+    mode: "edit",
+    title: "📷 A+ Hero Banner · 产品图",
+    blurb: "上传产品图 → 自动放进宽幅戏剧光 banner，右侧留出文字空间（你后期 PS 加字）。",
+    spec: "16:9 横版 · 留文字空间",
+    recommendedModelId: "fal-ai/nano-banana-pro/edit",
+    aspectRatio: "16:9",
+    dimensionsHint: "约 1280×720",
+    promptTemplate:
+      "Use this exact product as the hero subject placed on the LEFT THIRD of a wide cinematic Amazon A+ Hero Banner, {theme} atmosphere, dramatic professional studio lighting from above-left, leaving the RIGHT TWO-THIRDS as clean negative space for text overlay (no text in the image itself), premium commercial banner photography, shallow depth of field, " +
+      KEEP_INSTRUCTION +
+      ".",
+    fields: [themeField]
+  },
+  {
+    id: "aplus_text_hero_with_text",
+    category: "aplus",
+    mode: "text",
+    title: "✏️ A+ Hero Banner · 带 Slogan",
+    blurb: "无原图：纯文字生成 + 直接把英文 Slogan 渲染到图里（Ideogram 文字最强）。",
+    spec: "16:9 · 文字渲染",
     recommendedModelId: "fal-ai/ideogram/v2",
     imageSize: "landscape_16_9",
-    dimensionsHint: "1024×576（再 upscale）",
+    dimensionsHint: "1024×576",
     promptTemplate:
-      'Wide cinematic Amazon A+ hero banner, {product_name} as hero subject on the left third, {theme} atmosphere, dramatic professional studio lighting, leaving negative space on the right two-thirds for text overlay, large bold text saying "{headline}" rendered clearly on the right side, premium commercial banner, ultra-wide composition',
+      'Wide cinematic Amazon A+ hero banner, {product_name} as hero subject on the left third, {theme} atmosphere, dramatic professional studio lighting, large bold text saying "{headline}" rendered clearly on the right side, premium commercial banner, ultra-wide composition',
     fields: [
       {
         key: "product_name",
@@ -275,55 +407,21 @@ export const AMAZON_PRESETS: AmazonPreset[] = [
       },
       {
         key: "headline",
-        label: "标题文字（英文，会渲染到图里）",
+        label: "标题文字（英文，会写到图里）",
         kind: "text",
         placeholder: "例如：HYDRATE SMARTER",
         required: true
       },
-      {
-        key: "theme",
-        label: "氛围",
-        kind: "select",
-        defaultValue: "premium",
-        options: [
-          { value: "premium", label: "高端奢华", promptText: "luxurious dark premium" },
-          { value: "warm", label: "温馨家庭", promptText: "warm cozy homey" },
-          { value: "tech", label: "科技未来", promptText: "futuristic tech with blue accent lights" },
-          { value: "natural", label: "自然环保", promptText: "natural earthy with greenery" },
-          { value: "fitness", label: "活力健身", promptText: "energetic fitness with motion" }
-        ]
-      }
+      themeField
     ]
   },
   {
-    id: "aplus_lifestyle_banner",
+    id: "aplus_text_icon",
     category: "aplus",
-    title: "A+ 生活方式横幅",
-    blurb: "纯图无文字的宽横幅，配合后期排版工具加字。",
-    spec: "横版 16:9，建议 970×600",
-    recommendedModelId: "fal-ai/flux-pro/v1.1",
-    imageSize: "landscape_16_9",
-    dimensionsHint: "1024×576",
-    promptTemplate:
-      "Wide cinematic Amazon A+ lifestyle banner, {person} using {product_name} in {scene}, natural lighting, ultra-wide aspect ratio, commercial editorial photography, leaving space at top and right for text, no text overlay, no watermark",
-    fields: [
-      {
-        key: "product_name",
-        label: "产品",
-        kind: "text",
-        placeholder: "例如：smart water bottle",
-        required: true
-      },
-      personField,
-      sceneField
-    ]
-  },
-  {
-    id: "aplus_icon",
-    category: "aplus",
-    title: "A+ 图标 / 比较卡",
-    blurb: "扁平矢量图标，用于 A+ 比较表、卖点 icon、特性图。",
-    spec: "方形，建议 600×600",
+    mode: "text",
+    title: "✏️ A+ 图标 / 比较卡",
+    blurb: "无原图：扁平矢量图标，A+ 比较表 / 卖点 icon 用。",
+    spec: "方形 · 矢量插画",
     recommendedModelId: "fal-ai/recraft-v3",
     imageSize: "square_hd",
     dimensionsHint: "1024×1024",
@@ -357,6 +455,7 @@ export function getPresetsByCategory(category: PresetCategory) {
  * - text fields: trim and inject directly
  * - select fields: look up the option's promptText (English mapping)
  * - missing optional fields: replace with empty + collapse leftover commas/spaces
+ * - missing required fields: returned in `missing[]` for UI to surface
  */
 export function buildPromptFromPreset(
   preset: AmazonPreset,
@@ -380,7 +479,6 @@ export function buildPromptFromPreset(
     prompt = prompt.replaceAll(`{${field.key}}`, injected);
   }
 
-  // Tidy: collapse "  ", " ,", ", ," etc that appear when optional fields were empty.
   prompt = prompt
     .replace(/\s+,/g, ",")
     .replace(/,\s*,/g, ",")

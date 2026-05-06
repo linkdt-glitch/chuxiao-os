@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/permissions";
 
 const FAL_BASE_URL = "https://fal.run";
 
+// ── text2img sizes ──────────────────────────────────────────────────
 const VALID_SIZES = [
   "square_hd",
   "square",
@@ -16,9 +17,30 @@ const VALID_SIZES = [
 ] as const;
 type FalImageSize = (typeof VALID_SIZES)[number];
 
+// ── img2img aspect ratios (Nano Banana edit) ────────────────────────
+const VALID_ASPECT_RATIOS = [
+  "21:9",
+  "16:9",
+  "3:2",
+  "4:3",
+  "5:4",
+  "1:1",
+  "4:5",
+  "3:4",
+  "2:3",
+  "9:16"
+] as const;
+type FalAspectRatio = (typeof VALID_ASPECT_RATIOS)[number];
+
+// ── Reference image upload constraints ──────────────────────────────
+const MAX_REFERENCE_IMAGES = 4;
+const MAX_REFERENCE_BYTES = 6 * 1024 * 1024; // 6MB per image (base64 — already compressed client-side)
+const ALLOWED_DATA_URI_PREFIX = /^data:image\/(jpeg|jpg|png|webp);base64,/;
+
 type FalImageResponse = {
-  images?: Array<{ url: string; width?: number; height?: number }>;
+  images?: Array<{ url: string; width?: number; height?: number; content_type?: string }>;
   detail?: string | Array<{ msg?: string }>;
+  error?: string;
 };
 
 // ── Per-user rate limit (in-memory; OK for single-instance Render starter) ──
@@ -37,6 +59,19 @@ function isRateLimited(userId: string): { limited: true; retryAfter: number } | 
   stamps.push(now);
   _rateBucket.set(userId, stamps);
   return { limited: false };
+}
+
+function isValidReferenceImage(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  // accept either http(s) URL or data URI
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value.length < 2048; // sanity cap on URL length
+  }
+  if (!ALLOWED_DATA_URI_PREFIX.test(value)) return false;
+  // estimate decoded byte size: base64 length × 3/4
+  const base64Part = value.split(",", 2)[1] ?? "";
+  const approxBytes = (base64Part.length * 3) / 4;
+  return approxBytes <= MAX_REFERENCE_BYTES;
 }
 
 export async function POST(request: Request) {
@@ -64,13 +99,8 @@ export async function POST(request: Request) {
 
     // ── Parse + validate input ───────────────────────────────────────
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    const rawSize = typeof body.image_size === "string" ? body.image_size : "square_hd";
-    const imageSize: FalImageSize = (VALID_SIZES as readonly string[]).includes(rawSize)
-      ? (rawSize as FalImageSize)
-      : "square_hd";
 
-    // Whitelist enforcement: client can only ask for models in our registry.
+    // Whitelist: client can only ask for models in our registry.
     const requestedModelId = typeof body.model === "string" ? body.model : undefined;
     const model =
       getModelById(requestedModelId) ??
@@ -78,11 +108,12 @@ export async function POST(request: Request) {
       getDefaultModel();
     modelLabelForLog = model.id;
 
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) {
       return NextResponse.json({ error: "请输入图片描述。" }, { status: 400 });
     }
-    if (prompt.length > 500) {
-      return NextResponse.json({ error: "描述文字不能超过 500 个字符。" }, { status: 400 });
+    if (prompt.length > 1500) {
+      return NextResponse.json({ error: "描述文字不能超过 1500 字符。" }, { status: 400 });
     }
     promptPreview = prompt.slice(0, 200);
 
@@ -95,12 +126,54 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── Call fal.ai ──────────────────────────────────────────────────
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
+    // ── Build payload by API shape ───────────────────────────────────
+    let falPayload: Record<string, unknown>;
 
-    try {
-      const falPayload: Record<string, unknown> = {
+    if (model.apiShape === "img2img") {
+      // image-to-image: needs image_urls + aspect_ratio
+      const rawImages = Array.isArray(body.image_urls) ? body.image_urls : [];
+      if (rawImages.length === 0) {
+        return NextResponse.json(
+          { error: "图生图模型需要至少上传 1 张参考图。" },
+          { status: 400 }
+        );
+      }
+      if (rawImages.length > MAX_REFERENCE_IMAGES) {
+        return NextResponse.json(
+          { error: `最多上传 ${MAX_REFERENCE_IMAGES} 张参考图。` },
+          { status: 400 }
+        );
+      }
+      for (const img of rawImages) {
+        if (!isValidReferenceImage(img)) {
+          return NextResponse.json(
+            { error: "参考图格式不合法或超出 6MB 限制（支持 jpeg/png/webp）。" },
+            { status: 400 }
+          );
+        }
+      }
+
+      const rawAspect = typeof body.aspect_ratio === "string" ? body.aspect_ratio : "1:1";
+      const aspectRatio: FalAspectRatio = (VALID_ASPECT_RATIOS as readonly string[]).includes(rawAspect)
+        ? (rawAspect as FalAspectRatio)
+        : "1:1";
+
+      falPayload = {
+        prompt,
+        image_urls: rawImages,
+        aspect_ratio: aspectRatio,
+        num_images: 1,
+        output_format: "jpeg",
+        sync_mode: true
+      };
+    } else {
+      // text-to-image: needs image_size + maybe num_inference_steps
+      const rawSize = typeof body.image_size === "string" ? body.image_size : "square_hd";
+      const imageSize: FalImageSize = (VALID_SIZES as readonly string[]).includes(rawSize)
+        ? (rawSize as FalImageSize)
+        : "square_hd";
+
+      falPayload = {
         prompt,
         image_size: imageSize,
         num_images: 1,
@@ -110,7 +183,15 @@ export async function POST(request: Request) {
       if (model.inferenceSteps) {
         falPayload.num_inference_steps = model.inferenceSteps;
       }
+    }
 
+    // ── Call fal.ai ──────────────────────────────────────────────────
+    const controller = new AbortController();
+    // image-edit can take longer with multiple references
+    const timeoutMs = model.apiShape === "img2img" ? 120_000 : 90_000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
       const response = await fetch(`${FAL_BASE_URL}/${model.id}`, {
         method: "POST",
         headers: {
@@ -129,10 +210,14 @@ export async function POST(request: Request) {
           ? detail[0]?.msg ?? `请求失败 (${response.status})`
           : typeof detail === "string"
             ? detail
-            : `请求失败 (${response.status})`;
+            : payload.error ?? `请求失败 (${response.status})`;
 
-        // Server-side log (full), client gets generic.
-        console.error("[image-gen] fal.ai error", { status: response.status, model: model.id, errorMsg });
+        console.error("[image-gen] fal.ai error", {
+          status: response.status,
+          model: model.id,
+          shape: model.apiShape,
+          errorMsg
+        });
         await logAIInvocation({
           module: "ai_workforce.image_gen",
           prompt_preview: `${model.label}: ${promptPreview}`,
@@ -160,7 +245,6 @@ export async function POST(request: Request) {
         );
       }
 
-      // Audit log success — cost_estimate uses our registry hint, not actual.
       await logAIInvocation({
         module: "ai_workforce.image_gen",
         prompt_preview: `${model.label}: ${promptPreview}`,
@@ -183,7 +267,7 @@ export async function POST(request: Request) {
           error_message: "timeout"
         }).catch(() => {});
         return NextResponse.json(
-          { error: "图片生成超时（90s），请尝试使用更简短的描述或稍后重试。" },
+          { error: `图片生成超时（${Math.round(timeoutMs / 1000)}s），请稍后重试或换轻量模型。` },
           { status: 504 }
         );
       }
@@ -192,7 +276,6 @@ export async function POST(request: Request) {
       clearTimeout(timeout);
     }
   } catch (error) {
-    // Defensive: don't leak internal stack traces to the browser.
     console.error("[image-gen] unexpected error", error);
     return NextResponse.json({ error: "图片生成服务出错，请稍后重试。" }, { status: 500 });
   }
@@ -217,8 +300,19 @@ export async function GET() {
       speed: m.speed,
       approxSeconds: m.approxSeconds,
       isDefault: Boolean(m.isDefault),
-      tag: m.tag
+      tag: m.tag,
+      apiShape: m.apiShape,
+      acceptsReferenceImages: Boolean(m.acceptsReferenceImages)
     })),
-    rateLimit: { perMinute: RATE_MAX_PER_WINDOW }
+    rateLimit: { perMinute: RATE_MAX_PER_WINDOW },
+    referenceImage: {
+      maxCount: MAX_REFERENCE_IMAGES,
+      maxBytes: MAX_REFERENCE_BYTES,
+      mimes: ["image/jpeg", "image/png", "image/webp"]
+    }
   });
 }
+
+// Larger body needed for base64-uploaded reference photos.
+export const runtime = "nodejs";
+export const maxDuration = 120;

@@ -32,59 +32,47 @@ export type ImageModel = {
   tag?: string;
 };
 
+/**
+ * 4 旗舰模型，针对亚马逊卖家可用性挑选：
+ *  - 主图/附图直出建议 Flux Pro Ultra（最高真实感）
+ *  - 中等任务 Flux Pro 1.1（性价比）
+ *  - A+ 比较图、扁平插画、icon 用 Recraft v3
+ *  - 横幅需写文字、Slogan 用 Ideogram v2
+ * 砍掉 Flux Schnell / Flux Dev（质量不达 Amazon 商用线）。
+ */
 export const IMAGE_MODELS: ImageModel[] = [
   {
-    id: "fal-ai/flux/schnell",
-    label: "Flux Schnell",
-    description: "极速出图，最便宜，适合草稿、批量、想法验证。",
-    pricePerImageCny: 0.022,
-    speed: "fast",
-    approxSeconds: 3,
-    inferenceSteps: 4,
+    id: "fal-ai/flux-pro/v1.1-ultra",
+    label: "Flux Pro Ultra",
+    description: "顶级真实感，2K 级输出。亚马逊主图、产品特写、对外发布首选。",
+    pricePerImageCny: 0.43,
+    speed: "slow",
+    approxSeconds: 20,
     isDefault: true,
-    tag: "极速"
-  },
-  {
-    id: "fal-ai/flux/dev",
-    label: "Flux Dev",
-    description: "质量与速度平衡，构图细节优于 Schnell，多数日常场景首选。",
-    pricePerImageCny: 0.18,
-    speed: "medium",
-    approxSeconds: 10,
-    inferenceSteps: 28,
-    tag: "性价比"
+    tag: "顶配 · 主图"
   },
   {
     id: "fal-ai/flux-pro/v1.1",
     label: "Flux Pro 1.1",
-    description: "fal 自家高画质模型，更准确的提示理解、更稳的人脸与光影。",
+    description: "高画质 + 提示理解准确，适合附图、生活方式、应用场景。",
     pricePerImageCny: 0.29,
     speed: "medium",
     approxSeconds: 15,
     tag: "高质量"
   },
   {
-    id: "fal-ai/flux-pro/v1.1-ultra",
-    label: "Flux Pro Ultra",
-    description: "Flux Pro 顶配，2K 级别输出，主图、海报、对外发布建议用它。",
-    pricePerImageCny: 0.43,
-    speed: "slow",
-    approxSeconds: 20,
-    tag: "顶配"
-  },
-  {
     id: "fal-ai/recraft-v3",
     label: "Recraft v3",
-    description: "矢量风、扁平插画、品牌图标和 UI 配图的最佳选择。",
+    description: "矢量风、扁平插画、品牌图标。A+ 比较卡 / icon 模块的最佳选择。",
     pricePerImageCny: 0.29,
     speed: "medium",
     approxSeconds: 15,
-    tag: "插画"
+    tag: "插画/Icon"
   },
   {
     id: "fal-ai/ideogram/v2",
     label: "Ideogram v2",
-    description: "**文字渲染最强**：海报、Slogan、Banner 中要写字时用它。",
+    description: "**文字渲染最强**：A+ Hero Banner 要写 slogan、卖点文字时用它。",
     pricePerImageCny: 0.58,
     speed: "slow",
     approxSeconds: 20,

@@ -69,56 +69,84 @@ function inputVariables(formData: FormData) {
 }
 
 export async function createAgentAction(formData: FormData) {
-  const agent = await createAgent({
-    name: value(formData, "name") ?? "新 Agent",
-    description: value(formData, "description") ?? "",
-    owner_user_id: value(formData, "owner_user_id") ?? "",
-    permission_level: (value(formData, "permission_level") ?? "L1") as AgentPermissionLevel,
-    allowed_modules: values(formData, "allowed_modules"),
-    allowed_tools: values(formData, "allowed_tools"),
-    default_provider_id: value(formData, "default_provider_id") ?? null,
-    status: (value(formData, "status") ?? "active") as "active" | "paused" | "archived",
-    config: jsonObject(formData, "config")
-  });
-  redirect(`/ai-workforce/agents/${"id" in agent ? agent.id : ""}`);
+  let agentId: string | undefined;
+  try {
+    const agent = await createAgent({
+      name: value(formData, "name") ?? "新 Agent",
+      description: value(formData, "description") ?? "",
+      owner_user_id: value(formData, "owner_user_id") ?? "",
+      permission_level: (value(formData, "permission_level") ?? "L1") as AgentPermissionLevel,
+      allowed_modules: values(formData, "allowed_modules"),
+      allowed_tools: values(formData, "allowed_tools"),
+      default_provider_id: value(formData, "default_provider_id") ?? null,
+      status: (value(formData, "status") ?? "active") as "active" | "paused" | "archived",
+      config: jsonObject(formData, "config")
+    });
+    agentId = "id" in agent ? agent.id : undefined;
+    if (!agentId) throw new Error("AI 员工创建后未拿到 ID。");
+  } catch (error) {
+    console.error("[createAgentAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/agents", extractErrorMessage(error)));
+  }
+  redirect(`/ai-workforce/agents/${agentId}?notice=${encodeURIComponent("AI 员工已创建。")}`);
 }
 
 export async function updateAgentAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing agent id");
-  await updateAgent(id, {
-    name: value(formData, "name"),
-    description: value(formData, "description"),
-    owner_user_id: value(formData, "owner_user_id"),
-    permission_level: value(formData, "permission_level") as AgentPermissionLevel | undefined,
-    allowed_modules: values(formData, "allowed_modules"),
-    allowed_tools: values(formData, "allowed_tools"),
-    default_provider_id: value(formData, "default_provider_id") ?? null,
-    status: value(formData, "status") as "active" | "paused" | "archived" | undefined,
-    config: jsonObject(formData, "config")
-  });
+  if (!id) redirect(withErrorParam("/ai-workforce/agents", "缺少 AI 员工 ID。"));
+  try {
+    await updateAgent(id, {
+      name: value(formData, "name"),
+      description: value(formData, "description"),
+      owner_user_id: value(formData, "owner_user_id"),
+      permission_level: value(formData, "permission_level") as AgentPermissionLevel | undefined,
+      allowed_modules: values(formData, "allowed_modules"),
+      allowed_tools: values(formData, "allowed_tools"),
+      default_provider_id: value(formData, "default_provider_id") ?? null,
+      status: value(formData, "status") as "active" | "paused" | "archived" | undefined,
+      config: jsonObject(formData, "config")
+    });
+  } catch (error) {
+    console.error("[updateAgentAction] error:", error);
+    redirect(withErrorParam(`/ai-workforce/agents/${id}`, extractErrorMessage(error)));
+  }
   revalidatePath(`/ai-workforce/agents/${id}`);
   revalidatePath("/ai-workforce/agents");
 }
 
 export async function pauseAgentAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing agent id");
-  await pauseAgent(id);
+  if (!id) redirect(withErrorParam("/ai-workforce/agents", "缺少 AI 员工 ID。"));
+  try {
+    await pauseAgent(id);
+  } catch (error) {
+    console.error("[pauseAgentAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/agents", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/agents");
 }
 
 export async function activateAgentAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing agent id");
-  await activateAgent(id);
+  if (!id) redirect(withErrorParam("/ai-workforce/agents", "缺少 AI 员工 ID。"));
+  try {
+    await activateAgent(id);
+  } catch (error) {
+    console.error("[activateAgentAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/agents", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/agents");
 }
 
 export async function archiveAgentAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing agent id");
-  await archiveAgent(id);
+  if (!id) redirect(withErrorParam("/ai-workforce/agents", "缺少 AI 员工 ID。"));
+  try {
+    await archiveAgent(id);
+  } catch (error) {
+    console.error("[archiveAgentAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/agents", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/agents");
 }
 
@@ -135,58 +163,82 @@ export async function bindPromptAction(formData: FormData) {
 }
 
 export async function createPromptAction(formData: FormData) {
-  const prompt = await createPrompt({
-    name: value(formData, "name") ?? "新 Prompt",
-    description: value(formData, "description") ?? "",
-    scenario: value(formData, "scenario") ?? "",
-    module: value(formData, "module") ?? "ai_workforce",
-    tags: values(formData, "tags"),
-    input_variables: inputVariables(formData),
-    output_format: value(formData, "output_format") ?? "",
-    quality_criteria: value(formData, "quality_criteria") ?? "",
-    content: value(formData, "content") ?? "",
-    owner_id: value(formData, "owner_id") ?? null,
-    status: (value(formData, "status") ?? "draft") as "draft" | "published" | "archived"
-  });
-  redirect(`/ai-workforce/prompts/${"id" in prompt ? prompt.id : ""}`);
+  let promptId: string | undefined;
+  try {
+    const prompt = await createPrompt({
+      name: value(formData, "name") ?? "新提示词",
+      description: value(formData, "description") ?? "",
+      scenario: value(formData, "scenario") ?? "",
+      module: value(formData, "module") ?? "ai_workforce",
+      tags: values(formData, "tags"),
+      input_variables: inputVariables(formData),
+      output_format: value(formData, "output_format") ?? "",
+      quality_criteria: value(formData, "quality_criteria") ?? "",
+      content: value(formData, "content") ?? "",
+      owner_id: value(formData, "owner_id") ?? null,
+      status: (value(formData, "status") ?? "draft") as "draft" | "published" | "archived"
+    });
+    promptId = "id" in prompt ? prompt.id : undefined;
+    if (!promptId) throw new Error("提示词创建后未拿到 ID。");
+  } catch (error) {
+    console.error("[createPromptAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/prompts", extractErrorMessage(error)));
+  }
+  redirect(`/ai-workforce/prompts/${promptId}?notice=${encodeURIComponent("提示词已创建。")}`);
 }
 
 export async function updatePromptAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing prompt id");
-  await updatePrompt(id, {
-    name: value(formData, "name"),
-    description: value(formData, "description"),
-    scenario: value(formData, "scenario") ?? "",
-    module: value(formData, "module") ?? "ai_workforce",
-    tags: values(formData, "tags"),
-    input_variables: inputVariables(formData),
-    output_format: value(formData, "output_format") ?? "",
-    quality_criteria: value(formData, "quality_criteria") ?? "",
-    owner_id: value(formData, "owner_id") ?? null,
-    status: value(formData, "status") as "draft" | "published" | "archived" | undefined
-  });
+  if (!id) redirect(withErrorParam("/ai-workforce/prompts", "缺少提示词 ID。"));
+  try {
+    await updatePrompt(id, {
+      name: value(formData, "name"),
+      description: value(formData, "description"),
+      scenario: value(formData, "scenario") ?? "",
+      module: value(formData, "module") ?? "ai_workforce",
+      tags: values(formData, "tags"),
+      input_variables: inputVariables(formData),
+      output_format: value(formData, "output_format") ?? "",
+      quality_criteria: value(formData, "quality_criteria") ?? "",
+      owner_id: value(formData, "owner_id") ?? null,
+      status: value(formData, "status") as "draft" | "published" | "archived" | undefined
+    });
+  } catch (error) {
+    console.error("[updatePromptAction] error:", error);
+    redirect(withErrorParam(`/ai-workforce/prompts/${id}`, extractErrorMessage(error)));
+  }
   revalidatePath(`/ai-workforce/prompts/${id}`);
   revalidatePath("/ai-workforce/prompts");
 }
 
 export async function createPromptVersionAction(formData: FormData) {
   const promptId = value(formData, "prompt_template_id");
-  if (!promptId) throw new Error("Missing prompt id");
-  await createPromptVersion({
-    prompt_template_id: promptId,
-    version: value(formData, "version") ?? "1.1",
-    content: value(formData, "content") ?? "",
-    change_note: value(formData, "change_note") ?? ""
-  });
+  if (!promptId) redirect(withErrorParam("/ai-workforce/prompts", "缺少提示词 ID。"));
+  try {
+    await createPromptVersion({
+      prompt_template_id: promptId,
+      version: value(formData, "version") ?? "1.1",
+      content: value(formData, "content") ?? "",
+      change_note: value(formData, "change_note") ?? ""
+    });
+  } catch (error) {
+    console.error("[createPromptVersionAction] error:", error);
+    redirect(withErrorParam(`/ai-workforce/prompts/${promptId}`, extractErrorMessage(error)));
+  }
   revalidatePath(`/ai-workforce/prompts/${promptId}`);
 }
 
 export async function publishPromptAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing prompt id");
-  await publishPrompt(id);
+  if (!id) redirect(withErrorParam("/ai-workforce/prompts", "缺少提示词 ID。"));
+  try {
+    await publishPrompt(id);
+  } catch (error) {
+    console.error("[publishPromptAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/prompts", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/prompts");
+  redirect(`/ai-workforce/prompts?notice=${encodeURIComponent("提示词已发布。")}`);
 }
 
 export async function archivePromptAction(formData: FormData) {

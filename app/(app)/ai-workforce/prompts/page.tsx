@@ -6,19 +6,26 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPrompts } from "@/lib/ai-workforce/prompts";
 import { formatDate } from "@/lib/utils";
 
-export default async function PromptsPage() {
+export default async function PromptsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; notice?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const prompts = await getPrompts();
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="提示词库"
-        description="把高质量 Prompt 沉淀为组织资产。Prompt 包含场景、模块、变量、输出格式、质量标准、版本、负责人和状态。"
+        description="把高质量提示词沉淀为组织资产。包含场景、模块、变量、输出格式、质量标准、版本、负责人和状态。"
         action={<Button asChild><Link href="/ai-workforce/prompts/new"><Plus className="h-4 w-4" />创建提示词</Link></Button>}
       />
       <Card>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -8,6 +9,7 @@ import { getCurrentOrganization } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { requirePermission } from "@/lib/permissions";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 
 export type CreateHumanMemberState = {
   ok: boolean;
@@ -382,61 +384,97 @@ export async function resetMemberPasswordAction(
 }
 
 export async function enableMemberAction(formData: FormData) {
-  await requirePermission("organization.manage");
   const member_id = value(formData, "member_id");
-  if (!member_id) throw new Error("缺少成员 ID");
-  const supabase = await createSupabaseServerClient();
-  const organization = await getCurrentOrganization();
-  if (!supabase) { revalidatePath("/organization"); return; }
-  await supabase.from("organization_members").update({ status: "active" }).eq("id", member_id).eq("organization_id", organization.id);
-  await logAction({ event_key: "member.enabled", action: "enable", module: "organization", related_record_type: "organization_member", related_record_id: member_id });
+  if (!member_id) {
+    redirect(withErrorParam("/organization", "缺少成员 ID。"));
+  }
+  try {
+    await requirePermission("organization.manage");
+    const supabase = await createSupabaseServerClient();
+    const organization = await getCurrentOrganization();
+    if (!supabase) {
+      revalidatePath("/organization");
+      redirect(`/organization?notice=${encodeURIComponent("演示模式：成员已启用。")}`);
+    }
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ status: "active" })
+      .eq("id", member_id)
+      .eq("organization_id", organization.id);
+    if (error) throw error;
+    await logAction({
+      event_key: "member.enabled",
+      action: "enable",
+      module: "organization",
+      related_record_type: "organization_member",
+      related_record_id: member_id
+    });
+  } catch (error) {
+    console.error("[enableMemberAction] error:", error);
+    redirect(withErrorParam("/organization", extractErrorMessage(error)));
+  }
   revalidatePath("/organization");
+  redirect(`/organization?notice=${encodeURIComponent("成员已启用。")}`);
 }
 
 export async function disableMemberAction(formData: FormData) {
-  await requirePermission("organization.manage");
-
   const member_id = value(formData, "member_id");
-  if (!member_id) throw new Error("缺少成员 ID");
-
-  const supabase = await createSupabaseServerClient();
-  const admin = createSupabaseAdminClient();
-  const organization = await getCurrentOrganization();
-  if (!supabase) return;
-
-  // Fetch user_id before disabling
-  const { data: memberRow } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("id", member_id)
-    .eq("organization_id", organization.id)
-    .maybeSingle();
-
-  const { error } = await supabase
-    .from("organization_members")
-    .update({ status: "disabled" })
-    .eq("id", member_id)
-    .eq("organization_id", organization.id);
-
-  if (error) throw error;
-
-  // Revoke all active sessions immediately
-  if (admin && memberRow?.user_id) {
-    await admin.auth.admin.signOut(memberRow.user_id, "global");
+  if (!member_id) {
+    redirect(withErrorParam("/organization", "缺少成员 ID。"));
   }
+  try {
+    await requirePermission("organization.manage");
+    const supabase = await createSupabaseServerClient();
+    const admin = createSupabaseAdminClient();
+    const organization = await getCurrentOrganization();
+    if (!supabase) {
+      revalidatePath("/organization");
+      redirect(`/organization?notice=${encodeURIComponent("演示模式：成员已禁用。")}`);
+    }
 
-  await logAction({
-    event_key: "member.disabled",
-    action: "disable",
-    module: "organization",
-    related_record_type: "organization_member",
-    related_record_id: member_id,
-  });
-  await emitEvent({
-    event_key: "member.disabled",
-    module: "organization",
-    payload: { member_id },
-  });
+    // Fetch user_id before disabling
+    const { data: memberRow } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("id", member_id)
+      .eq("organization_id", organization.id)
+      .maybeSingle();
 
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ status: "disabled" })
+      .eq("id", member_id)
+      .eq("organization_id", organization.id);
+
+    if (error) throw error;
+
+    // Revoke active sessions — failure here shouldn't roll back the disable.
+    // Cookie 已无效（DB 状态 = disabled，下一次请求被中间件拦截），
+    // signOut 是补刀让现有 token 失效，失败也只是延迟几分钟生效，记 warn 不抛错。
+    if (admin && memberRow?.user_id) {
+      try {
+        await admin.auth.admin.signOut(memberRow.user_id, "global");
+      } catch (signOutError) {
+        console.warn("[disableMemberAction] signOut failed (ignored):", signOutError);
+      }
+    }
+
+    await logAction({
+      event_key: "member.disabled",
+      action: "disable",
+      module: "organization",
+      related_record_type: "organization_member",
+      related_record_id: member_id
+    });
+    await emitEvent({
+      event_key: "member.disabled",
+      module: "organization",
+      payload: { member_id }
+    });
+  } catch (error) {
+    console.error("[disableMemberAction] error:", error);
+    redirect(withErrorParam("/organization", extractErrorMessage(error)));
+  }
   revalidatePath("/organization");
+  redirect(`/organization?notice=${encodeURIComponent("成员已禁用，会话已撤销。")}`);
 }

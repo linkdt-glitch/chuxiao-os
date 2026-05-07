@@ -8,20 +8,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getAgents } from "@/lib/ai-workforce/agents";
 import { formatDate } from "@/lib/utils";
 
-export default async function WorkforceAgentsPage() {
+export default async function WorkforceAgentsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; notice?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const agents = await getAgents();
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="AI 员工档案"
-        description="像管理员工一样管理 AI Agent。每个 Agent 必须有负责人、权限等级、允许模块、状态和运行留痕。"
-        action={<Button asChild><Link href="/ai-workforce/agents/new"><Plus className="h-4 w-4" />创建 Agent</Link></Button>}
+        description="像管理员工一样管理 AI 员工。每个 AI 员工必须有负责人、权限等级、允许模块、状态和运行留痕。"
+        action={<Button asChild><Link href="/ai-workforce/agents/new"><Plus className="h-4 w-4" />创建 AI 员工</Link></Button>}
       />
 
       <Card>

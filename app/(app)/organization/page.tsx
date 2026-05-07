@@ -5,13 +5,19 @@ import { MemberEditPanel } from "@/components/organization/member-edit-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { getMembers, getRolesAndPermissions } from "@/lib/data/queries";
 import { disableMemberAction, enableMemberAction } from "./actions";
 
-export default async function OrganizationPage() {
+export default async function OrganizationPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; notice?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const [organization, members, currentMember, { roles }] = await Promise.all([
     getCurrentOrganization(),
     getMembers(),
@@ -26,6 +32,7 @@ export default async function OrganizationPage() {
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="组织与成员"
         description="统一管理 human / agent / system 操作者身份；Agent 成员必须绑定人类负责人。"

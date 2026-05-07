@@ -95,8 +95,8 @@ export default async function CockpitPage() {
               <Rocket className="h-5 w-5 text-orange-300" />
             </div>
             <div className="min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-orange-400/70">
-                COCKPIT // 老板驾驶舱
+              <div className="font-mono text-[10px] tracking-[0.24em] text-orange-400/70">
+                老板驾驶舱
               </div>
               <h1
                 className="truncate bg-gradient-to-r from-orange-300 via-amber-200 to-orange-200 bg-clip-text text-xl font-semibold tracking-tight text-transparent sm:text-2xl"
@@ -119,18 +119,18 @@ export default async function CockpitPage() {
             </div>
             <div className="flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-emerald-300">
               <StatusLight tone="success" />
-              SYSTEM ONLINE
+              系统在线
             </div>
           </div>
         </div>
         <p className="text-sm text-slate-400">
-          只看钱、看项目、看风险。{member.role?.name ?? "Member"} 视角的经营全景，数据由真实流水派生，不足处以 — 标记。
+          只看钱、看项目、看风险。{member.role?.name ?? "成员"} 视角的经营全景，数据由真实流水派生，不足处以 — 标记。
         </p>
       </div>
 
       {/* ── Tier 1: 4 core HUD tiles ─────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <HudFrame label="今日盈利 // TODAY P&L" tone={profitTone} meta={`${cockpit.todayMetrics.recordCount} 条`}>
+        <HudFrame label="今日盈利" tone={profitTone} meta={`${cockpit.todayMetrics.recordCount} 条`}>
           <Telemetry
             label="净利润"
             value={money(cockpit.todayMetrics.profit, { compact: true })}
@@ -139,7 +139,7 @@ export default async function CockpitPage() {
           />
         </HudFrame>
 
-        <HudFrame label="本月利润 // MONTH" tone={monthProfitTone} meta={`利润率 ${cockpit.monthMetrics.profitMargin}%`}>
+        <HudFrame label="本月利润" tone={monthProfitTone} meta={`利润率 ${cockpit.monthMetrics.profitMargin}%`}>
           <Telemetry
             label="本月净利润"
             value={money(cockpit.monthMetrics.profit, { compact: true })}
@@ -148,7 +148,7 @@ export default async function CockpitPage() {
           />
         </HudFrame>
 
-        <HudFrame label="现金余额 // CASH" meta="CNY">
+        <HudFrame label="现金余额" meta="人民币">
           <Telemetry
             label="可用现金"
             value={money(cockpit.cashMetrics.cashBalance, { compact: true })}
@@ -157,7 +157,7 @@ export default async function CockpitPage() {
           />
         </HudFrame>
 
-        <HudFrame label="现金 RUNWAY" tone={runwayTone} meta={runwayTone === "alert" ? "警戒" : runwayTone === "success" ? "稳健" : "关注"}>
+        <HudFrame label="现金可支撑期" tone={runwayTone} meta={runwayTone === "alert" ? "警戒" : runwayTone === "success" ? "稳健" : "关注"}>
           <Telemetry
             label="可支撑月数"
             value={cockpit.cashMetrics.runwayMonths === null ? "—" : `${cockpit.cashMetrics.runwayMonths}`}
@@ -179,8 +179,8 @@ export default async function CockpitPage() {
       {/* ── Tier 2: 项目营收战力榜 + 趋势 ─────────────────────────────── */}
       <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_360px]">
         <HudFrame
-          label="项目营收战力榜 // PROJECT REVENUE"
-          meta={`近 ${90} 天 · TOP ${Math.min(5, cockpit.projectRevenue.length)}`}
+          label="项目营收战力榜"
+          meta={`近 ${90} 天 · 前 ${Math.min(5, cockpit.projectRevenue.length)} 名`}
         >
           {cockpit.projectRevenue.length ? (
             <div className="space-y-3">
@@ -272,7 +272,7 @@ export default async function CockpitPage() {
 
         <div className="space-y-3">
           {/* 6 month income/expense */}
-          <HudFrame label="现金流 // 6M TREND" meta="月柱">
+          <HudFrame label="近 6 个月现金流" meta="月柱">
             {cockpit.monthly.length ? (
               <>
                 <MonthlyMiniBars
@@ -295,7 +295,7 @@ export default async function CockpitPage() {
           </HudFrame>
 
           {/* Top expense categories */}
-          <HudFrame label="支出排名 // EXPENSE TOP" tone="alert" meta={cockpit.expenseTop.length ? "类目" : ""}>
+          <HudFrame label="支出排名" tone="alert" meta={cockpit.expenseTop.length ? "类目" : ""}>
             {cockpit.expenseTop.length ? (
               <div className="space-y-2.5">
                 {cockpit.expenseTop.slice(0, 5).map((c) => (
@@ -324,7 +324,7 @@ export default async function CockpitPage() {
       {/* ── Tier 3: 潜力雷达 ─────────────────────────────────────────── */}
       <div className="mt-5">
         <HudFrame
-          label="潜力雷达 // POTENTIAL RADAR"
+          label="潜力雷达"
           meta={cockpit.projectPotential.length ? `${cockpit.projectPotential.length} 个项目入榜` : ""}
         >
           {cockpit.projectPotential.length ? (
@@ -347,7 +347,7 @@ export default async function CockpitPage() {
                       value={p.potentialScore}
                       size={56}
                       thickness={5}
-                      label="POT"
+                      label="潜力"
                       tone={(p.potentialScore ?? 0) >= 70 ? "success" : (p.potentialScore ?? 0) >= 40 ? "default" : "alert"}
                     />
                   </div>
@@ -383,7 +383,7 @@ export default async function CockpitPage() {
       {/* ── Tier 4: 决策建议 + 待办告警 ────────────────────────────────── */}
       <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_360px]">
         <HudFrame
-          label="经营决策建议 // DECISIONS"
+          label="经营决策建议"
           tone={decisions.some((d) => d.severity === "danger") ? "alert" : "default"}
           meta={`${decisions.length} 条`}
         >
@@ -421,7 +421,7 @@ export default async function CockpitPage() {
         </HudFrame>
 
         <div className="space-y-3">
-          <HudFrame label="告警 // ALERTS" tone={pendingAlertsTotal > 0 ? "alert" : "success"} meta={`${pendingAlertsTotal} 项`}>
+          <HudFrame label="告警" tone={pendingAlertsTotal > 0 ? "alert" : "success"} meta={`${pendingAlertsTotal} 项`}>
             <div className="space-y-2">
               <AlertRow icon={Banknote} label="财务待审批" value={basics.stats.financePendingApprovals} href="/finance/records?status=pending_approval" />
               <AlertRow icon={Bot} label="AI 待确认" value={basics.stats.aiPendingConfirmations} href="/ai-workforce/confirmations" />
@@ -439,11 +439,11 @@ export default async function CockpitPage() {
             </div>
           </HudFrame>
 
-          <HudFrame label="智能劳动力 // AI" meta={`${basics.stats.aiInvocations} 次/月`}>
+          <HudFrame label="智能劳动力" meta={`${basics.stats.aiInvocations} 次/月`}>
             <div className="space-y-2">
               <Telemetry label="活跃 Agent" value={String(basics.stats.agents)} unit="个" />
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <Stat label="AI Provider" value={String(basics.stats.providers)} />
+                <Stat label="AI 服务商" value={String(basics.stats.providers)} />
                 <Stat label="启用模块" value={String(basics.stats.enabledModules)} />
               </div>
               <Button asChild variant="outline" size="sm" className="w-full">
@@ -456,7 +456,7 @@ export default async function CockpitPage() {
 
       {/* ── Tier 5: 优化建议 + 操作日志（紧凑） ────────────────────────── */}
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
-        <HudFrame label="组织优化建议 // IMPROVEMENTS" meta={`${basics.improvements.length} 条`}>
+        <HudFrame label="组织优化建议" meta={`${basics.improvements.length} 条`}>
           {basics.improvements.length ? (
             <div className="space-y-2">
               {basics.improvements.slice(0, 4).map((item) => (
@@ -481,7 +481,7 @@ export default async function CockpitPage() {
           )}
         </HudFrame>
 
-        <HudFrame label="最近操作 // RECENT" meta={`${basics.logs.length} 条`}>
+        <HudFrame label="最近操作" meta={`${basics.logs.length} 条`}>
           {basics.logs.length ? (
             <Table>
               <TableHeader>

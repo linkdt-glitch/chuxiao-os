@@ -6,6 +6,15 @@ import { ChevronDown, LogOut, Repeat, Settings, User as UserIcon } from "lucide-
 import Link from "next/link";
 import { logoutAction, switchAccountAction } from "@/app/(app)/actions";
 
+// 角色 key → 中文显示名（chip 短文案）
+const ROLE_LABEL_CN: Record<string, string> = {
+  owner: "创始人",
+  admin: "管理员",
+  manager: "负责人",
+  member: "成员",
+  agent: "AI 员工"
+};
+
 export function UserMenu({
   userName,
   userEmail,
@@ -16,7 +25,7 @@ export function UserMenu({
   roleKey: string;
 }) {
   const [open, setOpen] = useState(false);
-  const role = (roleKey ?? "member").toUpperCase();
+  const role = ROLE_LABEL_CN[roleKey ?? "member"] ?? (roleKey ?? "成员");
 
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
@@ -27,7 +36,7 @@ export function UserMenu({
         >
           {/* Desktop: role chip + name + email + chevron */}
           <span
-            className="hidden rounded px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-orange-400 sm:inline"
+            className="hidden rounded px-2 py-0.5 text-[11px] font-semibold tracking-wide text-orange-400 sm:inline"
             style={{
               background: "rgba(249,115,22,0.10)",
               border: "1px solid rgba(249,115,22,0.26)",
@@ -83,7 +92,7 @@ export function UserMenu({
             <div className="font-mono text-[10px] text-slate-500">{userEmail}</div>
             <div className="mt-1.5">
               <span
-                className="inline-block rounded px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-orange-400"
+                className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide text-orange-400"
                 style={{
                   background: "rgba(249,115,22,0.10)",
                   border: "1px solid rgba(249,115,22,0.26)"

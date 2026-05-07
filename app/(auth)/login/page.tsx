@@ -8,6 +8,10 @@ const errorMessages: Record<string, string> = {
   missing_supabase_env: "生产环境还没有配置 Supabase 环境变量，请先完成部署环境设置。"
 };
 
+const noticeMessages: Record<string, string> = {
+  switched: "已退出当前账号，请用另一个账号登录。"
+};
+
 const demoAccounts = [
   { name: "创始人", identifier: "founder@qiming.ai", phone: "18800000001", role: "Owner", color: "text-orange-700 bg-orange-50 border-orange-200" },
   { name: "管理员", identifier: "admin@qiming.ai", phone: "18800000002", role: "Admin", color: "text-red-700 bg-red-50 border-red-200" },
@@ -18,10 +22,11 @@ const demoAccounts = [
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; notice?: string }>;
 }) {
   const params = await searchParams;
   const initialMessage = params?.error ? errorMessages[params.error] ?? params.error : undefined;
+  const noticeMessage = params?.notice ? noticeMessages[params.notice] : undefined;
   const isDemo = isDemoModeEnabled();
 
   return (
@@ -29,6 +34,22 @@ export default async function LoginPage({
       <div className="pointer-events-none absolute inset-x-0 top-10 mx-auto h-56 max-w-4xl rounded-full bg-gradient-to-r from-orange-200/40 via-rose-200/28 to-amber-200/35 blur-3xl" />
 
       <div className="relative w-full max-w-lg space-y-4">
+        {noticeMessage ? (
+          <div
+            className="flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
+            style={{
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.32)",
+              boxShadow: "0 0 16px rgba(16,185,129,0.10)"
+            }}
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-emerald-400"
+              style={{ boxShadow: "0 0 8px rgba(74,222,128,0.85)" }}
+            />
+            {noticeMessage}
+          </div>
+        ) : null}
         <Card className="overflow-hidden">
           <CardHeader className="items-center pb-5 text-center">
             <div className="mb-3 flex flex-col items-center">

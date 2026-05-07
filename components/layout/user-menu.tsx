@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { ChevronDown, LogOut, Repeat, Settings, User as UserIcon } from "lucide-react";
 import Link from "next/link";
-import { logoutAction } from "@/app/(app)/actions";
+import { logoutAction, switchAccountAction } from "@/app/(app)/actions";
 
 export function UserMenu({
   userName,
@@ -110,8 +110,19 @@ export function UserMenu({
           />
 
           <DropdownMenu.Item asChild>
-            {/* Server action triggered through a hidden form. The DropdownMenu.Item
-                handles keyboard / click; we route the activation to a submit. */}
+            {/* Switch account: same as logout but lands on /login?notice=switched */}
+            <form action={switchAccountAction} className="m-0">
+              <button
+                type="submit"
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-orange-200 outline-none transition-colors hover:bg-orange-500/[0.08] focus:bg-orange-500/[0.10]"
+              >
+                <Repeat className="h-4 w-4 text-orange-400" />
+                切换账号
+              </button>
+            </form>
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item asChild>
             <form action={logoutAction} className="m-0">
               <button
                 type="submit"

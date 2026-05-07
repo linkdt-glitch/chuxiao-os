@@ -427,11 +427,12 @@ textarea {
 
 /* ─── Welcome overlay (post-login sci-fi splash) ────── */
 
-/* overlay lifecycle: fade-in 0-200ms, hold, fade-out last 500ms */
+/* overlay lifecycle: fade-in 0-200ms, hold, fade-out last 600ms.
+   Total 4600ms — gives readers ~3s on the headline, ~2.3s on subtitle. */
 @keyframes wo-overlay-life {
   0%   { opacity: 0; }
-  8%   { opacity: 1; }                 /* ~200ms in for total 2700ms */
-  81%  { opacity: 1; }                 /* hold until 2200ms */
+  4%   { opacity: 1; }                 /* ~200ms fade-in for total 4600ms */
+  87%  { opacity: 1; }                 /* hold until 4000ms */
   100% { opacity: 0; pointer-events: none; }
 }
 

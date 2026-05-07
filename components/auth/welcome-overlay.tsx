@@ -4,21 +4,26 @@ import { useEffect } from "react";
 import Image from "next/image";
 
 /**
- * Sci-fi welcome overlay shown for ~2.5s after a successful login.
+ * Sci-fi welcome overlay shown for ~4.6s after a successful login.
  *
- * Timeline:
+ * Timeline (slowed down so text is readable):
  *   0.00s — backdrop fade-in + dot grid + 4 corner HUD brackets
  *   0.20s — horizontal scan line sweeps top → bottom
  *   0.30s — logo zoom-in (scale 0.5 → 1) with glow pulse
  *   0.50s — 3 orbiting particles around logo
- *   0.80s — main text "欢迎登录启明时刻" gradient + glow fade-in
- *   1.30s — subtitle "一起创造奇迹" letter-spaced fade-in
- *   1.70s — "SYS://ONLINE" status bar fade-in
- *   2.20s — start fade-out
- *   2.70s — onComplete() fires → caller redirects
+ *   0.90s — main text "欢迎登录启明时刻" gradient + glow fade-in (slower)
+ *   1.70s — subtitle "一起创造奇迹" letter-spaced fade-in
+ *   2.30s — "系统在线" status bar fade-in
+ *   2.30 → 4.00s — full hold (1.7s of dwell time after everything is up)
+ *   4.00s — start fade-out
+ *   4.60s — onComplete() fires → caller redirects
+ *
+ * Reading windows:
+ *   主标题:  0.90s → 4.00s ≈ 3.1s 可读
+ *   副标题:  1.70s → 4.00s ≈ 2.3s 可读
  */
-const HOLD_AFTER_FADE_IN_MS = 2200;
-const FADE_OUT_MS = 500;
+const HOLD_AFTER_FADE_IN_MS = 4000;
+const FADE_OUT_MS = 600;
 const TOTAL_MS = HOLD_AFTER_FADE_IN_MS + FADE_OUT_MS;
 
 export function WelcomeOverlay({
@@ -173,7 +178,7 @@ export function WelcomeOverlay({
         <h1
           className="bg-gradient-to-r from-orange-200 via-amber-100 to-orange-300 bg-clip-text text-3xl font-bold tracking-wide text-transparent sm:text-4xl"
           style={{
-            animation: "wo-text-in 700ms cubic-bezier(0.2,0.8,0.2,1) 800ms backwards",
+            animation: "wo-text-in 900ms cubic-bezier(0.2,0.8,0.2,1) 900ms backwards",
             filter: "drop-shadow(0 0 18px rgba(249,115,22,0.50))"
           }}
         >
@@ -184,7 +189,7 @@ export function WelcomeOverlay({
         <p
           className="-mt-2 font-mono text-base tracking-[0.4em] text-orange-300 sm:text-lg"
           style={{
-            animation: "wo-text-in 700ms cubic-bezier(0.2,0.8,0.2,1) 1300ms backwards",
+            animation: "wo-text-in 900ms cubic-bezier(0.2,0.8,0.2,1) 1700ms backwards",
             textShadow:
               "0 0 14px rgba(249,115,22,0.65), 0 0 28px rgba(249,115,22,0.35)"
           }}
@@ -196,7 +201,7 @@ export function WelcomeOverlay({
         <div
           className="mt-3 flex items-center gap-3 font-mono text-[11px] tracking-[0.5em] text-orange-400/70"
           style={{
-            animation: "wo-text-in 600ms cubic-bezier(0.2,0.8,0.2,1) 1700ms backwards"
+            animation: "wo-text-in 800ms cubic-bezier(0.2,0.8,0.2,1) 2300ms backwards"
           }}
         >
           <span

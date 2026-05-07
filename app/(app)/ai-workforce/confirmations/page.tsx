@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,11 +16,17 @@ import { getConfirmations } from "@/lib/ai-workforce/confirmations";
 import { getPrompts } from "@/lib/ai-workforce/prompts";
 import { formatDate } from "@/lib/utils";
 
-export default async function ConfirmationsPage() {
+export default async function ConfirmationsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; notice?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const [confirmations, agents, prompts] = await Promise.all([getConfirmations(), getAgents(), getPrompts()]);
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="AI 审批与人工确认"
         description="高风险 AI 动作统一留在智能劳动力中心处理。L3/L4 动作、对外发送、重要数据修改和大量任务创建都必须由人类确认。"

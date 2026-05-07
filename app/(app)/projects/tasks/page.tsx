@@ -59,6 +59,7 @@ export default async function ProjectTasksWorkbenchPage({
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="任务表"
         description="像优秀任务应用一样，用一张表聚合项目、负责人、优先级、截止日期和协作动态。"

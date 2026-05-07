@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 import {
   activateAgent,
   archiveAgent,
@@ -228,16 +229,28 @@ export async function createConfirmationAction(formData: FormData) {
 
 export async function approveConfirmationAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing confirmation id");
-  await approveConfirmation(id, value(formData, "decision_note") ?? null);
+  if (!id) redirect(withErrorParam("/ai-workforce/confirmations", "缺少 AI 审批 ID。"));
+  try {
+    await approveConfirmation(id, value(formData, "decision_note") ?? null);
+  } catch (error) {
+    console.error("[approveConfirmationAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/confirmations", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/confirmations");
+  redirect(`/ai-workforce/confirmations?notice=${encodeURIComponent("已批准。")}`);
 }
 
 export async function rejectConfirmationAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing confirmation id");
-  await rejectConfirmation(id, value(formData, "decision_note") ?? null);
+  if (!id) redirect(withErrorParam("/ai-workforce/confirmations", "缺少 AI 审批 ID。"));
+  try {
+    await rejectConfirmation(id, value(formData, "decision_note") ?? null);
+  } catch (error) {
+    console.error("[rejectConfirmationAction] error:", error);
+    redirect(withErrorParam("/ai-workforce/confirmations", extractErrorMessage(error)));
+  }
   revalidatePath("/ai-workforce/confirmations");
+  redirect(`/ai-workforce/confirmations?notice=${encodeURIComponent("已驳回。")}`);
 }
 
 export async function createAgentRunAction(formData: FormData) {

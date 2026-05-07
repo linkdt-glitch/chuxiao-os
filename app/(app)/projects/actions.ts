@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 import {
   archiveTask,
   approveProjectApproval,
@@ -110,16 +111,28 @@ export async function archiveTaskAction(formData: FormData) {
 
 export async function approveProjectApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
-  if (!id) throw new Error("缺少项目审批 ID");
-  await approveProjectApproval(id);
+  if (!id) redirect(withErrorParam("/projects/tasks", "缺少项目审批 ID。"));
+  try {
+    await approveProjectApproval(id);
+  } catch (error) {
+    console.error("[approveProjectApprovalAction] error:", error);
+    redirect(withErrorParam("/projects/tasks", extractErrorMessage(error)));
+  }
   revalidatePath("/projects/tasks");
+  redirect(`/projects/tasks?notice=${encodeURIComponent("已批准。")}`);
 }
 
 export async function rejectProjectApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
-  if (!id) throw new Error("缺少项目审批 ID");
-  await rejectProjectApproval(id);
+  if (!id) redirect(withErrorParam("/projects/tasks", "缺少项目审批 ID。"));
+  try {
+    await rejectProjectApproval(id);
+  } catch (error) {
+    console.error("[rejectProjectApprovalAction] error:", error);
+    redirect(withErrorParam("/projects/tasks", extractErrorMessage(error)));
+  }
   revalidatePath("/projects/tasks");
+  redirect(`/projects/tasks?notice=${encodeURIComponent("已驳回。")}`);
 }
 
 export async function createTaskCommentAction(formData: FormData) {

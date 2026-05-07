@@ -1,11 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { approveApproval, cancelApproval, createApproval, rejectApproval } from "@/lib/approvals";
 import { getCurrentOrganization } from "@/lib/auth";
 import { approveFinanceRecord, rejectFinanceRecord } from "@/lib/finance/records";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ApprovalRequest, RiskLevel } from "@/lib/types/core";
+
+// 审批失败/成功统一回到治理页（用户最自然的位置看到结果）。
+const APPROVAL_LIST_PATH = "/governance";
 
 function value(formData: FormData, key: string) {
   const raw = formData.get(key);
@@ -16,16 +21,24 @@ export async function createApprovalAction(formData: FormData) {
   const title = value(formData, "title");
   const related_module = value(formData, "related_module");
   const risk_level = (value(formData, "risk_level") ?? "medium") as RiskLevel;
-  if (!title || !related_module) throw new Error("标题和模块不能为空");
-  await createApproval({
-    title,
-    related_module,
-    description: value(formData, "description"),
-    related_record_type: value(formData, "related_record_type"),
-    related_record_id: value(formData, "related_record_id"),
-    risk_level,
-  });
+  if (!title || !related_module) {
+    redirect(withErrorParam(APPROVAL_LIST_PATH, "标题和模块不能为空。"));
+  }
+  try {
+    await createApproval({
+      title,
+      related_module,
+      description: value(formData, "description"),
+      related_record_type: value(formData, "related_record_type"),
+      related_record_id: value(formData, "related_record_id"),
+      risk_level,
+    });
+  } catch (error) {
+    console.error("[createApprovalAction] error:", error);
+    redirect(withErrorParam(APPROVAL_LIST_PATH, extractErrorMessage(error)));
+  }
   revalidateApprovalSurfaces(related_module);
+  redirect(`${APPROVAL_LIST_PATH}?notice=${encodeURIComponent("审批已创建。")}`);
 }
 
 async function getApproval(approvalId: string) {
@@ -67,34 +80,58 @@ function getFinanceRecordId(approval: ApprovalRequest | null) {
 
 export async function approveApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
-  if (!id) throw new Error("缺少审批 ID");
-  const approval = await getApproval(id);
-  const financeRecordId = getFinanceRecordId(approval);
-  if (financeRecordId) {
-    await approveFinanceRecord(financeRecordId);
-  } else {
-    await approveApproval(id);
+  if (!id) redirect(withErrorParam(APPROVAL_LIST_PATH, "缺少审批 ID。"));
+  let approvalModule: string | null | undefined;
+  try {
+    const approval = await getApproval(id);
+    approvalModule = approval?.related_module;
+    const financeRecordId = getFinanceRecordId(approval);
+    if (financeRecordId) {
+      await approveFinanceRecord(financeRecordId);
+    } else {
+      await approveApproval(id);
+    }
+  } catch (error) {
+    console.error("[approveApprovalAction] error:", error);
+    redirect(withErrorParam(APPROVAL_LIST_PATH, extractErrorMessage(error)));
   }
-  revalidateApprovalSurfaces(approval?.related_module);
+  revalidateApprovalSurfaces(approvalModule);
+  redirect(`${APPROVAL_LIST_PATH}?notice=${encodeURIComponent("已批准。")}`);
 }
 
 export async function rejectApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
-  if (!id) throw new Error("缺少审批 ID");
-  const approval = await getApproval(id);
-  const financeRecordId = getFinanceRecordId(approval);
-  if (financeRecordId) {
-    await rejectFinanceRecord(financeRecordId, value(formData, "reason"));
-  } else {
-    await rejectApproval(id);
+  if (!id) redirect(withErrorParam(APPROVAL_LIST_PATH, "缺少审批 ID。"));
+  let approvalModule: string | null | undefined;
+  try {
+    const approval = await getApproval(id);
+    approvalModule = approval?.related_module;
+    const financeRecordId = getFinanceRecordId(approval);
+    if (financeRecordId) {
+      await rejectFinanceRecord(financeRecordId, value(formData, "reason"));
+    } else {
+      await rejectApproval(id);
+    }
+  } catch (error) {
+    console.error("[rejectApprovalAction] error:", error);
+    redirect(withErrorParam(APPROVAL_LIST_PATH, extractErrorMessage(error)));
   }
-  revalidateApprovalSurfaces(approval?.related_module);
+  revalidateApprovalSurfaces(approvalModule);
+  redirect(`${APPROVAL_LIST_PATH}?notice=${encodeURIComponent("已驳回。")}`);
 }
 
 export async function cancelApprovalAction(formData: FormData) {
   const id = value(formData, "approval_id");
-  if (!id) throw new Error("缺少审批 ID");
-  const approval = await getApproval(id);
-  await cancelApproval(id);
-  revalidateApprovalSurfaces(approval?.related_module);
+  if (!id) redirect(withErrorParam(APPROVAL_LIST_PATH, "缺少审批 ID。"));
+  let approvalModule: string | null | undefined;
+  try {
+    const approval = await getApproval(id);
+    approvalModule = approval?.related_module;
+    await cancelApproval(id);
+  } catch (error) {
+    console.error("[cancelApprovalAction] error:", error);
+    redirect(withErrorParam(APPROVAL_LIST_PATH, extractErrorMessage(error)));
+  }
+  revalidateApprovalSurfaces(approvalModule);
+  redirect(`${APPROVAL_LIST_PATH}?notice=${encodeURIComponent("已撤销审批。")}`);
 }

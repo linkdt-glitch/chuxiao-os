@@ -7,14 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { getGovernanceData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
 
-export default async function GovernancePage() {
+export default async function GovernancePage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; notice?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const data = await getGovernanceData();
 
   return (
     <>
+      <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="组织护航盾"
         description="原治理与风控底座。统一管理权限、分模块审批、日志、事件和风险，确保组织安全、可控、可追溯。核心价值：确保谁可以做、谁批准、谁负责、是否可追溯。"

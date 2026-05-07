@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Download, Plus, RotateCcw, Search, WalletCards } from "lucide-react";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { NoticeCelebration } from "@/components/ui/notice-celebration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,12 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
             <Button asChild><Link href="/finance/records/new"><Plus className="h-4 w-4" />新增记录</Link></Button>
           </div>
         }
+      />
+      <NoticeCelebration
+        notice={params.notice}
+        created={params.created}
+        title="恭喜！"
+        message={params.notice ?? (params.created ? "财务记录已经保存成功" : undefined)}
       />
       {params.error ? (
         <div

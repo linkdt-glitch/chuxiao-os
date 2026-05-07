@@ -19,10 +19,10 @@ import { Sparkles } from "lucide-react";
  */
 
 const PHRASES = [
-  "正在解析你的输入",
-  "调用神经网络中",
-  "组合最佳推理路径",
-  "即将给出答案"
+  "光速思考中",
+  "调用全部脑细胞",
+  "组合最佳答案",
+  "拼成最准的回复"
 ];
 
 export function AIThinking({
@@ -170,6 +170,22 @@ export function AIThinking({
         <Particle duration={4} size={5} delay={-2} />
         <Particle duration={7} size={3} delay={-3} reverse />
         <Particle duration={6} size={3.5} delay={-1.5} />
+
+        {/* 8 sparks — outward firework bursts continuously around center */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <span
+            key={i}
+            className="pointer-events-none absolute left-1/2 top-1/2 block h-1 w-1 rounded-full"
+            style={{
+              marginLeft: -2,
+              marginTop: -2,
+              background: "rgba(255,200,140,1)",
+              boxShadow: "0 0 6px rgba(249,115,22,0.95)",
+              animation: `at-spark-${i} 1.4s cubic-bezier(0.2,0.6,0.2,1) infinite`,
+              animationDelay: `${i * 0.18}s`
+            }}
+          />
+        ))}
       </div>
 
       {/* Title + cycling phrase */}

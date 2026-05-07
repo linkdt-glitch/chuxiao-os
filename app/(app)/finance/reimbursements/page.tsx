@@ -4,6 +4,7 @@ import { ExpenseApprovalWorkbench } from "@/components/expenses/expense-approval
 import { ExpenseMetricCard } from "@/components/expenses/expense-shared";
 import { FinanceApprovalWorkbench } from "@/components/finance/finance-approval-workbench";
 import { PageHeader } from "@/components/layout/page-header";
+import { NoticeCelebration } from "@/components/ui/notice-celebration";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -24,6 +25,12 @@ export default async function ReimbursementsPage({
 
   return (
     <>
+      <NoticeCelebration
+        notice={params.notice}
+        created={params.created}
+        title="恭喜！"
+        message={params.notice ?? (params.created ? "报销已经提交成功" : undefined)}
+      />
       {params.error ? (
         <div
           className="mb-4 flex items-start gap-2 rounded-lg p-3 text-sm text-red-200"

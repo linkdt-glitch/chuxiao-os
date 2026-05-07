@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowLeft, FileText, ReceiptText, Save, Send } from "luc
 import { createExpenseReportAction } from "@/app/(app)/finance/reimbursements/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ export function ExpenseReportForm({
       </CardHeader>
       <CardContent>
         <form action={createExpenseReportAction} className="grid gap-4 md:grid-cols-2">
+          <FormPendingOverlay label="正在提交报销..." estimatedSeconds={2} />
           <input type="hidden" name="currency" value="CNY" />
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="template_hint">常用模板</Label>

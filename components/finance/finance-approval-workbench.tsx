@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RejectInlineButton } from "@/components/ui/reject-inline-button";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { Textarea } from "@/components/ui/textarea";
 import type { FinanceRecord, FinanceReceiptAttachment } from "@/lib/finance/types";
@@ -474,12 +475,21 @@ export function FinanceApprovalWorkbench({
                           <Eye className="h-4 w-4" />详情
                         </Button>
                         {showActions ? (
-                          <form action={approveFinanceRecordAction}>
-                            <input type="hidden" name="id" value={record.id} />
-                            <ConfirmSubmitButton confirmText="确认批准这条财务审批？" size="sm" variant="secondary">
-                              批准
-                            </ConfirmSubmitButton>
-                          </form>
+                          <>
+                            <form action={approveFinanceRecordAction}>
+                              <input type="hidden" name="id" value={record.id} />
+                              <ConfirmSubmitButton confirmText="确认批准这条财务审批？" size="sm" variant="secondary">
+                                批准
+                              </ConfirmSubmitButton>
+                            </form>
+                            <RejectInlineButton
+                              action={rejectFinanceRecordAction}
+                              idValue={record.id}
+                              idName="id"
+                              reasonName="reason"
+                              reasonPromptTitle="请输入驳回原因（员工会看到）"
+                            />
+                          </>
                         ) : null}
                       </div>
                     </div>

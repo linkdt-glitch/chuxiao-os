@@ -35,7 +35,9 @@ export function AssistantChat() {
 
     const nextMessages: Message[] = [...messages, { role: "user", content: question }];
     const assistantIndex = nextMessages.length;
-    setMessages([...nextMessages, { role: "assistant", content: "正在连接 AI..." }]);
+    // Insert empty assistant placeholder; AIThinking 卡片会在 content 为空时
+    // 显示，第一个流式 chunk 到达时自动接管。
+    setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setPending(true);
     setError("");
@@ -92,35 +94,41 @@ export function AssistantChat() {
           <div className="text-sm text-muted-foreground">连接当前启用的 AI Provider，调用记录会进入 AI 调用日志。</div>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {messages.map((message, index) => (
-            <div key={`${message.role}-${index}`} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-              <div className="flex max-w-[82%] gap-3">
-                {message.role === "assistant" ? (
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-                    <Bot className="h-4 w-4" />
+          {messages.map((message, index) => {
+            // Hide empty assistant bubble — the AIThinking card below replaces it.
+            if (message.role === "assistant" && !message.content.trim()) return null;
+            return (
+              <div key={`${message.role}-${index}`} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <div className="flex max-w-[82%] gap-3">
+                  {message.role === "assistant" ? (
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                  ) : null}
+                  <div
+                    className={
+                      message.role === "user"
+                        ? "rounded-lg bg-gradient-to-b from-orange-400 to-orange-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
+                        : "rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm"
+                    }
+                  >
+                    <div className="whitespace-pre-wrap">{message.content}</div>
                   </div>
-                ) : null}
-                <div
-                  className={
-                    message.role === "user"
-                      ? "rounded-lg bg-gradient-to-b from-orange-400 to-orange-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
-                      : "rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm"
-                  }
-                >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  {message.role === "user" ? (
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                  ) : null}
                 </div>
-                {message.role === "user" ? (
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <UserRound className="h-4 w-4" />
-                  </div>
-                ) : null}
               </div>
-            </div>
-          ))}
-          {pending && messages[messages.length - 1]?.role !== "assistant" ? (
+            );
+          })}
+          {/* AIThinking 卡片在 pending + 最后一条 assistant 还没内容时显示，
+             第一个流式 chunk 到达后自动消失，真实回复 bubble 接管。 */}
+          {pending && (messages[messages.length - 1]?.content ?? "").trim() === "" ? (
             <div className="flex justify-start">
               <div className="max-w-[85%]">
-                <AIThinking label="AI 正在思考" variant="card" />
+                <AIThinking label="AI 正在光速思考" variant="card" />
               </div>
             </div>
           ) : null}

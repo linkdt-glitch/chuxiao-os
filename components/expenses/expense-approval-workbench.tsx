@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RejectInlineButton } from "@/components/ui/reject-inline-button";
 import { Textarea } from "@/components/ui/textarea";
 import { money, type Department, type DepartmentBudget, type ExpenseReport, type ExpenseStatus } from "@/lib/finance/expense-types";
 
@@ -563,10 +564,19 @@ export function ExpenseApprovalWorkbench({
                                   </form>
                                 ) : null}
                                 {canApprove && isPending ? (
-                                  <form action={approveExpenseReportAction}>
-                                    <input type="hidden" name="id" value={report.id} />
-                                    <Button size="sm" type="submit"><Check className="h-4 w-4" />通过</Button>
-                                  </form>
+                                  <>
+                                    <form action={approveExpenseReportAction}>
+                                      <input type="hidden" name="id" value={report.id} />
+                                      <Button size="sm" type="submit"><Check className="h-4 w-4" />通过</Button>
+                                    </form>
+                                    <RejectInlineButton
+                                      action={rejectExpenseReportAction}
+                                      idValue={report.id}
+                                      idName="id"
+                                      reasonName="comment"
+                                      reasonPromptTitle="请输入驳回原因（员工会看到）"
+                                    />
+                                  </>
                                 ) : null}
                               </div>
                             </div>

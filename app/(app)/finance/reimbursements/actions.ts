@@ -71,7 +71,19 @@ export async function createExpenseReportAction(formData: FormData) {
     }, intent === "submit");
     createdId = "id" in report ? report.id : "";
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "报销创建失败，请检查必填项后重试。";
+    console.error("[createExpenseReportAction] error:", error);
+    let msg = "报销创建失败，请检查必填项后重试。";
+    if (error instanceof Error) {
+      msg = error.message;
+    } else if (error && typeof error === "object") {
+      const e = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+      const parts: string[] = [];
+      if (typeof e.message === "string" && e.message) parts.push(e.message);
+      if (typeof e.details === "string" && e.details) parts.push(e.details);
+      if (typeof e.hint === "string" && e.hint) parts.push(`提示：${e.hint}`);
+      if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
+      if (parts.length) msg = parts.join(" · ");
+    }
     redirect(`/finance/reimbursements/new?error=${encodeURIComponent(msg)}`);
   }
   redirect(`/finance/reimbursements?created=${createdId}`);

@@ -126,10 +126,32 @@ export async function createFinanceRecordAction(formData: FormData) {
       runAfter("finance.attach_receipts", () => attachUploadedFiles(pendingFiles, id));
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "保存失败，请检查必填项后重试。";
-    redirect(`/finance/records/new?error=${encodeURIComponent(msg)}`);
+    // 把所有错误都打到 server log（Render Dashboard → Logs 可以看到）
+    console.error("[createFinanceRecordAction] error:", error);
+    redirect(`/finance/records/new?error=${encodeURIComponent(extractErrorMessage(error))}`);
   }
   redirect(`/finance/records?created=1${recordId ? `&highlight=${recordId}` : ""}`);
+}
+
+/**
+ * Extract human-readable message from any throwable shape:
+ * - Error instance: e.message
+ * - Supabase PostgrestError: { code, message, details, hint } — pick message + hint
+ * - plain object with message: stringify message
+ * - anything else: generic fallback
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    const e = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    const parts: string[] = [];
+    if (typeof e.message === "string" && e.message) parts.push(e.message);
+    if (typeof e.details === "string" && e.details) parts.push(e.details);
+    if (typeof e.hint === "string" && e.hint) parts.push(`提示：${e.hint}`);
+    if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
+    if (parts.length > 0) return parts.join(" · ");
+  }
+  return "保存失败，请检查必填项后重试。";
 }
 
 /**

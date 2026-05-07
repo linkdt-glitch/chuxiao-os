@@ -7,6 +7,7 @@ import { createFinanceAccount } from "@/lib/finance/accounts";
 import { createFinanceCategory } from "@/lib/finance/categories";
 import { approveFinanceRecord, createFinanceRecord, rejectFinanceRecord, updateFinanceRecord } from "@/lib/finance/records";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 import { runAfter } from "@/lib/server/after";
 import type { FinanceAccountType, FinanceCategoryType, FinanceRecordType, ParsedFinanceRecord } from "@/lib/finance/types";
 
@@ -134,27 +135,6 @@ export async function createFinanceRecordAction(formData: FormData) {
 }
 
 /**
- * Extract human-readable message from any throwable shape:
- * - Error instance: e.message
- * - Supabase PostgrestError: { code, message, details, hint } — pick message + hint
- * - plain object with message: stringify message
- * - anything else: generic fallback
- */
-function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error && typeof error === "object") {
-    const e = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
-    const parts: string[] = [];
-    if (typeof e.message === "string" && e.message) parts.push(e.message);
-    if (typeof e.details === "string" && e.details) parts.push(e.details);
-    if (typeof e.hint === "string" && e.hint) parts.push(`提示：${e.hint}`);
-    if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
-    if (parts.length > 0) return parts.join(" · ");
-  }
-  return "保存失败，请检查必填项后重试。";
-}
-
-/**
  * 把 File[] 上传到 Storage 并 link 到 record。
  * 跟 attachReceiptFiles(formData,recordId) 行为一致，但接收已经从 formData
  * 提取出的 File 数组，方便在 runAfter 闭包中调用。
@@ -185,27 +165,50 @@ async function attachUploadedFiles(files: File[], recordId: string) {
 
 export async function updateFinanceRecordAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing record id");
-  await updateFinanceRecord(id, {
-    status: value(formData, "status") as never
-  });
+  if (!id) {
+    redirect(withErrorParam("/finance/records", "缺少记录 ID。"));
+  }
+  try {
+    await updateFinanceRecord(id, {
+      status: value(formData, "status") as never
+    });
+  } catch (error) {
+    console.error("[updateFinanceRecordAction] error:", error);
+    redirect(withErrorParam("/finance/records", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/records");
 }
 
 export async function approveFinanceRecordAction(formData: FormData) {
   const ids = values(formData, "id");
-  if (!ids.length) throw new Error("Missing record id");
-  await Promise.all(ids.map((id) => approveFinanceRecord(id)));
+  if (!ids.length) {
+    redirect(withErrorParam("/finance/records", "请先选择要批准的记录。"));
+  }
+  try {
+    await Promise.all(ids.map((id) => approveFinanceRecord(id)));
+  } catch (error) {
+    console.error("[approveFinanceRecordAction] error:", error);
+    redirect(withErrorParam("/finance/records", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/records");
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/records?notice=${encodeURIComponent(`已批准 ${ids.length} 条记录。`)}`);
 }
 
 export async function rejectFinanceRecordAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing record id");
-  await rejectFinanceRecord(id, value(formData, "reason"));
+  if (!id) {
+    redirect(withErrorParam("/finance/records", "缺少记录 ID。"));
+  }
+  try {
+    await rejectFinanceRecord(id, value(formData, "reason"));
+  } catch (error) {
+    console.error("[rejectFinanceRecordAction] error:", error);
+    redirect(withErrorParam("/finance/records", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/records");
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/records?notice=${encodeURIComponent("已驳回。")}`);
 }
 
 export async function createFinanceCategoryAction(formData: FormData) {

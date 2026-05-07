@@ -13,6 +13,7 @@ import {
   upsertExpenseTemplate,
   withdrawExpenseReport
 } from "@/lib/finance/expenses";
+import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 
 function value(formData: FormData, key: string) {
   const raw = formData.get(key);
@@ -72,67 +73,92 @@ export async function createExpenseReportAction(formData: FormData) {
     createdId = "id" in report ? report.id : "";
   } catch (error) {
     console.error("[createExpenseReportAction] error:", error);
-    let msg = "报销创建失败，请检查必填项后重试。";
-    if (error instanceof Error) {
-      msg = error.message;
-    } else if (error && typeof error === "object") {
-      const e = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
-      const parts: string[] = [];
-      if (typeof e.message === "string" && e.message) parts.push(e.message);
-      if (typeof e.details === "string" && e.details) parts.push(e.details);
-      if (typeof e.hint === "string" && e.hint) parts.push(`提示：${e.hint}`);
-      if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
-      if (parts.length) msg = parts.join(" · ");
-    }
-    redirect(`/finance/reimbursements/new?error=${encodeURIComponent(msg)}`);
+    redirect(withErrorParam("/finance/reimbursements/new", extractErrorMessage(error, "报销创建失败，请检查必填项后重试。")));
   }
   redirect(`/finance/reimbursements?created=${createdId}`);
 }
 
 export async function submitExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing expense report id");
-  await submitExpenseReport(id);
+  if (!id) redirect(withErrorParam("/finance/reimbursements", "缺少报销单 ID。"));
+  try {
+    await submitExpenseReport(id);
+  } catch (error) {
+    console.error("[submitExpenseReportAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/reimbursements?notice=${encodeURIComponent("已提交审批。")}`);
 }
 
 export async function withdrawExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing expense report id");
-  await withdrawExpenseReport(id);
+  if (!id) redirect(withErrorParam("/finance/reimbursements", "缺少报销单 ID。"));
+  try {
+    await withdrawExpenseReport(id);
+  } catch (error) {
+    console.error("[withdrawExpenseReportAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/reimbursements?notice=${encodeURIComponent("已撤回。")}`);
 }
 
 export async function approveExpenseReportAction(formData: FormData) {
   const ids = values(formData, "id");
-  if (!ids.length) throw new Error("请选择至少一条报销单。");
-  await Promise.all(ids.map((id) => decideExpenseReport(id, "approved", value(formData, "comment") ?? "")));
+  if (!ids.length) redirect(withErrorParam("/finance/reimbursements", "请选择至少一条报销单。"));
+  try {
+    await Promise.all(ids.map((id) => decideExpenseReport(id, "approved", value(formData, "comment") ?? "")));
+  } catch (error) {
+    console.error("[approveExpenseReportAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
   revalidatePath("/finance/reimbursements/payments");
+  redirect(`/finance/reimbursements?notice=${encodeURIComponent(`已批准 ${ids.length} 条报销单。`)}`);
 }
 
 export async function rejectExpenseReportAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing expense report id");
-  await decideExpenseReport(id, "rejected", value(formData, "comment") ?? "");
+  if (!id) redirect(withErrorParam("/finance/reimbursements", "缺少报销单 ID。"));
+  try {
+    await decideExpenseReport(id, "rejected", value(formData, "comment") ?? "");
+  } catch (error) {
+    console.error("[rejectExpenseReportAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/reimbursements?notice=${encodeURIComponent("已驳回。")}`);
 }
 
 export async function requestExpenseRevisionAction(formData: FormData) {
   const id = value(formData, "id");
-  if (!id) throw new Error("Missing expense report id");
-  await decideExpenseReport(id, "need_revision", value(formData, "comment") ?? "");
+  if (!id) redirect(withErrorParam("/finance/reimbursements", "缺少报销单 ID。"));
+  try {
+    await decideExpenseReport(id, "need_revision", value(formData, "comment") ?? "");
+  } catch (error) {
+    console.error("[requestExpenseRevisionAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
+  redirect(`/finance/reimbursements?notice=${encodeURIComponent("已请求修改。")}`);
 }
 
 export async function markExpenseReportsPaidAction(formData: FormData) {
   const ids = values(formData, "id");
-  await markExpenseReportsPaid(ids, {
-    paid_at: value(formData, "paid_at"),
-    payment_reference: value(formData, "payment_reference")
-  });
+  if (!ids.length) redirect(withErrorParam("/finance/reimbursements/payments", "请选择至少一条报销单。"));
+  try {
+    await markExpenseReportsPaid(ids, {
+      paid_at: value(formData, "paid_at"),
+      payment_reference: value(formData, "payment_reference")
+    });
+  } catch (error) {
+    console.error("[markExpenseReportsPaidAction] error:", error);
+    redirect(withErrorParam("/finance/reimbursements/payments", extractErrorMessage(error)));
+  }
   revalidatePath("/finance/reimbursements");
   revalidatePath("/finance/reimbursements/payments");
+  redirect(`/finance/reimbursements/payments?notice=${encodeURIComponent(`已标记 ${ids.length} 条为已支付。`)}`);
 }
 
 export async function createExpenseTemplateAction(formData: FormData) {

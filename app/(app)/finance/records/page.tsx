@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Download, Plus, RotateCcw, Search, WalletCards } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Plus, RotateCcw, Search, WalletCards } from "lucide-react";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -49,9 +49,45 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
           </div>
         }
       />
+      {params.error ? (
+        <div
+          className="mb-4 flex items-start gap-2 rounded-lg p-3 text-sm text-red-200"
+          style={{
+            background: "rgba(239,68,68,0.10)",
+            border: "1px solid rgba(239,68,68,0.32)",
+            boxShadow: "0 0 14px rgba(239,68,68,0.10)"
+          }}
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+          <div>
+            <div className="font-medium text-red-200">操作失败</div>
+            <div className="mt-0.5 text-red-200/85">{params.error}</div>
+          </div>
+        </div>
+      ) : null}
+      {params.notice ? (
+        <div
+          className="mb-4 flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
+          style={{
+            background: "rgba(16,185,129,0.10)",
+            border: "1px solid rgba(16,185,129,0.32)",
+            boxShadow: "0 0 14px rgba(16,185,129,0.10)"
+          }}
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>{params.notice}</span>
+        </div>
+      ) : null}
       {params.created ? (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-800 shadow-[0_12px_34px_rgba(16,185,129,0.08)]">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <div
+          className="mb-4 flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
+          style={{
+            background: "rgba(16,185,129,0.10)",
+            border: "1px solid rgba(16,185,129,0.32)",
+            boxShadow: "0 0 14px rgba(16,185,129,0.10)"
+          }}
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
           <span>财务记录已保存，最新流水已同步。</span>
         </div>
       ) : null}

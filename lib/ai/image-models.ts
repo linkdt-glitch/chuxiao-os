@@ -46,7 +46,7 @@ export const IMAGE_MODELS: ImageModel[] = [
   {
     id: "fal-ai/nano-banana-pro/edit",
     label: "① Nano Banana Pro",
-    description: "Gemini 3 Pro Image · 顶级真实感 + 最多 14 张参考图。产品保留 + 风格迁移效果最强。",
+    description: "Google Gemini 3 Pro Image · 顶级真实感 + 最多 14 张参考图。产品保留 + 风格迁移效果最强。",
     pricePerImageCny: 1.08,
     speed: "slow",
     approxSeconds: 20,
@@ -56,8 +56,19 @@ export const IMAGE_MODELS: ImageModel[] = [
     tag: "顶配 · 商业级"
   },
   {
+    id: "openai/gpt-image-2/edit",
+    label: "② OpenAI GPT Image 2 Edit",
+    description: "OpenAI 最新一代图像编辑（ChatGPT-5 时代旗舰）· 提示遵循极强，文字渲染最准，可多张参考图。",
+    pricePerImageCny: 1.52,
+    speed: "slow",
+    approxSeconds: 25,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "OpenAI · GPT 5"
+  },
+  {
     id: "fal-ai/flux-pro/kontext/max",
-    label: "② Flux Kontext Max",
+    label: "③ Flux Kontext Max",
     description: "Black Forest Labs 旗舰编辑模型。提示词遵循 + 字符一致性最强，多轮编辑稳。",
     pricePerImageCny: 0.79,
     speed: "medium",
@@ -68,7 +79,7 @@ export const IMAGE_MODELS: ImageModel[] = [
   },
   {
     id: "fal-ai/nano-banana-2/edit",
-    label: "③ Nano Banana 2",
+    label: "④ Nano Banana 2",
     description: "Gemini 3.1 Flash Image · 构图与材质保真升级，比初代质量高一档，速度还行。",
     pricePerImageCny: 0.58,
     speed: "medium",
@@ -79,7 +90,7 @@ export const IMAGE_MODELS: ImageModel[] = [
   },
   {
     id: "fal-ai/bytedance/seedream/v4.5/edit",
-    label: "④ Seedream v4.5",
+    label: "⑤ Seedream v4.5",
     description: "ByteDance 旗舰 · 一架构同时做生成+编辑 · 最多 10 张参考图，2K 输出，性价比之王。",
     pricePerImageCny: 0.29,
     speed: "medium",
@@ -90,7 +101,7 @@ export const IMAGE_MODELS: ImageModel[] = [
   },
   {
     id: "fal-ai/flux-pro/kontext",
-    label: "⑤ Flux Kontext Pro",
+    label: "⑥ Flux Kontext Pro",
     description: "Flux Kontext 标准版 · 12B 参数多模态流式 Transformer，本地+全局编辑统一。",
     pricePerImageCny: 0.29,
     speed: "medium",
@@ -101,7 +112,7 @@ export const IMAGE_MODELS: ImageModel[] = [
   },
   {
     id: "fal-ai/nano-banana/edit",
-    label: "⑥ Nano Banana",
+    label: "⑦ Nano Banana",
     description: "Gemini 2.5 Flash Image · Nano Banana 初代，最便宜的 Gemini 图生图，质量已够商用。",
     pricePerImageCny: 0.28,
     speed: "fast",
@@ -110,19 +121,18 @@ export const IMAGE_MODELS: ImageModel[] = [
     acceptsReferenceImages: true,
     tag: "Gemini · 入门"
   },
-  {
-    id: "fal-ai/flux/dev/image-to-image",
-    label: "⑦ Flux Dev img2img",
-    description: "Flux Dev 图生图变体 · 最便宜的图生图基础款，跑批草图不心疼。",
-    pricePerImageCny: 0.18,
-    speed: "fast",
-    approxSeconds: 8,
-    apiShape: "img2img",
-    acceptsReferenceImages: true,
-    tag: "BFL · 草稿"
-  },
 
-  // ── Text-to-Image (Flux + Recraft + Ideogram) ────────────────────
+  // ── Text-to-Image (OpenAI + Flux + Recraft + Ideogram) ──────────
+  {
+    id: "openai/gpt-image-2",
+    label: "OpenAI GPT Image 2",
+    description: "OpenAI ChatGPT-5 时代旗舰文生图 · 提示遵循 + 文字渲染业内最强，复杂海报首选。",
+    pricePerImageCny: 1.52,
+    speed: "slow",
+    approxSeconds: 22,
+    apiShape: "text2img",
+    tag: "OpenAI · GPT 5"
+  },
   {
     id: "fal-ai/flux-pro/v1.1-ultra",
     label: "Flux Pro Ultra",

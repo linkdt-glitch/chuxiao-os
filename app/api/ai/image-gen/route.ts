@@ -129,8 +129,19 @@ export async function POST(request: Request) {
     // ── Build payload by API shape ───────────────────────────────────
     let falPayload: Record<string, unknown>;
 
+    // OpenAI's GPT Image 2 family uses `image_size + quality` instead of
+    // `aspect_ratio`. Map our 1:1/16:9/etc to the matching image_size enum.
+    const isOpenAIGPT = model.id.startsWith("openai/gpt-image-");
+    const aspectToImageSize: Record<string, FalImageSize> = {
+      "1:1": "square_hd",
+      "4:3": "landscape_4_3",
+      "3:4": "portrait_4_3",
+      "16:9": "landscape_16_9",
+      "9:16": "portrait_16_9"
+    };
+
     if (model.apiShape === "img2img") {
-      // image-to-image: needs image_urls + aspect_ratio
+      // image-to-image: needs image_urls + aspect_ratio (or image_size for OpenAI)
       const rawImages = Array.isArray(body.image_urls) ? body.image_urls : [];
       if (rawImages.length === 0) {
         return NextResponse.json(
@@ -158,16 +169,34 @@ export async function POST(request: Request) {
         ? (rawAspect as FalAspectRatio)
         : "1:1";
 
-      falPayload = {
-        prompt,
-        image_urls: rawImages,
-        aspect_ratio: aspectRatio,
-        num_images: 1,
-        output_format: "jpeg",
-        sync_mode: true
-      };
+      if (isOpenAIGPT) {
+        // GPT Image 2 edit: image_size + quality
+        const rawSize = typeof body.image_size === "string" ? body.image_size : "";
+        const imageSize: FalImageSize =
+          (VALID_SIZES as readonly string[]).includes(rawSize)
+            ? (rawSize as FalImageSize)
+            : aspectToImageSize[aspectRatio] ?? "square_hd";
+        falPayload = {
+          prompt,
+          image_urls: rawImages,
+          image_size: imageSize,
+          quality: "high",
+          num_images: 1,
+          output_format: "jpeg",
+          sync_mode: true
+        };
+      } else {
+        falPayload = {
+          prompt,
+          image_urls: rawImages,
+          aspect_ratio: aspectRatio,
+          num_images: 1,
+          output_format: "jpeg",
+          sync_mode: true
+        };
+      }
     } else {
-      // text-to-image: needs image_size + maybe num_inference_steps
+      // text-to-image: needs image_size + maybe num_inference_steps / quality
       const rawSize = typeof body.image_size === "string" ? body.image_size : "square_hd";
       const imageSize: FalImageSize = (VALID_SIZES as readonly string[]).includes(rawSize)
         ? (rawSize as FalImageSize)
@@ -177,11 +206,19 @@ export async function POST(request: Request) {
         prompt,
         image_size: imageSize,
         num_images: 1,
-        enable_safety_checker: true,
         sync_mode: true
       };
-      if (model.inferenceSteps) {
-        falPayload.num_inference_steps = model.inferenceSteps;
+
+      if (isOpenAIGPT) {
+        // GPT Image 2 text2img: quality required to lock per-image price
+        falPayload.quality = "high";
+        falPayload.output_format = "jpeg";
+      } else {
+        // Flux/Recraft/Ideogram families
+        falPayload.enable_safety_checker = true;
+        if (model.inferenceSteps) {
+          falPayload.num_inference_steps = model.inferenceSteps;
+        }
       }
     }
 

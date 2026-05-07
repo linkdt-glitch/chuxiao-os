@@ -183,12 +183,33 @@ function numberEnv(key: string, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+/**
+ * SiliconFlow 推荐模型组合（2026 最新最优，按用途分）
+ *
+ *   FAST  Qwen/Qwen2.5-7B-Instruct          极速短任务（一句话记账解析）首字节 <300ms
+ *   CHAT  deepseek-ai/DeepSeek-V3.1         hybrid thinking + 164K context，质量+速度平衡
+ *   VISION Qwen/Qwen2.5-VL-7B-Instruct      拍照识别票据，比 72B 快 5-10×，识别足够
+ *   DEFAULT deepseek-ai/DeepSeek-V3.1       通用 fallback（V3 已被 V3.1 全方位升级且同价）
+ *
+ * 用户在 Render 环境变量 / Supabase ai_providers 表里可以覆盖以上任一项。
+ */
+const SILICONFLOW_DEFAULT_FAST = "Qwen/Qwen2.5-7B-Instruct";
+const SILICONFLOW_DEFAULT_CHAT = "deepseek-ai/DeepSeek-V3.1";
+const SILICONFLOW_DEFAULT_VISION = "Qwen/Qwen2.5-VL-7B-Instruct";
+const SILICONFLOW_DEFAULT_GENERAL = "deepseek-ai/DeepSeek-V3.1";
+
 function modelForModule(provider: AIProvider, module: string, hasImages = false) {
   if (provider.provider_name === "siliconflow") {
-    if (hasImages) return process.env.SILICONFLOW_VISION_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
-    if (module.startsWith("finance.ai_parse")) return process.env.SILICONFLOW_FAST_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
-    if (module === "ai_chat") return process.env.SILICONFLOW_CHAT_MODEL || provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
-    return provider.model_name || process.env.SILICONFLOW_MODEL || "deepseek-ai/DeepSeek-V3";
+    if (hasImages) {
+      return process.env.SILICONFLOW_VISION_MODEL || SILICONFLOW_DEFAULT_VISION;
+    }
+    if (module.startsWith("finance.ai_parse")) {
+      return process.env.SILICONFLOW_FAST_MODEL || SILICONFLOW_DEFAULT_FAST;
+    }
+    if (module === "ai_chat") {
+      return process.env.SILICONFLOW_CHAT_MODEL || SILICONFLOW_DEFAULT_CHAT;
+    }
+    return provider.model_name || process.env.SILICONFLOW_MODEL || SILICONFLOW_DEFAULT_GENERAL;
   }
 
   if (module.startsWith("finance.ai_parse")) return process.env.DEEPSEEK_FAST_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";

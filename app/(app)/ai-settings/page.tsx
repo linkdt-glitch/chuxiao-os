@@ -49,6 +49,66 @@ export default async function AISettingsPage() {
             </CardContent>
           </Card>
           <ProviderTestCard />
+
+          {/* SiliconFlow 推荐模型升级提示 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ServerCog className="h-4 w-4 text-orange-400" />
+                SiliconFlow 推荐模型组合（2026）
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-400">
+              <div
+                className="rounded-lg p-3 text-[12px]"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-2 flex items-center gap-2 font-medium text-slate-200">
+                  <span
+                    className="rounded px-1.5 py-0.5 font-mono text-[10px]"
+                    style={{
+                      background: "rgba(74,222,128,0.10)",
+                      color: "#86efac",
+                      border: "1px solid rgba(74,222,128,0.30)"
+                    }}
+                  >
+                    已升级
+                  </span>
+                  代码默认值
+                </div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                  <li>极速短任务 → <span className="font-mono text-orange-200">Qwen/Qwen2.5-7B-Instruct</span> · 首字节 &lt;300ms</li>
+                  <li>AI 对话 → <span className="font-mono text-orange-200">deepseek-ai/DeepSeek-V3.1</span> · hybrid thinking + 164K 上下文</li>
+                  <li>拍照识图 → <span className="font-mono text-orange-200">Qwen/Qwen2.5-VL-7B-Instruct</span> · 比 72B 快 5-10×，识别票据足够</li>
+                  <li>价格档：<span className="text-emerald-300">输入 ¥1.94/M · 输出 ¥7.92/M</span>（V3.1，与 V3 同价但质量更高）</li>
+                </ul>
+              </div>
+
+              <div
+                className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-200/85"
+                style={{
+                  background: "rgba(251,191,36,0.06)",
+                  border: "1px solid rgba(251,191,36,0.28)"
+                }}
+              >
+                <div className="mb-1 font-medium text-amber-200">如果你之前在 Render 设过环境变量</div>
+                <p>
+                  Render 的 env 会覆盖代码默认值。要享受新组合，请到 Render Dashboard → chuxiao-os → Environment 把这 4 项更新（设过的话）：
+                </p>
+                <ul className="ml-3 mt-1.5 list-disc font-mono text-[10px] marker:text-amber-300/60">
+                  <li>SILICONFLOW_MODEL = deepseek-ai/DeepSeek-V3.1</li>
+                  <li>SILICONFLOW_CHAT_MODEL = deepseek-ai/DeepSeek-V3.1</li>
+                  <li>SILICONFLOW_VISION_MODEL = Qwen/Qwen2.5-VL-7B-Instruct</li>
+                  <li>SILICONFLOW_FAST_MODEL = Qwen/Qwen2.5-7B-Instruct（保持）</li>
+                </ul>
+                <p className="mt-1.5">如果没设过任何 env，系统会自动用上面的默认值，无需操作。</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

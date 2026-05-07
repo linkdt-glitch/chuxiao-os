@@ -47,13 +47,13 @@ services:
       - key: SILICONFLOW_BASE_URL
         value: https://api.siliconflow.cn/v1
       - key: SILICONFLOW_MODEL
-        value: deepseek-ai/DeepSeek-V3
+        value: deepseek-ai/DeepSeek-V3.1
       - key: SILICONFLOW_FAST_MODEL
         value: Qwen/Qwen2.5-7B-Instruct
       - key: SILICONFLOW_CHAT_MODEL
-        value: deepseek-ai/DeepSeek-V3
+        value: deepseek-ai/DeepSeek-V3.1
       - key: SILICONFLOW_VISION_MODEL
-        sync: false
+        value: Qwen/Qwen2.5-VL-7B-Instruct
       - key: AI_DEFAULT_TIMEOUT_MS
         value: "20000"
       - key: AI_CHAT_TIMEOUT_MS

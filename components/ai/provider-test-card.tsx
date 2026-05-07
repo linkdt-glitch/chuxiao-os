@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
+import { AIThinking } from "@/components/ui/ai-thinking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,19 +57,29 @@ export function ProviderTestCard() {
           <Sparkles className="h-4 w-4" />
           {pending ? "测试中..." : "测试当前 Provider"}
         </Button>
+        {pending ? <AIThinking label="AI 测试中" variant="card" estimatedSeconds={6} /> : null}
         {result ? (
           <div
-            className={
+            className="rounded-lg p-3 text-sm"
+            style={
               result.error
-                ? "rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-600"
-                : "rounded-lg border bg-white/80 p-3 text-sm text-slate-700"
+                ? {
+                    background: "rgba(239,68,68,0.10)",
+                    border: "1px solid rgba(239,68,68,0.32)",
+                    color: "rgb(252,165,165)"
+                  }
+                : {
+                    background: "rgba(8,13,28,0.55)",
+                    border: "1px solid rgba(249,115,22,0.18)",
+                    color: "rgb(226,232,240)"
+                  }
             }
           >
             {result.error ? (
               result.error
             ) : (
               <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-slate-500">
                   {result.provider?.label} · {result.provider?.model_name}
                 </div>
                 <div className="whitespace-pre-wrap leading-6">{result.text}</div>

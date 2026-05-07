@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, CheckCircle2, Keyboard, Mic, MicOff, Sparkles, Upload } from "lucide-react";
 import { confirmParsedFinanceRecordAction, parseFinanceTextAction, type AIParseState } from "@/app/(app)/finance/actions";
 import { ConfettiBurst } from "@/components/energy/confetti-burst";
+import { AIThinking } from "@/components/ui/ai-thinking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -199,6 +200,13 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
             ) : null}
             {parseState.error ? <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{parseState.error}</div> : null}
             <Button type="submit" disabled={parsing} className="h-11 w-full">{parsing ? "识别中..." : "AI 识别并生成草稿"}</Button>
+            {parsing ? (
+              <AIThinking
+                label="AI 正在解析记账"
+                variant="card"
+                estimatedSeconds={6}
+              />
+            ) : null}
           </form>
         </CardContent>
       </Card>
@@ -316,7 +324,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                   </div>
                 ) : null}
                 <Button type="submit" name="intent" value="confirm" disabled={confirming || Boolean(confirmState.success)} className="h-11">
-                  {confirming ? "正在保存，请稍候..." : "确认并保存"}
+                  {confirming ? "保存中..." : "确认并保存"}
                 </Button>
                 <Button type="submit" variant="outline" name="intent" value="draft" disabled={confirming || Boolean(confirmState.success)} className="h-11">
                   {confirming ? "正在保存..." : "保存草稿"}

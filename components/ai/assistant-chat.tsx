@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Bot, Send, UserRound } from "lucide-react";
+import { AIThinking } from "@/components/ui/ai-thinking";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -118,8 +119,8 @@ export function AssistantChat() {
           ))}
           {pending && messages[messages.length - 1]?.role !== "assistant" ? (
             <div className="flex justify-start">
-              <div className="rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-muted-foreground">
-                AI 正在思考...
+              <div className="max-w-[85%]">
+                <AIThinking label="AI 正在思考" variant="card" />
               </div>
             </div>
           ) : null}

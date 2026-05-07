@@ -180,6 +180,91 @@ export default async function AISettingsPage() {
               </a>
             </CardContent>
           </Card>
+
+          {/* ── Amazon 官方规格速查 (2026) ─────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-orange-400" />
+                亚马逊图片官方规格速查 (2026)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-400">
+              <div
+                className="rounded-lg p-3 text-[12px]"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-2 font-medium text-slate-200">主图（Main Image）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                  <li>纯白底 <span className="font-mono text-orange-200">RGB 255,255,255</span></li>
+                  <li>最低 <span className="font-mono text-orange-200">1000×1000</span>（启用放大功能必须）</li>
+                  <li>推荐 <span className="font-mono text-emerald-300">2000×2000+</span> · 甜区 2000-3000</li>
+                  <li>仅产品本体 · 占图 ≥85% · 无人物/文字/水印/logo</li>
+                </ul>
+              </div>
+
+              <div
+                className="rounded-lg p-3 text-[12px]"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-2 font-medium text-slate-200">附图（Additional Images）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                  <li>背景颜色不限 · 可加文字/人物/场景</li>
+                  <li>同样建议 ≥1000×1000，推荐 2000+</li>
+                  <li>每个 ASIN 最多 9 张图</li>
+                </ul>
+              </div>
+
+              <div
+                className="rounded-lg p-3 text-[12px]"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-2 font-medium text-slate-200">通用技术规格</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                  <li>格式：<span className="font-mono">JPEG / PNG / TIFF / GIF</span>（无动画）</li>
+                  <li>体积：<span className="font-mono text-orange-200">≤10MB / 张</span></li>
+                  <li>最大单边：<span className="font-mono">10000px</span></li>
+                  <li>最大宽高比：<span className="font-mono">5:1</span></li>
+                  <li>色彩空间：<span className="font-mono">sRGB</span> 或 <span className="font-mono">CMYK</span></li>
+                </ul>
+              </div>
+
+              <div
+                className="rounded-lg p-3 text-[12px]"
+                style={{
+                  background: "rgba(8,13,28,0.55)",
+                  border: "1px solid rgba(249,115,22,0.14)"
+                }}
+              >
+                <div className="mb-2 font-medium text-slate-200">A+ Content（品牌内容）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                  <li>Hero Banner: 970×600 或 1464×600</li>
+                  <li>Standard image: 300×300 / 600×180 / 970×300</li>
+                  <li>对比卡缩略图: 100×100</li>
+                  <li>logo: 600×180 推荐 PNG 透明底</li>
+                </ul>
+              </div>
+
+              <a
+                href="https://sellercentral.amazon.com/help/hub/reference/external/G1881"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Amazon Seller Central 官方规格文档
+              </a>
+            </CardContent>
+          </Card>
         </div>
         <Card>
           <CardHeader>

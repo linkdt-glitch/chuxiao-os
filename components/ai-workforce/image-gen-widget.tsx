@@ -31,6 +31,7 @@ import {
   type AmazonImageSize,
   type PresetCategory
 } from "@/lib/ai/amazon-presets";
+import { ImageGenHelp } from "@/components/ai-workforce/image-gen-help";
 
 type TabKind = "amazon" | "free";
 
@@ -347,14 +348,214 @@ export function ImageGenWidget() {
         {/* ── Amazon mode ─────────────────────────────────────────── */}
         {activeTab.kind === "amazon" && (
           <>
-            {/* Preset cards */}
+            {/* ── Step indicator: ① 上传  ② 选场景  ③ 出图  ④ 下载 ── */}
+            {(() => {
+              // Determine current step:
+              const stepUploaded = !presetNeedsUpload || refs.length > 0;
+              const stepReady = stepUploaded && Boolean(activePreset);
+              const stepGenerated = Boolean(result);
+              const steps = [
+                { n: 1, label: "上传产品照", done: refs.length > 0, active: presetNeedsUpload && refs.length === 0 },
+                { n: 2, label: "选场景 + 填字段", done: stepReady, active: stepUploaded && !stepGenerated },
+                { n: 3, label: "AI 生成", done: stepGenerated, active: stepReady && !stepGenerated && !loading },
+                { n: 4, label: "下载 / 上传 ASIN", done: false, active: stepGenerated }
+              ];
+              return (
+                <div className="flex items-center gap-2 overflow-x-auto py-1">
+                  {steps.map((s, i) => (
+                    <div key={s.n} className="flex shrink-0 items-center gap-2">
+                      <div
+                        className="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors"
+                        style={{
+                          background: s.done
+                            ? "rgba(74,222,128,0.10)"
+                            : s.active
+                              ? "rgba(249,115,22,0.14)"
+                              : "rgba(8,13,28,0.55)",
+                          border: s.done
+                            ? "1px solid rgba(74,222,128,0.40)"
+                            : s.active
+                              ? "1px solid rgba(249,115,22,0.55)"
+                              : "1px solid rgba(249,115,22,0.10)",
+                          boxShadow: s.active
+                            ? "0 0 12px rgba(249,115,22,0.20)"
+                            : undefined
+                        }}
+                      >
+                        <span
+                          className="grid h-5 w-5 place-items-center rounded-full font-mono text-[10px] font-bold"
+                          style={{
+                            background: s.done
+                              ? "rgba(74,222,128,0.30)"
+                              : s.active
+                                ? "rgba(249,115,22,0.30)"
+                                : "rgba(15,23,42,0.85)",
+                            color: s.done ? "#86efac" : s.active ? "#fbbf24" : "rgb(100,116,139)"
+                          }}
+                        >
+                          {s.done ? "✓" : s.n}
+                        </span>
+                        <span
+                          className="text-[11px] font-medium"
+                          style={{
+                            color: s.done
+                              ? "#86efac"
+                              : s.active
+                                ? "#fbbf24"
+                                : "rgb(148,163,184)"
+                          }}
+                        >
+                          {s.label}
+                        </span>
+                      </div>
+                      {i < steps.length - 1 ? (
+                        <span
+                          className="h-px w-3 shrink-0"
+                          style={{ background: "rgba(249,115,22,0.20)" }}
+                        />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* ── Upload zone (always visible in amazon tab; required when preset.mode === edit) ── */}
+            {presetNeedsUpload ? (
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
+                    ① 上传产品照 // REFERENCE PHOTOS
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-500">
+                    {refs.length}/{MAX_REFS} 张
+                  </span>
+                </div>
+
+                {refs.length === 0 ? (
+                  // ── Big empty state — drop / click ─────────────────
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    className="group flex w-full flex-col items-center justify-center rounded-xl px-6 py-10 text-center transition-colors hover:border-orange-400/55 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(8,13,28,0.55) 0%, rgba(4,8,20,0.65) 100%)",
+                      border: "1.5px dashed rgba(249,115,22,0.32)",
+                      boxShadow: "inset 0 0 24px rgba(249,115,22,0.04)"
+                    }}
+                  >
+                    <div
+                      className="mb-3 flex h-14 w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+                      style={{
+                        background:
+                          "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.28), rgba(3,7,18,0.92))",
+                        boxShadow:
+                          "0 0 24px rgba(249,115,22,0.30), 0 0 0 1px rgba(249,115,22,0.40)"
+                      }}
+                    >
+                      <Upload className="h-6 w-6 text-orange-300" />
+                    </div>
+                    <div className="text-sm font-semibold text-orange-200">
+                      点击上传 / 拖拽产品照到这里
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      手机随手拍即可 · 浏览器本地压缩 1280px · 最多 {MAX_REFS} 张
+                    </div>
+                    <div className="mt-2 font-mono text-[10px] text-slate-500">
+                      支持 JPG / PNG / WEBP · ≤6MB / 张
+                    </div>
+                  </button>
+                ) : (
+                  // ── Thumb grid + add more ──────────────────────────
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {refs.map((r) => (
+                      <div
+                        key={r.id}
+                        className="group relative aspect-square overflow-hidden rounded-lg"
+                        style={{
+                          background: "rgba(8,13,28,0.6)",
+                          border: "1px solid rgba(249,115,22,0.25)"
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={r.url} alt="reference" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeRef(r.id)}
+                          disabled={loading}
+                          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                          style={{
+                            background: "rgba(239,68,68,0.85)",
+                            boxShadow: "0 0 8px rgba(239,68,68,0.5)"
+                          }}
+                          aria-label="移除"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                        <span
+                          className="absolute bottom-0 left-0 right-0 px-2 py-1 font-mono text-[9px] tracking-wide text-slate-300"
+                          style={{ background: "rgba(0,0,0,0.55)" }}
+                        >
+                          {formatBytes(r.bytes)}
+                        </span>
+                      </div>
+                    ))}
+
+                    {refs.length < MAX_REFS ? (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                        className="flex aspect-square flex-col items-center justify-center rounded-lg text-orange-400/80 transition-colors hover:text-orange-300 hover:border-orange-400/50 disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{
+                          background: "rgba(8,13,28,0.45)",
+                          border: "1.5px dashed rgba(249,115,22,0.32)"
+                        }}
+                      >
+                        <Upload className="mb-1.5 h-5 w-5" />
+                        <span className="text-xs">+ 添加</span>
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+
+                {uploadError ? (
+                  <div className="text-[11px] text-red-300">{uploadError}</div>
+                ) : null}
+
+                <div
+                  className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
+                  style={{
+                    background: "rgba(74,222,128,0.04)",
+                    border: "1px solid rgba(74,222,128,0.18)"
+                  }}
+                >
+                  🔒 <span className="text-emerald-300">隐私保护</span>：
+                  图片在你浏览器本地用 canvas 压缩到 1280px 后再发送，
+                  <strong className="text-emerald-200">原图不会上传到我们的服务器</strong>。
+                </div>
+              </div>
+            ) : null}
+
+            {/* ── Preset cards ──────────────────────────────────────── */}
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                  场景 // PRESET
+                  ② 选场景 // PRESET
                 </span>
                 <span className="font-mono text-[10px] tracking-wide text-slate-500">
-                  📷 = 上传图 ↗ 出图 · ✏️ = 文字生成
+                  📷 = 图生图（需上传）· ✏️ = 文生图（无需图）
                 </span>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -391,8 +592,14 @@ export function ImageGenWidget() {
                         <span
                           className="rounded px-1.5 py-0.5 text-[9px] uppercase"
                           style={{
-                            background: preset.mode === "edit" ? "rgba(74,222,128,0.10)" : "rgba(249,115,22,0.08)",
-                            color: preset.mode === "edit" ? "#86efac" : "rgba(251,146,60,0.85)",
+                            background:
+                              preset.mode === "edit"
+                                ? "rgba(74,222,128,0.10)"
+                                : "rgba(249,115,22,0.08)",
+                            color:
+                              preset.mode === "edit"
+                                ? "#86efac"
+                                : "rgba(251,146,60,0.85)",
                             border: `1px solid ${preset.mode === "edit" ? "rgba(74,222,128,0.30)" : "rgba(249,115,22,0.20)"}`
                           }}
                         >
@@ -405,7 +612,7 @@ export function ImageGenWidget() {
               </div>
             </div>
 
-            {/* Compliance hint for main category */}
+            {/* ── Compliance hint for main ─────────────────────────── */}
             {activePreset?.category === "main" ? (
               <div
                 className="flex items-start gap-2 rounded-lg p-3 text-[11px] leading-relaxed text-amber-200/85"
@@ -416,101 +623,10 @@ export function ImageGenWidget() {
               >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-300" />
                 <div>
-                  <span className="font-medium text-amber-200">亚马逊主图合规</span>
-                  ：纯白底 #FFFFFF 是硬要求；AI 生成后请人工核对，必要时用 remove.bg / Photoshop 抹底。
-                  fal 单次最大约 1024×1024，建议再用 Topaz Photo AI 或 fal upscaler 放大至 2000+ 才符合放大功能要求。
-                </div>
-              </div>
-            ) : null}
-
-            {/* Upload zone (only for edit-mode presets) */}
-            {presetNeedsUpload ? (
-              <div className="space-y-2">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                  上传产品照 // REFERENCE PHOTOS
-                  <span className="ml-2 normal-case tracking-normal text-slate-500">
-                    （手机拍的就行 · 自动压缩 · 最多 {MAX_REFS} 张）
-                  </span>
-                </div>
-
-                {/* upload tiles */}
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {refs.map((r) => (
-                    <div
-                      key={r.id}
-                      className="group relative aspect-square overflow-hidden rounded-lg"
-                      style={{
-                        background: "rgba(8,13,28,0.6)",
-                        border: "1px solid rgba(249,115,22,0.18)"
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.url} alt="reference" className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeRef(r.id)}
-                        disabled={loading}
-                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
-                        style={{
-                          background: "rgba(239,68,68,0.85)",
-                          boxShadow: "0 0 8px rgba(239,68,68,0.5)"
-                        }}
-                        aria-label="移除"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                      <span
-                        className="absolute bottom-0 left-0 right-0 px-2 py-1 font-mono text-[9px] tracking-wide text-slate-300"
-                        style={{ background: "rgba(0,0,0,0.55)" }}
-                      >
-                        {formatBytes(r.bytes)}
-                      </span>
-                    </div>
-                  ))}
-
-                  {refs.length < MAX_REFS ? (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={loading}
-                      className="flex aspect-square flex-col items-center justify-center rounded-lg text-orange-400/80 transition-colors hover:text-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{
-                        background: "rgba(8,13,28,0.45)",
-                        border: "1px dashed rgba(249,115,22,0.30)"
-                      }}
-                    >
-                      <Upload className="mb-1.5 h-5 w-5" />
-                      <span className="text-xs">上传产品照</span>
-                      <span className="mt-0.5 font-mono text-[9px] text-slate-500">
-                        {refs.length}/{MAX_REFS}
-                      </span>
-                    </button>
-                  ) : null}
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-
-                {uploadError ? (
-                  <div className="text-[11px] text-red-300">{uploadError}</div>
-                ) : null}
-
-                <div
-                  className="rounded-md p-2 text-[11px] leading-relaxed text-slate-400"
-                  style={{
-                    background: "rgba(8,13,28,0.45)",
-                    border: "1px solid rgba(249,115,22,0.10)"
-                  }}
-                >
-                  <span className="text-orange-300">提示：</span>
-                  上传 1 张产品正面清晰照即可。多角度拍 2-3 张能让 AI 更准确还原产品。
-                  图片在你浏览器本地压缩到 1280px 后才发送，**原图不会上传到服务器**。
+                  <span className="font-medium text-amber-200">亚马逊主图官方规格</span>
+                  ：最低 1000×1000，推荐 2000×2000+，纯白底 RGB(255,255,255)，文件 ≤10MB，
+                  最多 9 张/ASIN。AI 生成后请用 Topaz / fal upscaler / Photoshop 把 1024
+                  放大到 2000+ 再上传，并人工核对背景是否真为 #FFFFFF。
                 </div>
               </div>
             ) : null}
@@ -825,6 +941,11 @@ export function ImageGenWidget() {
             </p>
           </div>
         ) : null}
+
+        {/* ── Help / Cheat sheet ───────────────────────────────────── */}
+        <div className="pt-2">
+          <ImageGenHelp />
+        </div>
       </CardContent>
     </Card>
   );

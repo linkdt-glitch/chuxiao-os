@@ -42,39 +42,84 @@ export type ImageModel = {
 };
 
 export const IMAGE_MODELS: ImageModel[] = [
-  // ── Image-to-Image (Nano Banana family — Google Gemini Image) ────
-  {
-    id: "fal-ai/nano-banana/edit",
-    label: "Nano Banana Edit",
-    description: "Google Gemini 图片编辑：上传产品照 + 描述 → 改背景 / 换风格 / 加场景，最便宜的图生图。",
-    pricePerImageCny: 0.28,
-    speed: "fast",
-    approxSeconds: 6,
-    apiShape: "img2img",
-    acceptsReferenceImages: true,
-    tag: "图生图 · 性价比"
-  },
-  {
-    id: "fal-ai/nano-banana-2/edit",
-    label: "Nano Banana 2 Edit",
-    description: "Gemini 3.1 Flash Image 编辑版，构图与材质保真比初代 Nano Banana 好。",
-    pricePerImageCny: 0.58,
-    speed: "medium",
-    approxSeconds: 10,
-    apiShape: "img2img",
-    acceptsReferenceImages: true,
-    tag: "图生图 · 升级"
-  },
+  // ── Image-to-Image · 2026 旗舰 7 大（按推荐度排序） ──────────────
   {
     id: "fal-ai/nano-banana-pro/edit",
-    label: "Nano Banana Pro Edit",
-    description: "Gemini 3 Pro Image，支持多张参考图、最多 14 张组合，主图级真实感的图生图首选。",
+    label: "① Nano Banana Pro",
+    description: "Gemini 3 Pro Image · 顶级真实感 + 最多 14 张参考图。产品保留 + 风格迁移效果最强。",
     pricePerImageCny: 1.08,
     speed: "slow",
     approxSeconds: 20,
     apiShape: "img2img",
     acceptsReferenceImages: true,
-    tag: "图生图 · 顶配"
+    isDefault: true,
+    tag: "顶配 · 商业级"
+  },
+  {
+    id: "fal-ai/flux-pro/kontext/max",
+    label: "② Flux Kontext Max",
+    description: "Black Forest Labs 旗舰编辑模型。提示词遵循 + 字符一致性最强，多轮编辑稳。",
+    pricePerImageCny: 0.79,
+    speed: "medium",
+    approxSeconds: 15,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "BFL · 高端"
+  },
+  {
+    id: "fal-ai/nano-banana-2/edit",
+    label: "③ Nano Banana 2",
+    description: "Gemini 3.1 Flash Image · 构图与材质保真升级，比初代质量高一档，速度还行。",
+    pricePerImageCny: 0.58,
+    speed: "medium",
+    approxSeconds: 10,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "Gemini · 升级"
+  },
+  {
+    id: "fal-ai/bytedance/seedream/v4.5/edit",
+    label: "④ Seedream v4.5",
+    description: "ByteDance 旗舰 · 一架构同时做生成+编辑 · 最多 10 张参考图，2K 输出，性价比之王。",
+    pricePerImageCny: 0.29,
+    speed: "medium",
+    approxSeconds: 12,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "字节 · 多图王"
+  },
+  {
+    id: "fal-ai/flux-pro/kontext",
+    label: "⑤ Flux Kontext Pro",
+    description: "Flux Kontext 标准版 · 12B 参数多模态流式 Transformer，本地+全局编辑统一。",
+    pricePerImageCny: 0.29,
+    speed: "medium",
+    approxSeconds: 10,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "BFL · 性价比"
+  },
+  {
+    id: "fal-ai/nano-banana/edit",
+    label: "⑥ Nano Banana",
+    description: "Gemini 2.5 Flash Image · Nano Banana 初代，最便宜的 Gemini 图生图，质量已够商用。",
+    pricePerImageCny: 0.28,
+    speed: "fast",
+    approxSeconds: 6,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "Gemini · 入门"
+  },
+  {
+    id: "fal-ai/flux/dev/image-to-image",
+    label: "⑦ Flux Dev img2img",
+    description: "Flux Dev 图生图变体 · 最便宜的图生图基础款，跑批草图不心疼。",
+    pricePerImageCny: 0.18,
+    speed: "fast",
+    approxSeconds: 8,
+    apiShape: "img2img",
+    acceptsReferenceImages: true,
+    tag: "BFL · 草稿"
   },
 
   // ── Text-to-Image (Flux + Recraft + Ideogram) ────────────────────
@@ -86,7 +131,6 @@ export const IMAGE_MODELS: ImageModel[] = [
     speed: "slow",
     approxSeconds: 20,
     apiShape: "text2img",
-    isDefault: true,
     tag: "文生图 · 顶配"
   },
   {

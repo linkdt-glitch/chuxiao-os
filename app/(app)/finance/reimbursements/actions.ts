@@ -38,25 +38,42 @@ function numberValue(formData: FormData, key: string, fallback = 0) {
 
 export async function createExpenseReportAction(formData: FormData) {
   const intent = value(formData, "intent") ?? "draft";
-  const report = await createExpenseReport({
-    title: value(formData, "title") ?? "报销申请",
-    department_id: value(formData, "department_id") ?? null,
-    occurred_at: value(formData, "occurred_at") ?? new Date().toISOString().slice(0, 10),
-    currency: value(formData, "currency") ?? "CNY",
-    category_id: value(formData, "category_id") ?? null,
-    amount: numberValue(formData, "amount"),
-    merchant_name: value(formData, "merchant_name") ?? null,
-    description: value(formData, "description") ?? "报销说明",
-    files: files(formData),
-    save_as_template: bool(formData, "save_as_template"),
-    template_name: value(formData, "template_name") ?? null,
-    metadata: {
-      payment_method: value(formData, "payment_method") ?? "",
-      notes: value(formData, "notes") ?? ""
-    }
-  }, intent === "submit");
 
-  const createdId = "id" in report ? report.id : "";
+  // Pre-validate so user gets a friendly redirect instead of a generic
+  // "页面加载失败" from the page error boundary.
+  const amountValue = numberValue(formData, "amount");
+  if (!amountValue || isNaN(amountValue) || amountValue <= 0) {
+    redirect(`/finance/reimbursements/new?error=${encodeURIComponent("报销金额必须是大于 0 的数字。")}`);
+  }
+  const description = value(formData, "description") ?? "";
+  if (!description.trim()) {
+    redirect(`/finance/reimbursements/new?error=${encodeURIComponent("请填写报销说明。")}`);
+  }
+
+  let createdId = "";
+  try {
+    const report = await createExpenseReport({
+      title: value(formData, "title") ?? "报销申请",
+      department_id: value(formData, "department_id") ?? null,
+      occurred_at: value(formData, "occurred_at") ?? new Date().toISOString().slice(0, 10),
+      currency: value(formData, "currency") ?? "CNY",
+      category_id: value(formData, "category_id") ?? null,
+      amount: amountValue,
+      merchant_name: value(formData, "merchant_name") ?? null,
+      description,
+      files: files(formData),
+      save_as_template: bool(formData, "save_as_template"),
+      template_name: value(formData, "template_name") ?? null,
+      metadata: {
+        payment_method: value(formData, "payment_method") ?? "",
+        notes: value(formData, "notes") ?? ""
+      }
+    }, intent === "submit");
+    createdId = "id" in report ? report.id : "";
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "报销创建失败，请检查必填项后重试。";
+    redirect(`/finance/reimbursements/new?error=${encodeURIComponent(msg)}`);
+  }
   redirect(`/finance/reimbursements?created=${createdId}`);
 }
 

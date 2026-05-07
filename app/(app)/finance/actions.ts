@@ -80,25 +80,48 @@ async function linkPendingReceiptFiles(formData: FormData, recordId?: string) {
 }
 
 export async function createFinanceRecordAction(formData: FormData) {
-  const record = await createFinanceRecord({
-    record_type: (value(formData, "record_type") ?? "expense") as FinanceRecordType,
-    amount: Number(value(formData, "amount") ?? 0),
-    currency: value(formData, "currency") ?? "CNY",
-    occurred_at: value(formData, "occurred_at"),
-    category_id: value(formData, "category_id") ?? null,
-    subcategory_id: value(formData, "subcategory_id") ?? null,
-    account_id: value(formData, "account_id") ?? null,
-    payment_method: value(formData, "payment_method") ?? null,
-    counterparty_name: value(formData, "counterparty_name") ?? null,
-    description: value(formData, "description") ?? "财务记录",
-    quantity: Number(value(formData, "quantity") ?? 1),
-    project_name: value(formData, "project_name") ?? null,
-    reimbursement_required: bool(formData, "reimbursement_required"),
-    submit_for_approval: bool(formData, "submit_for_approval"),
-    metadata: { notes: value(formData, "notes") ?? "" }
-  });
-  await attachReceiptFiles(formData, "id" in record ? record.id : undefined);
-  redirect(`/finance/records?created=1${"id" in record ? `&highlight=${record.id}` : ""}`);
+  // Validate amount before hitting DB so user gets a friendly message,
+  // not a vague "页面加载失败" from page-level error boundary.
+  const rawAmount = value(formData, "amount");
+  const amount = Number(rawAmount ?? 0);
+  if (!rawAmount || isNaN(amount) || amount <= 0) {
+    redirect(`/finance/records/new?error=${encodeURIComponent("金额必须是大于 0 的数字。")}`);
+  }
+  const description = value(formData, "description") ?? "";
+  if (!description.trim()) {
+    redirect(`/finance/records/new?error=${encodeURIComponent("请填写说明 / 备注。")}`);
+  }
+  const occurred_at = value(formData, "occurred_at");
+  if (!occurred_at) {
+    redirect(`/finance/records/new?error=${encodeURIComponent("请选择发生日期。")}`);
+  }
+
+  let recordId: string | undefined;
+  try {
+    const record = await createFinanceRecord({
+      record_type: (value(formData, "record_type") ?? "expense") as FinanceRecordType,
+      amount,
+      currency: value(formData, "currency") ?? "CNY",
+      occurred_at,
+      category_id: value(formData, "category_id") ?? null,
+      subcategory_id: value(formData, "subcategory_id") ?? null,
+      account_id: value(formData, "account_id") ?? null,
+      payment_method: value(formData, "payment_method") ?? null,
+      counterparty_name: value(formData, "counterparty_name") ?? null,
+      description,
+      quantity: Number(value(formData, "quantity") ?? 1),
+      project_name: value(formData, "project_name") ?? null,
+      reimbursement_required: bool(formData, "reimbursement_required"),
+      submit_for_approval: bool(formData, "submit_for_approval"),
+      metadata: { notes: value(formData, "notes") ?? "" }
+    });
+    recordId = "id" in record ? record.id : undefined;
+    if (recordId) await attachReceiptFiles(formData, recordId);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "保存失败，请检查必填项后重试。";
+    redirect(`/finance/records/new?error=${encodeURIComponent(msg)}`);
+  }
+  redirect(`/finance/records?created=1${recordId ? `&highlight=${recordId}` : ""}`);
 }
 
 export async function updateFinanceRecordAction(formData: FormData) {

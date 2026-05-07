@@ -10,12 +10,12 @@ const PUBLIC_API_PATHS = [
 ];
 
 // 页面路由中不需要登录校验的公开页面
+// Note: app/(auth)/change-password 's URL is `/change-password`,
+// not `/auth/change-password` ((auth) is a route group, hidden from URL).
 const PUBLIC_PAGE_PATHS = [
   "/login",
   "/auth/callback",
-  "/auth/magic-link",
-  "/auth/setup",
-  "/auth/change-password"
+  "/change-password"
 ];
 
 function isPublicPath(pathname: string) {

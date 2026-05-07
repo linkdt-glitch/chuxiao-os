@@ -29,9 +29,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getNavigationModules()
   ]);
 
-  // Force password change if flagged by admin
+  // Force password change if flagged by admin.
+  // Page lives at app/(auth)/change-password/page.tsx — `(auth)` is a route
+  // group, so the actual URL is `/change-password`, NOT `/auth/change-password`.
   if (!isDemoModeEnabled() && user?.must_change_password) {
-    redirect("/auth/change-password");
+    redirect("/change-password");
   }
 
   return (

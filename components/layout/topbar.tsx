@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { BackButton } from "@/components/layout/back-button";
+import { UserMenu } from "@/components/layout/user-menu";
 import type { Organization, OrganizationMember, UserProfile } from "@/lib/types/core";
 
 export function Topbar({
@@ -46,26 +47,12 @@ export function Topbar({
         </div>
       </div>
 
-      {/* Right: role chip + user info */}
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-3">
-          {/* HUD role chip */}
-          <div
-            className="rounded px-2 py-0.5 font-mono text-[11px] font-semibold text-orange-400 tracking-wider"
-            style={{
-              background: "rgba(249,115,22,0.10)",
-              border: "1px solid rgba(249,115,22,0.26)",
-              boxShadow: "0 0 10px rgba(249,115,22,0.12)",
-            }}
-          >
-            {(member.role?.key ?? "member").toUpperCase()}
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-medium text-slate-200">{user.full_name}</div>
-            <div className="font-mono text-[10px] text-slate-500">{user.email}</div>
-          </div>
-        </div>
-      </div>
+      {/* Right: user menu (role chip + name + email + dropdown w/ logout) */}
+      <UserMenu
+        userName={user.full_name ?? user.email ?? "User"}
+        userEmail={user.email ?? ""}
+        roleKey={member.role?.key ?? "member"}
+      />
     </header>
   );
 }

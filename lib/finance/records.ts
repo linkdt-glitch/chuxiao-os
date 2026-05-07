@@ -242,7 +242,8 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
 
   let record = data as FinanceRecord;
   if (status === "pending_approval") {
-    record = await submitFinanceRecord(record.id);
+    // Pass the freshly-inserted record to skip the redundant SELECT inside submit (saves 1 round-trip).
+    record = await submitFinanceRecord(record.id, record);
   } else {
     writeFinanceRecordTrace({
       event_key: "finance.record.created",
@@ -309,12 +310,29 @@ export async function markFinanceRecordPaid(id: string) {
   return data as FinanceRecord;
 }
 
-export async function submitFinanceRecord(id: string) {
+export async function submitFinanceRecord(
+  id: string,
+  /**
+   * 可选：调用方刚 insert/select 拿到的完整 record。
+   * 传了就跳过这里的 SELECT *，省一次远程往返（约 150-300ms）。
+   */
+  prefetchedRecord?: FinanceRecord
+) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoFinanceRecords[0];
 
-  const { data: record, error: readError } = await supabase.from("finance_records").select("*").eq("id", id).single();
-  if (readError) throw readError;
+  let record: FinanceRecord;
+  if (prefetchedRecord) {
+    record = prefetchedRecord;
+  } else {
+    const { data, error: readError } = await supabase
+      .from("finance_records")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (readError) throw readError;
+    record = data as FinanceRecord;
+  }
 
   const approval = await createApproval({
     title: `财务审批 ${record.record_no}`,

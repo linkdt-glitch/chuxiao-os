@@ -7,6 +7,7 @@ import { createFinanceAccount } from "@/lib/finance/accounts";
 import { createFinanceCategory } from "@/lib/finance/categories";
 import { approveFinanceRecord, createFinanceRecord, rejectFinanceRecord, updateFinanceRecord } from "@/lib/finance/records";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
+import { runAfter } from "@/lib/server/after";
 import type { FinanceAccountType, FinanceCategoryType, FinanceRecordType, ParsedFinanceRecord } from "@/lib/finance/types";
 
 function value(formData: FormData, key: string) {
@@ -116,12 +117,48 @@ export async function createFinanceRecordAction(formData: FormData) {
       metadata: { notes: value(formData, "notes") ?? "" }
     });
     recordId = "id" in record ? record.id : undefined;
-    if (recordId) await attachReceiptFiles(formData, recordId);
+    // 票据上传到 Supabase Storage 较慢（5MB 图可能 2-5s）。
+    // 用 runAfter 让它在响应送出后台跑，redirect 立刻返回给用户。
+    // 用户跳到流水列表时记录已存在，几秒后票据会自动出现（页面下次访问 SSR 时拉到）。
+    const pendingFiles = recordId ? receiptFiles(formData) : [];
+    if (recordId && pendingFiles.length > 0) {
+      const id = recordId;
+      runAfter("finance.attach_receipts", () => attachUploadedFiles(pendingFiles, id));
+    }
   } catch (error) {
     const msg = error instanceof Error ? error.message : "保存失败，请检查必填项后重试。";
     redirect(`/finance/records/new?error=${encodeURIComponent(msg)}`);
   }
   redirect(`/finance/records?created=1${recordId ? `&highlight=${recordId}` : ""}`);
+}
+
+/**
+ * 把 File[] 上传到 Storage 并 link 到 record。
+ * 跟 attachReceiptFiles(formData,recordId) 行为一致，但接收已经从 formData
+ * 提取出的 File 数组，方便在 runAfter 闭包中调用。
+ */
+async function attachUploadedFiles(files: File[], recordId: string) {
+  await Promise.all(
+    files.map(async (file) => {
+      const created = await uploadFile({
+        file,
+        file_name: file.name,
+        storage_path: `finance/receipts/${recordId}/${Date.now()}-${file.name}`,
+        mime_type: file.type || "application/octet-stream",
+        size_bytes: file.size,
+        asset_type: "receipt",
+        metadata: { asset_type: "receipt", module: "finance" }
+      });
+      if ("id" in created) {
+        await linkFileToRecord({
+          file_id: created.id,
+          module: "finance",
+          record_type: "finance_record",
+          record_id: recordId
+        });
+      }
+    })
+  );
 }
 
 export async function updateFinanceRecordAction(formData: FormData) {

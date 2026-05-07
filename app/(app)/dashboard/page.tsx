@@ -441,7 +441,7 @@ export default async function CockpitPage() {
 
           <HudFrame label="智能劳动力" meta={`${basics.stats.aiInvocations} 次/月`}>
             <div className="space-y-2">
-              <Telemetry label="活跃 Agent" value={String(basics.stats.agents)} unit="个" />
+              <Telemetry label="活跃 AI 员工" value={String(basics.stats.agents)} unit="个" />
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Stat label="AI 服务商" value={String(basics.stats.providers)} />
                 <Stat label="启用模块" value={String(basics.stats.enabledModules)} />
@@ -518,7 +518,7 @@ export default async function CockpitPage() {
         >
           <SystemStat icon={Layers3} label="启用模块" value={basics.stats.enabledModules} />
           <SystemStat icon={Users} label="组织成员" value={basics.stats.members} />
-          <SystemStat icon={Bot} label="Agent 数量" value={basics.stats.agents} />
+          <SystemStat icon={Bot} label="AI 员工数量" value={basics.stats.agents} />
           <SystemStat icon={Cpu} label="AI Provider" value={basics.stats.providers} />
         </div>
       </div>

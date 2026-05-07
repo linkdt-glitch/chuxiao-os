@@ -11,7 +11,7 @@ export default async function RolesPage() {
   return (
     <>
       <PageHeader
-        title="Roles 权限与角色"
+        title="权限与角色"
         description="默认角色不可删除；自定义角色复用同一套 permissions、role_permissions、member_permissions。"
         action={<Button disabled variant="outline">自定义角色稍后开放</Button>}
       />

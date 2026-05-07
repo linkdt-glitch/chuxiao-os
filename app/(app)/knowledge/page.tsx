@@ -13,8 +13,8 @@ const assetLabels: Record<string, string> = {
   receipt: "票据",
   contract: "合同",
   project_doc: "项目资料",
-  prompt_doc: "Prompt 文档",
-  agent_output: "Agent 输出",
+  prompt_doc: "提示词文档",
+  agent_output: "AI 员工输出",
   sop: "SOP",
   review: "复盘",
   other: "其他"

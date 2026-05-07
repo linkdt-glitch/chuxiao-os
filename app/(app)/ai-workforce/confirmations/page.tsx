@@ -32,7 +32,7 @@ export default async function ConfirmationsPage() {
           </CardHeader>
           <CardContent>
             <form action={createConfirmationAction} className="space-y-3">
-              <Field label="标题" name="title" placeholder="Agent 建议创建 3 个任务" />
+              <Field label="标题" name="title" placeholder="AI 员工建议创建 3 个任务" />
               <div className="space-y-2">
                 <Label htmlFor="agent_id">来源 Agent</Label>
                 <select id="agent_id" name="agent_id" className="h-9 w-full rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">

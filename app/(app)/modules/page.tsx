@@ -12,7 +12,7 @@ export default async function ModulesPage() {
   return (
     <>
       <PageHeader
-        title="Modules 模块管理"
+        title="模块管理"
         description="模块通过 key、route、required_permission 和 organization_modules 注册，未来模块可逐个接入。"
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -32,7 +32,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
     <>
       <PageHeader
         title={agent.name}
-        description="Agent 详情包含基本信息、负责人、权限等级、允许模块、绑定 Prompt、运行记录、AI 调用记录和反馈评分。"
+        description="AI 员工详情包含基本信息、负责人、权限等级、允许模块、绑定提示词、运行记录、AI 调用记录和反馈评分。"
         action={<Button asChild variant="outline"><Link href="/ai-workforce/agents">返回列表</Link></Button>}
       />
 
@@ -57,7 +57,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
 
           <Card>
             <CardHeader>
-              <CardTitle>绑定 Prompt</CardTitle>
+              <CardTitle>绑定提示词</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {agent.bindings?.map((binding) => (
@@ -71,7 +71,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
                 <select name="prompt_template_id" className="h-9 w-full rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">
                   {prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
                 </select>
-                <Button type="submit" size="sm" variant="outline">绑定 Prompt</Button>
+                <Button type="submit" size="sm" variant="outline">绑定提示词</Button>
               </form>
             </CardContent>
           </Card>

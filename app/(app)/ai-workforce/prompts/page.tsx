@@ -17,9 +17,9 @@ export default async function PromptsPage() {
   return (
     <>
       <PageHeader
-        title="Prompt 模板库"
+        title="提示词库"
         description="把高质量 Prompt 沉淀为组织资产。Prompt 包含场景、模块、变量、输出格式、质量标准、版本、负责人和状态。"
-        action={<Button asChild><Link href="/ai-workforce/prompts/new"><Plus className="h-4 w-4" />创建 Prompt</Link></Button>}
+        action={<Button asChild><Link href="/ai-workforce/prompts/new"><Plus className="h-4 w-4" />创建提示词</Link></Button>}
       />
       <Card>
         <CardContent className="p-0">
@@ -68,7 +68,7 @@ export default async function PromptsPage() {
             </Table>
           ) : (
             <div className="p-5">
-              <EmptyState title="暂无 Prompt" description="创建 Prompt 时会自动生成 v1.0 版本。" />
+              <EmptyState title="暂无提示词" description="创建提示词 时会自动生成 v1.0 版本。" />
             </div>
           )}
         </CardContent>

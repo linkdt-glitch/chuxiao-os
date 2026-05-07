@@ -69,7 +69,7 @@ export default async function NewWorkforceAgentPage() {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="description">描述</Label>
-              <Textarea id="description" name="description" placeholder="Agent 职责、边界和风险说明" />
+              <Textarea id="description" name="description" placeholder="AI 员工职责、边界和风险说明" />
             </div>
             <div className="flex gap-3 md:col-span-2">
               <Button type="button" variant="outline" asChild>

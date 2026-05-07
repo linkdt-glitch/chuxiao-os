@@ -19,7 +19,7 @@ export default async function WorkforceAgentsPage() {
   return (
     <>
       <PageHeader
-        title="Agent 档案"
+        title="AI 员工档案"
         description="像管理员工一样管理 AI Agent。每个 Agent 必须有负责人、权限等级、允许模块、状态和运行留痕。"
         action={<Button asChild><Link href="/ai-workforce/agents/new"><Plus className="h-4 w-4" />创建 Agent</Link></Button>}
       />
@@ -33,7 +33,7 @@ export default async function WorkforceAgentsPage() {
                   <TableHead>名称</TableHead>
                   <TableHead>负责人</TableHead>
                   <TableHead>权限等级</TableHead>
-                  <TableHead>绑定 Prompt</TableHead>
+                  <TableHead>绑定提示词</TableHead>
                   <TableHead>最近运行</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="text-right">操作</TableHead>
@@ -85,7 +85,7 @@ export default async function WorkforceAgentsPage() {
             </Table>
           ) : (
             <div className="p-5">
-              <EmptyState title="暂无 Agent" description="创建第一个 AI 员工后，可以绑定 Prompt、记录运行、接入人工确认。" />
+              <EmptyState title="暂无 Agent" description="创建第一个 AI 员工后，可以绑定提示词、记录运行、接入人工确认。" />
             </div>
           )}
         </CardContent>

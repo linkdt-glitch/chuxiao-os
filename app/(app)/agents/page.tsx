@@ -26,8 +26,8 @@ export default async function AgentsPage() {
   return (
     <>
       <PageHeader
-        title="Agents Agent 档案"
-        description="Agent 是组织内受控操作者：必须绑定负责人、分级授权、运行留痕，高风险动作进入审批。"
+        title="AI 员工档案"
+        description="AI 员工是组织内受控操作者：必须绑定负责人、分级授权、运行留痕，高风险动作进入审批。"
         action={<Button asChild><Link href="/ai-workforce/agents">进入新版 Agent 管理</Link></Button>}
       />
       <div className="mb-4 grid gap-3 md:grid-cols-5">
@@ -61,7 +61,7 @@ export default async function AgentsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="desc">描述</Label>
-                <Textarea id="desc" disabled placeholder="Agent 职责、允许模块和工具边界" />
+                <Textarea id="desc" disabled placeholder="AI 员工职责、允许模块和工具边界" />
               </div>
               <Button asChild className="w-full">
                 <Link href="/ai-workforce/agents">
@@ -80,7 +80,7 @@ export default async function AgentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
+                  <TableHead>AI 员工</TableHead>
                   <TableHead>负责人</TableHead>
                   <TableHead>等级</TableHead>
                   <TableHead>允许模块</TableHead>
@@ -121,7 +121,7 @@ export default async function AgentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Agent</TableHead>
+                <TableHead>AI 员工</TableHead>
                 <TableHead>类型</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>输入</TableHead>

@@ -22,8 +22,8 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHeader
-        title="Agent 运行记录"
-        description="记录 Agent 运行类型、所属模块、状态、输入摘要、输出摘要、错误信息、AI 调用和反馈评分。"
+        title="AI 员工运行记录"
+        description="记录 AI 员工运行类型、所属模块、状态、输入摘要、输出摘要、错误信息、AI 调用和反馈评分。"
       />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
@@ -33,7 +33,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
           <CardContent>
             <form action={createAgentRunAction} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="agent_id">Agent</Label>
+                <Label htmlFor="agent_id">AI 员工</Label>
                 <select id="agent_id" name="agent_id" className="h-9 w-full rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">
                   {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                 </select>
@@ -50,7 +50,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
                 </select>
               </div>
               <Textarea name="input" placeholder='{"summary":"用户请求"}' />
-              <Textarea name="output" placeholder='{"summary":"Agent 输出"}' />
+              <Textarea name="output" placeholder='{"summary":"AI 员工输出"}' />
               <Textarea name="error_message" placeholder="错误信息，可选" />
               <Button type="submit" className="w-full">写入运行记录</Button>
             </form>
@@ -79,7 +79,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
+                  <TableHead>AI 员工</TableHead>
                   <TableHead>类型</TableHead>
                   <TableHead>模块</TableHead>
                   <TableHead>状态</TableHead>

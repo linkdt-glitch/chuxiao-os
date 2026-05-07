@@ -21,9 +21,9 @@ export default async function GovernancePage() {
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="权限安全" icon={ShieldCheck} stats={[["角色", data.stats.roleCount], ["权限", data.stats.permissionCount], ["高权限成员", data.stats.highPrivilegeMembers], ["高权限 Agent", data.stats.highPrivilegeAgents]]} href="/roles" />
+        <StatCard title="权限安全" icon={ShieldCheck} stats={[["角色", data.stats.roleCount], ["权限", data.stats.permissionCount], ["高权限成员", data.stats.highPrivilegeMembers], ["高权限 AI 员工", data.stats.highPrivilegeAgents]]} href="/roles" />
         <StatCard title="分模块审批" icon={ClipboardCheck} stats={[["待审批", data.stats.pendingApprovals], ["高风险", data.stats.highRiskApprovals], ["本周已审批", data.stats.approvedThisWeek]]} href="/finance/records?status=pending_approval" />
-        <StatCard title="日志审计" icon={FileClock} stats={[["今日操作", data.stats.todayLogs], ["关键操作", data.stats.criticalLogs], ["Human", data.actorDistribution.human], ["Agent", data.actorDistribution.agent]]} href="/logs" />
+        <StatCard title="日志审计" icon={FileClock} stats={[["今日操作", data.stats.todayLogs], ["关键操作", data.stats.criticalLogs], ["人类成员", data.actorDistribution.human], ["AI 员工", data.actorDistribution.agent]]} href="/logs" />
         <StatCard title="事件追踪" icon={AlertTriangle} stats={[["今日事件", data.stats.todayEvents], ["未处理", data.stats.newEvents], ["失败", data.stats.failedEvents]]} href="/events" />
       </div>
 
@@ -33,7 +33,7 @@ export default async function GovernancePage() {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <ModuleApprovalLink href="/finance/records?status=pending_approval" icon={WalletCards} title="财务审批" description="支出、报销、付款和财务异常在财务中心处理。" />
-          <ModuleApprovalLink href="/ai-workforce/confirmations" icon={BrainCircuit} title="AI 审批" description="Agent 高风险动作、Prompt 发布和人工确认在 AI 中心处理。" />
+          <ModuleApprovalLink href="/ai-workforce/confirmations" icon={BrainCircuit} title="AI 审批" description="AI 员工高风险动作、提示词发布和人工确认在 AI 中心处理。" />
           <ModuleApprovalLink href="/projects/tasks" icon={ListTodo} title="项目审批" description="任务归档、项目关键变更和执行风险在项目中心处理。" />
         </CardContent>
       </Card>
@@ -136,7 +136,7 @@ export default async function GovernancePage() {
             <CardTitle>风险规则预留</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
-            {["大额支出审批", "Agent 高风险动作审批", "Prompt 发布审批", "项目关键变更审批"].map((rule) => (
+            {["大额支出审批", "AI 员工高风险动作审批", "提示词发布审批", "项目关键变更审批"].map((rule) => (
               <div key={rule} className="flex items-center justify-between rounded-md border p-3">
                 <span>{rule}</span>
                 <Badge variant="warning">即将上线</Badge>

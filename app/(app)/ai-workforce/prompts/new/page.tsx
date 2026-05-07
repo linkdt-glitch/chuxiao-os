@@ -15,8 +15,8 @@ export default async function NewPromptPage() {
   return (
     <>
       <PageHeader
-        title="创建 Prompt"
-        description="Prompt 是组织 AI 能力资产。创建时自动生成 v1.0 版本，published 状态表示组织正式可用。"
+        title="创建提示词"
+        description="提示词是组织 AI 能力资产。创建时自动生成 v1.0 版本，published 状态表示组织正式可用。"
       />
       <Card className="max-w-4xl">
         <CardHeader>

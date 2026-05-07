@@ -22,7 +22,7 @@ export default async function EventsPage({
   return (
     <>
       <PageHeader
-        title="Events 事件中心"
+        title="事件中心"
         description="统一记录 organization、member、approval、agent、ai 等系统事件，供自动化工作流订阅。"
       />
       <Card>

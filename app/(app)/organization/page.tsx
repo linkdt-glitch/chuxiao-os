@@ -27,7 +27,7 @@ export default async function OrganizationPage() {
   return (
     <>
       <PageHeader
-        title="Organization 组织与成员"
+        title="组织与成员"
         description="统一管理 human / agent / system 操作者身份；Agent 成员必须绑定人类负责人。"
         action={
           isOwner ? (
@@ -147,7 +147,7 @@ export default async function OrganizationPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent</TableHead>
+                  <TableHead>AI 员工</TableHead>
                   <TableHead>角色</TableHead>
                   <TableHead>负责人</TableHead>
                   <TableHead>状态</TableHead>

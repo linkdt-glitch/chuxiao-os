@@ -36,16 +36,16 @@ export default async function AIWorkforcePage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline"><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话</Link></Button>
-            <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建 Prompt</Link></Button>
+            <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建提示词</Link></Button>
             <Button asChild><Link href="/ai-workforce/agents/new"><Plus className="h-4 w-4" />创建 Agent</Link></Button>
           </div>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-5">
-        <Metric label="Agent 总数" value={agents.length} icon={Bot} />
-        <Metric label="活跃 Agent" value={agents.filter((agent) => agent.status === "active").length} icon={BrainCircuit} />
-        <Metric label="Prompt 数量" value={prompts.length} icon={FileText} />
+        <Metric label="AI 员工总数" value={agents.length} icon={Bot} />
+        <Metric label="活跃 AI 员工" value={agents.filter((agent) => agent.status === "active").length} icon={BrainCircuit} />
+        <Metric label="提示词数量" value={prompts.length} icon={FileText} />
         <Metric label="本月 AI 调用" value={monthlyInvocations.length} icon={Sparkles} />
         <Metric label="待 AI 审批" value={pendingConfirmations.length} icon={CheckSquare} />
       </div>
@@ -53,7 +53,7 @@ export default async function AIWorkforcePage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>最近 Agent 运行记录</CardTitle>
+            <CardTitle>最近运行记录</CardTitle>
             <Button asChild variant="outline" size="sm"><Link href="/ai-workforce/runs">查看全部</Link></Button>
           </CardHeader>
           <CardContent>
@@ -61,7 +61,7 @@ export default async function AIWorkforcePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Agent</TableHead>
+                    <TableHead>AI 员工</TableHead>
                     <TableHead>类型</TableHead>
                     <TableHead>模块</TableHead>
                     <TableHead>状态</TableHead>
@@ -83,7 +83,7 @@ export default async function AIWorkforcePage() {
                 </TableBody>
               </Table>
             ) : (
-              <EmptyState title="暂无运行记录" description="Agent 被调用后，会在这里留下输入、输出、状态和错误信息。" />
+              <EmptyState title="暂无运行记录" description="AI 员工被调用后，会在这里留下输入、输出、状态和错误信息。" />
             )}
           </CardContent>
         </Card>
@@ -96,7 +96,7 @@ export default async function AIWorkforcePage() {
             <CardContent className="grid gap-2">
               <Button asChild><Link href="/ai-workforce/chat"><MessageSquareText className="h-4 w-4" />AI 对话助手</Link></Button>
               <Button asChild><Link href="/ai-workforce/agents/new"><Bot className="h-4 w-4" />创建 Agent</Link></Button>
-              <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建 Prompt</Link></Button>
+              <Button asChild variant="outline"><Link href="/ai-workforce/prompts/new"><FileText className="h-4 w-4" />创建提示词</Link></Button>
               <Button asChild variant="outline"><Link href="/ai-workforce/confirmations"><CheckSquare className="h-4 w-4" />AI 审批</Link></Button>
             </CardContent>
           </Card>
@@ -153,7 +153,7 @@ export default async function AIWorkforcePage() {
                 </TableBody>
               </Table>
             ) : (
-              <EmptyState title="暂无 AI 调用记录" description="Prompt 测试和 Agent 调用会复用 ai_invocation_logs。" />
+              <EmptyState title="暂无 AI 调用记录" description="提示词测试和 AI 员工调用会复用 ai_invocation_logs。" />
             )}
           </CardContent>
         </Card>

@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Settings 系统设置"
+        title="系统设置"
         description="只放底座级设置入口：组织、安全、审批规则、模块设置。最高风险配置预留 Owner 审批。"
       />
       <div className="grid gap-4 lg:grid-cols-2">

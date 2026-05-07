@@ -18,7 +18,7 @@ export default async function FilesPage() {
   return (
     <>
       <PageHeader
-        title="Files 文件中心"
+        title="文件中心"
         description="文件只保存基础资产信息；业务关联通过 file_links 多对多扩展。"
       />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">

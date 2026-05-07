@@ -23,7 +23,7 @@ export default async function LogsPage({
   return (
     <>
       <PageHeader
-        title="Logs 操作日志"
+        title="操作日志"
         description="human / agent / system 的关键动作统一写入 audit_logs，可按模块、操作者、类型、时间过滤。"
       />
       <Card>

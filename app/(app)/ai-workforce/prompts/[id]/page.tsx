@@ -25,7 +25,7 @@ export default async function PromptDetailPage({ params }: { params: Promise<{ i
     <>
       <PageHeader
         title={prompt.name}
-        description="Prompt 详情展示当前版本、内容、输入变量、输出格式、版本历史、绑定 Agent、测试入口和反馈评分。"
+        description="提示词详情展示当前版本、内容、输入变量、输出格式、版本历史、绑定 AI 员工、测试入口和反馈评分。"
         action={<Button asChild variant="outline"><Link href="/ai-workforce/prompts">返回模板库</Link></Button>}
       />
 
@@ -169,7 +169,7 @@ export default async function PromptDetailPage({ params }: { params: Promise<{ i
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>绑定 Agent</CardTitle>
+              <CardTitle>绑定 AI 员工</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {(prompt.bindings ?? []).map((binding) => (

@@ -3,6 +3,16 @@ import { demoModules, demoOrganizationModules } from "@/lib/data/demo";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { getRolePermissionKeys } from "@/lib/permissions";
 
+/**
+ * 模块名重映射 — 代码层覆盖 DB modules.name，无需等 DB migration 也能立即生效。
+ * DB 层也会跟着用 supabase migration 同步更新，最终 DB 就和这里一致。
+ */
+const MODULE_NAME_REMAP: Record<string, string> = {
+  finance: "财务能量中心",
+  projects: "计划任务中心",
+  ai_workforce: "AI 创新实验中心"
+};
+
 export async function getEnabledModules() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
@@ -49,8 +59,11 @@ export async function getNavigationModules() {
     .filter((module) => module.key !== "approvals")
     .map((module) => ({
       ...module,
+      // 应用模块名重映射（finance / projects / ai_workforce 改名）
+      name: MODULE_NAME_REMAP[module.key] ?? module.name,
+      // 严格按 required_permission 校验，不再"以 .read 结尾就放行"
+      // —— 之前的 bypass 让所有 role（包括 member）都能看到 dashboard 等
       canAccess:
-        module.required_permission.endsWith(".read") ||
         permissionKeys.includes("*") ||
         permissionKeys.includes(module.required_permission),
       isEnabled:

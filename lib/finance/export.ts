@@ -35,7 +35,7 @@ async function buildWorkbook(input: {
   exportType: FinanceExportType;
 }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "初晓 OS 经营能量舱";
+  workbook.creator = "初晓 OS 财务能量中心";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet("财务流水", {
     views: [{ state: "frozen", ySplit: 2 }]

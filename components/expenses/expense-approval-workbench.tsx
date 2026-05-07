@@ -373,7 +373,7 @@ export function ExpenseApprovalWorkbench({
             </div>
             <h2 className="mt-3 text-lg font-semibold text-slate-950">按员工优先处理，异常优先复核</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              这里处理员工提交的正式报销单；上方处理 AI 记账和手动记账产生的快捷财务审批。两类审批都归口到经营能量舱，不再分散到独立审批中心。
+              这里处理员工提交的正式报销单；上方处理 AI 记账和手动记账产生的快捷财务审批。两类审批都归口到财务能量中心，不再分散到独立审批中心。
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[520px] xl:grid-cols-4">
@@ -458,7 +458,7 @@ export function ExpenseApprovalWorkbench({
       ) : null}
 
       {!filteredReports.length ? (
-        <EmptyState title="暂无正式报销单" description="调整筛选条件，或让员工在经营能量舱提交正式报销。AI 记账和手动记账产生的快捷审批会显示在上方财务审批区。" />
+        <EmptyState title="暂无正式报销单" description="调整筛选条件，或让员工在财务能量中心提交正式报销。AI 记账和手动记账产生的快捷审批会显示在上方财务审批区。" />
       ) : (
         <div className="space-y-3">
           {groups.map((group) => {

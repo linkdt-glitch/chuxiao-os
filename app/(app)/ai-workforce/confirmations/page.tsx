@@ -29,7 +29,7 @@ export default async function ConfirmationsPage({
       <NoticeBanner error={params.error} notice={params.notice} />
       <PageHeader
         title="AI 审批与人工确认"
-        description="高风险 AI 动作统一留在智能劳动力中心处理。L3/L4 动作、对外发送、重要数据修改和大量任务创建都必须由人类确认。"
+        description="高风险 AI 动作统一留在 AI 创新实验中心处理。L3/L4 动作、对外发送、重要数据修改和大量任务创建都必须由人类确认。"
       />
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">

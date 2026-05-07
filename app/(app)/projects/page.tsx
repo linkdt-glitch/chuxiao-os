@@ -24,7 +24,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader
-        title="执行指挥舱"
+        title="计划任务中心"
         description="简化管理，明确责任，跟踪项目进度，让团队高效协作。"
         action={
           <div className="flex flex-wrap gap-2">

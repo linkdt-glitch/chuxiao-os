@@ -3,6 +3,7 @@ import { getCurrentMember } from "@/lib/auth";
 const rolePermissionMap: Record<string, string[]> = {
   owner: ["*"],
   admin: [
+    "dashboard.read",
     "organization.manage",
     "modules.manage",
     "approvals.manage",
@@ -85,6 +86,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "ai_feedback.view"
   ],
   manager: [
+    "dashboard.read",
     "approvals.manage",
     "logs.read",
     "events.read",
@@ -144,10 +146,17 @@ const rolePermissionMap: Record<string, string[]> = {
     "ai_feedback.create",
     "ai_feedback.view"
   ],
+  /**
+   * 普通员工（member）只能看到：
+   *   业务模块: 财务能量中心 / 计划任务中心 / AI 创新实验中心
+   *   平台:     组织大脑库（knowledge）
+   *   其他:     文件中心
+   * 不显示：老板驾驶舱 / 组织护航盾 / 进化 / 能量 / 系统设置 / 组织管理
+   */
   member: [
-    "dashboard.read",
     "approvals.create",
     "files.manage",
+    // 业务模块 - 财务能量中心
     "finance.view",
     "finance.create",
     "finance.update",
@@ -156,26 +165,25 @@ const rolePermissionMap: Record<string, string[]> = {
     "finance.expense.view",
     "finance.expense.create",
     "finance.expense.update",
+    // 业务模块 - 计划任务中心
     "projects.view",
     "tasks.view",
     "tasks.comment",
     "tasks.files",
-    "knowledge.view",
-    "sop.view",
-    "review.view",
-    "evolution.view",
-    "feedback.view",
-    "feedback.create",
-    "review_record.view",
-    "sop_record.view",
-    "energy.view",
+    // 业务模块 - AI 创新实验中心
     "ai_workforce.view",
     "agent.view",
     "agent.run",
     "prompt.view",
     "prompt.create",
     "prompt.test",
-    "ai_feedback.create"
+    "ai_feedback.create",
+    // 平台 - 组织大脑库
+    "knowledge.view",
+    "sop.view",
+    "review.view"
+    // 故意不给：dashboard.read / governance.view / evolution.view / energy.view
+    // 故意不给：feedback.* / sop_record.* / review_record.*（属于进化/能量子能力）
   ],
   agent: ["dashboard.read", "files.read", "finance.view", "projects.view", "tasks.view", "knowledge.view", "evolution.view", "feedback.create", "ai_workforce.view", "agent.view", "agent.run", "ai_feedback.create"]
 };

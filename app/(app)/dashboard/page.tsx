@@ -447,7 +447,7 @@ export default async function CockpitPage() {
                 <Stat label="启用模块" value={String(basics.stats.enabledModules)} />
               </div>
               <Button asChild variant="outline" size="sm" className="w-full">
-                <Link href="/ai-workforce">→ 智能劳动力中心</Link>
+                <Link href="/ai-workforce">→ AI 创新实验中心</Link>
               </Button>
             </div>
           </HudFrame>

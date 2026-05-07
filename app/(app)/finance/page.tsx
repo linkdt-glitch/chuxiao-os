@@ -62,7 +62,7 @@ export default async function FinancePage() {
   return (
     <>
       <PageHeader
-        title="经营能量舱"
+        title="财务能量中心"
         description="原财务中心。看清收入、支出、利润、现金流和经营健康度；当前保留一句话记账、报销审批、收支流水、财务看板与 Excel 导出。"
         action={
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -121,7 +121,7 @@ export default async function FinancePage() {
             <FinanceRecordsTable
               records={summary.recentRecords}
               emptyTitle="暂无本月流水"
-              emptyDescription="先记录一条收入、支出或报销，经营能量舱就会开始形成判断。"
+              emptyDescription="先记录一条收入、支出或报销，财务能量中心就会开始形成判断。"
             />
           </CardContent>
         </Card>

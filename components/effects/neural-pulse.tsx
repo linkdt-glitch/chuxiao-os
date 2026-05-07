@@ -90,10 +90,10 @@ export function NeuralPulse() {
           className="font-mono text-[9px] font-semibold tracking-[0.24em]"
           style={{ color: "rgba(249,115,22,0.65)", textShadow: "0 0 8px rgba(249,115,22,0.4)" }}
         >
-          AI CORE ACTIVE
+          AI 核心 · 在线
         </div>
         <div className="mt-0.5 font-mono text-[8px] tracking-[0.14em] text-slate-600">
-          KAIROSMINI v1.0
+          初晓 OS · v1.0
         </div>
       </div>
     </div>

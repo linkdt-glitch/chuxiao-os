@@ -14,11 +14,11 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
   const byKey = new Map(modules.map((m) => [m.key, m]));
 
   const sections = [
-    { title: "CORE",      keys: ["dashboard"] },
-    { title: "MODULES",   keys: ["finance", "projects", "ai_workforce"] },
-    { title: "PLATFORM",  keys: ["governance", "knowledge"] },
-    { title: "EVOLUTION", keys: ["evolution", "energy"] },
-    { title: "SYSTEM",    keys: ["organization", "modules", "ai-settings", "settings"] }
+    { title: "核心",     keys: ["dashboard"] },
+    { title: "业务模块", keys: ["finance", "projects", "ai_workforce"] },
+    { title: "平台",     keys: ["governance", "knowledge"] },
+    { title: "进化",     keys: ["evolution", "energy"] },
+    { title: "系统",     keys: ["organization", "modules", "ai-settings", "settings"] }
   ].map((s) => ({
     ...s,
     modules: s.keys.map((k) => byKey.get(k)).filter(Boolean) as ModuleDefinition[]
@@ -134,7 +134,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
               初晓 OS 系统
             </div>
             <div className="font-mono text-[10px] tracking-[0.18em] text-orange-500/45">
-              SYS://KAIROSMINI
+              企业智能操作系统
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         {fallback.length ? (
           <div className="mb-5">
             <div className="mb-1.5 flex items-center gap-2 px-2">
-              <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40">OTHER</span>
+              <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40">其他</span>
               <div className="flex-1" style={{ height: "1px", background: "rgba(249,115,22,0.09)" }} />
             </div>
             <NavSection modules={fallback} pathname={pathname} />
@@ -250,7 +250,7 @@ function NavSection({
 
             {/* Badge */}
             {module.status === "coming_soon" ? (
-              <Badge variant="warning" className="relative z-10 text-[10px]">Soon</Badge>
+              <Badge variant="warning" className="relative z-10 text-[10px]">即将上线</Badge>
             ) : null}
           </div>
         );

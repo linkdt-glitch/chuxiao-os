@@ -211,7 +211,7 @@ export function WelcomeOverlay({
               className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"
               style={{ boxShadow: "0 0 8px rgba(74,222,128,0.85)" }}
             />
-            SYS://ONLINE
+            系统在线
           </span>
           <span
             className="h-px w-14"

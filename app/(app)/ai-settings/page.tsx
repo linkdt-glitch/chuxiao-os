@@ -20,14 +20,14 @@ export default async function AISettingsPage() {
   return (
     <>
       <PageHeader
-        title="AI Settings AI 设置"
-        description="预留 OpenAI / Anthropic / Google / Local Provider 抽象接口；API Key 仅加密存储，不在前端明文展示。"
+        title="AI 设置"
+        description="预留 OpenAI / Anthropic / Google 等 AI 服务商的抽象接口；密钥仅加密存储，不在前端明文展示。"
       />
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Provider 安全配置</CardTitle>
+              <CardTitle>服务商安全配置</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
               <div className="rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4">
@@ -35,7 +35,7 @@ export default async function AISettingsPage() {
                   <ServerCog className="h-4 w-4" />
                   API Key 只放在服务端环境变量
                 </div>
-                <p>当前页面只负责选择启用哪个 Provider，不在浏览器里保存或展示密钥。</p>
+                <p>当前页面只负责选择启用哪个服务商，不在浏览器里保存或展示密钥。</p>
               </div>
               <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4 font-mono text-xs text-slate-300">
                 <div>DEEPSEEK_API_KEY=...</div>
@@ -45,7 +45,7 @@ export default async function AISettingsPage() {
                 <div>SILICONFLOW_FAST_MODEL=Qwen/Qwen2.5-7B-Instruct</div>
                 <div>FINANCE_AI_FAST_LOCAL=true</div>
               </div>
-              <p>切换 Provider 会写入审计日志和系统事件。财务一句话记账会优先走极速草稿，复杂识别和 AI 对话会自动使用当前 active Provider。</p>
+              <p>切换服务商会写入审计日志和系统事件。财务一句话记账会优先走极速草稿，复杂识别和 AI 对话会自动使用当前激活的服务商。</p>
             </CardContent>
           </Card>
           <ProviderTestCard />
@@ -268,7 +268,7 @@ export default async function AISettingsPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Provider 列表</CardTitle>
+            <CardTitle>服务商列表</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -276,7 +276,7 @@ export default async function AISettingsPage() {
                 <TableRow>
                   <TableHead>名称</TableHead>
                   <TableHead>模型</TableHead>
-                  <TableHead>base_url</TableHead>
+                  <TableHead>API 地址</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
@@ -287,7 +287,7 @@ export default async function AISettingsPage() {
                     <TableCell>
                       <div className="font-medium">{provider.label}</div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <KeyRound className="h-3 w-3" /> API Key encrypted
+                        <KeyRound className="h-3 w-3" /> 密钥已加密
                       </div>
                     </TableCell>
                     <TableCell>{provider.model_name}</TableCell>
@@ -297,7 +297,7 @@ export default async function AISettingsPage() {
                       <form action={provider.is_active ? disableProviderAction : activateProviderAction}>
                         <input type="hidden" name="provider_id" value={provider.id} />
                         <ConfirmSubmitButton
-                          confirmText="切换 AI Provider 会影响后续 AI 调用，确认继续？"
+                          confirmText="切换 AI 服务商会影响后续 AI 调用，确认继续？"
                           variant={provider.is_active ? "secondary" : "outline"}
                         >
                           {provider.is_active ? "停用" : "启用"}
@@ -321,8 +321,8 @@ export default async function AISettingsPage() {
               <TableRow>
                 <TableHead>调用者</TableHead>
                 <TableHead>模块</TableHead>
-                <TableHead>Prompt preview</TableHead>
-                <TableHead>Tokens</TableHead>
+                <TableHead>提示词预览</TableHead>
+                <TableHead>Token 数</TableHead>
                 <TableHead>成本估算</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>时间</TableHead>

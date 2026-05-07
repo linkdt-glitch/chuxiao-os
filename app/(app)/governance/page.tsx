@@ -139,7 +139,7 @@ export default async function GovernancePage() {
             {["大额支出审批", "Agent 高风险动作审批", "Prompt 发布审批", "项目关键变更审批"].map((rule) => (
               <div key={rule} className="flex items-center justify-between rounded-md border p-3">
                 <span>{rule}</span>
-                <Badge variant="warning">Coming Soon</Badge>
+                <Badge variant="warning">即将上线</Badge>
               </div>
             ))}
           </CardContent>

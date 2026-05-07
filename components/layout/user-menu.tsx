@@ -109,29 +109,28 @@ export function UserMenu({
             style={{ background: "rgba(249,115,22,0.10)" }}
           />
 
-          <DropdownMenu.Item asChild>
-            {/* Switch account: same as logout but lands on /login?notice=switched */}
-            <form action={switchAccountAction} className="m-0">
-              <button
-                type="submit"
-                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-orange-200 outline-none transition-colors hover:bg-orange-500/[0.08] focus:bg-orange-500/[0.10]"
-              >
-                <Repeat className="h-4 w-4 text-orange-400" />
-                切换账号
-              </button>
-            </form>
+          {/* Switch account — onSelect fires the server action directly,
+              no <form> nesting (radix Item swallowed the form submit). */}
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault();
+              void switchAccountAction();
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-orange-200 outline-none transition-colors data-[highlighted]:bg-orange-500/[0.10]"
+          >
+            <Repeat className="h-4 w-4 text-orange-400" />
+            切换账号
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item asChild>
-            <form action={logoutAction} className="m-0">
-              <button
-                type="submit"
-                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-300 outline-none transition-colors hover:bg-red-500/[0.10] focus:bg-red-500/[0.12]"
-              >
-                <LogOut className="h-4 w-4 text-red-400" />
-                退出登录
-              </button>
-            </form>
+          <DropdownMenu.Item
+            onSelect={(e) => {
+              e.preventDefault();
+              void logoutAction();
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-300 outline-none transition-colors data-[highlighted]:bg-red-500/[0.12]"
+          >
+            <LogOut className="h-4 w-4 text-red-400" />
+            退出登录
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

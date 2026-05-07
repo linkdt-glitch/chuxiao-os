@@ -150,7 +150,7 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
                               }
                             />
                             <span className="min-w-0 flex-1 truncate">{module.name}</span>
-                            {disabled ? <Badge variant="warning">Soon</Badge> : null}
+                            {disabled ? <Badge variant="warning">即将上线</Badge> : null}
                           </div>
                         );
 

@@ -43,7 +43,10 @@ export function Topbar({
         </div>
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-semibold text-slate-100">{organization.name}</div>
-          <div className="font-mono text-[10px] tracking-[0.16em] text-orange-500/45">SYS://ONLINE</div>
+          <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-orange-500/55">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.85)" }} />
+            系统在线
+          </div>
         </div>
       </div>
 

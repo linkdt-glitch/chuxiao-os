@@ -160,7 +160,7 @@ function UploadSlot({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between">
-        <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: `rgba(${accentRgb},0.85)` }}>
+        <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em]" style={{ color: `rgba(${accentRgb},0.85)` }}>
           <Icon className="h-3 w-3" />
           {title}
           {required ? <span className="text-orange-400">*</span> : <span className="text-slate-500">（可选）</span>}
@@ -626,8 +626,8 @@ export function ImageGenWidget() {
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-orange-400" />
           AI 图片生成 · 亚马逊卖家直出
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-            FAL.AI · 7 旗舰模型
+          <span className="ml-auto font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+            fal.ai · 7 个旗舰模型
           </span>
         </CardTitle>
       </CardHeader>
@@ -729,7 +729,7 @@ export function ImageGenWidget() {
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <UploadSlot
-                    title="产品照 // PRODUCT"
+                    title="产品照"
                     hint="必填 · 你拍的产品（背景/光线乱也没关系，AI 会换）"
                     required
                     refs={productRefs}
@@ -741,7 +741,7 @@ export function ImageGenWidget() {
                     Icon={Camera}
                   />
                   <UploadSlot
-                    title="想要的效果 // STYLE"
+                    title="想要的效果（参考图）"
                     hint="可选 · 想要的效果参考图（杂志风 / 网图 / 竞品）— AI 会借鉴它的色彩、光线、氛围"
                     required={false}
                     refs={styleRefs}
@@ -771,14 +771,14 @@ export function ImageGenWidget() {
               value={overrideModelId ?? activePreset?.recommendedModelId ?? defaultImg2Img.id}
               onChange={(id) => setOverrideModelId(id)}
               loading={loading}
-              label={`大模型 // MODEL ${overrideModelId ? "（已自选）" : "（推荐）"}`}
+              label={`选择大模型${overrideModelId ? "（已自选）" : "（推荐）"}`}
             />
 
             {/* ── Preset cards ───────────────────────────────────── */}
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                  场景 // PRESET
+                <span className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                  选择场景
                 </span>
                 <span className="font-mono text-[10px] tracking-wide text-slate-500">
                   📷 = 图生图（需上传）· ✏️ = 文生图（无需图）
@@ -842,8 +842,8 @@ export function ImageGenWidget() {
             {/* Field form */}
             {activePreset && activePreset.fields.length > 0 ? (
               <div className="space-y-3">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                  填空 // INPUTS
+                <div className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                  填写参数
                 </div>
                 {activePreset.fields.map((field) => {
                   const value = presetValues[field.key] ?? field.defaultValue ?? "";
@@ -923,14 +923,14 @@ export function ImageGenWidget() {
               value={freeModelId}
               onChange={setFreeModelId}
               loading={loading}
-              label="选大模型 // MODEL（11 个全模型 · 选了图生图自动出双槽上传）"
+              label="选择大模型（11 个全模型 · 选了图生图自动显示上传槽）"
             />
 
             {freeIsImg2Img ? (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <UploadSlot
-                    title="产品照 // PRODUCT"
+                    title="产品照"
                     hint="必填"
                     required
                     refs={productRefs}
@@ -942,7 +942,7 @@ export function ImageGenWidget() {
                     Icon={Camera}
                   />
                   <UploadSlot
-                    title="想要的效果 // STYLE"
+                    title="想要的效果（参考图）"
                     hint="可选 — 借鉴它的色彩与光线"
                     required={false}
                     refs={styleRefs}
@@ -959,8 +959,8 @@ export function ImageGenWidget() {
             ) : null}
 
             <div className="space-y-2">
-              <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                描述 // PROMPT (英文效果更佳)
+              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                描述提示词（英文效果更佳）
               </label>
               <Textarea
                 placeholder={
@@ -981,8 +981,8 @@ export function ImageGenWidget() {
             </div>
 
             <div className="space-y-2">
-              <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-                {freeIsImg2Img ? "比例 // ASPECT" : "尺寸 // SIZE"}
+              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                {freeIsImg2Img ? "图片比例" : "图片尺寸"}
               </label>
               <div className="flex flex-wrap gap-2">
                 {(freeIsImg2Img ? FREE_ASPECT_OPTIONS : FREE_SIZE_OPTIONS).map((option) => {

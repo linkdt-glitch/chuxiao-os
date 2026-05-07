@@ -255,8 +255,8 @@ export function ImageGenHelp() {
 
   return (
     <div className="space-y-2">
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
-        使用说明 // GUIDE
+      <div className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+        使用说明
       </div>
       {SECTIONS.map((section) => {
         const Icon = section.icon;

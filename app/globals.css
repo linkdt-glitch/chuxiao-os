@@ -425,6 +425,90 @@ textarea {
   100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
+/* ─── Welcome overlay (post-login sci-fi splash) ────── */
+
+/* overlay lifecycle: fade-in 0-200ms, hold, fade-out last 500ms */
+@keyframes wo-overlay-life {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }                 /* ~200ms in for total 2700ms */
+  81%  { opacity: 1; }                 /* hold until 2200ms */
+  100% { opacity: 0; pointer-events: none; }
+}
+
+/* horizontal scan line top → bottom */
+@keyframes wo-scan {
+  0%   { top: 0%;   opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* logo zoom-in with overshoot */
+@keyframes wo-logo-in {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.10); }
+  100% { transform: scale(1); }
+}
+
+/* logo glow breathing */
+@keyframes wo-logo-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 50px rgba(249,115,22,0.55),
+      0 0 0 1px rgba(249,115,22,0.60);
+  }
+  50% {
+    box-shadow:
+      0 0 80px rgba(249,115,22,0.85),
+      0 0 0 1px rgba(249,115,22,0.95),
+      0 0 130px rgba(249,115,22,0.40);
+  }
+}
+
+/* orbiting particles at three different radii */
+@keyframes wo-orbit-lg {
+  from { transform: rotate(0deg)   translateX(58px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(58px) rotate(-360deg); }
+}
+@keyframes wo-orbit-md {
+  from { transform: rotate(0deg)   translateX(70px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+}
+@keyframes wo-orbit-sm {
+  from { transform: rotate(0deg)   translateX(82px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(82px) rotate(-360deg); }
+}
+
+/* sonar ring expanding */
+@keyframes wo-sonar {
+  0%   { transform: translateX(-50%) scale(0.4); opacity: 0.85; }
+  100% { transform: translateX(-50%) scale(2.6);  opacity: 0;    }
+}
+
+/* generic text fade-up */
+@keyframes wo-text-in {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0);     }
+}
+
+/* corner brackets — slide in from each corner */
+@keyframes wo-bracket-tl {
+  from { opacity: 0; transform: translate(-12px, -12px); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes wo-bracket-tr {
+  from { opacity: 0; transform: translate(12px, -12px); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes wo-bracket-bl {
+  from { opacity: 0; transform: translate(-12px, 12px); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes wo-bracket-br {
+  from { opacity: 0; transform: translate(12px, 12px); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+
 @keyframes app-sheet-in {
   0%   { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.98); }
   100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }

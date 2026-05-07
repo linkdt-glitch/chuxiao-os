@@ -5,12 +5,14 @@ import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { WelcomeOverlay } from "@/components/auth/welcome-overlay";
 
 export function LoginForm({ initialMessage }: { initialMessage?: string }) {
   const [message, setMessage] = useState(initialMessage ?? "");
   const [isError, setIsError] = useState(Boolean(initialMessage));
   const [pendingAction, setPendingAction] = useState<"password" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [welcomeRedirectTo, setWelcomeRedirectTo] = useState<string | null>(null);
 
   async function submit(form: HTMLFormElement) {
     setPendingAction("password");
@@ -38,18 +40,27 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
     setMessage(payload.error ?? payload.message ?? "请求已提交。");
 
     if (response.ok && payload.redirectTo) {
-      window.location.href = payload.redirectTo;
+      // Trigger welcome overlay; redirect happens after animation completes.
+      setWelcomeRedirectTo(payload.redirectTo);
     }
   }
 
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        submit(event.currentTarget);
-      }}
-      className="space-y-4"
-    >
+    <>
+      {welcomeRedirectTo ? (
+        <WelcomeOverlay
+          onComplete={() => {
+            window.location.href = welcomeRedirectTo;
+          }}
+        />
+      ) : null}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit(event.currentTarget);
+        }}
+        className="space-y-4"
+      >
       <div className="space-y-2">
         <Label htmlFor="identifier">邮箱 / 手机号</Label>
         <Input
@@ -85,11 +96,12 @@ export function LoginForm({ initialMessage }: { initialMessage?: string }) {
         <KeyRound className="h-4 w-4" />
         {pendingAction === "password" ? "登录中..." : "登录"}
       </Button>
-      {message ? (
-        <p className={isError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
-          {message}
-        </p>
-      ) : null}
-    </form>
+        {message ? (
+          <p className={isError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
+            {message}
+          </p>
+        ) : null}
+      </form>
+    </>
   );
 }

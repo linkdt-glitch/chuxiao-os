@@ -12,7 +12,6 @@ function parseValues(raw: string): HomeValue[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      // 支持「标题 :: 描述」「标题 | 描述」「标题：描述」「仅标题」
       const sep = ["::", "|", "：", ":"].find((s) => line.includes(s));
       if (sep) {
         const idx = line.indexOf(sep);
@@ -31,7 +30,6 @@ function parseGoals(raw: string): HomeGoal[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      // 用 | 分隔：标题 | 描述 | 目标日期 (YYYY-MM-DD) | 进度 (0-100)
       const parts = line.split("|").map((s) => s.trim());
       if (!parts[0]) return null;
       const progress = parts[3] ? Number(parts[3]) : undefined;
@@ -50,7 +48,7 @@ function parseGoals(raw: string): HomeGoal[] {
 export async function saveHomeContentAction(formData: FormData) {
   const member = await getCurrentMember();
   if (member?.role?.key !== "owner") {
-    redirect("/home?error=forbidden");
+    redirect(`/home?error=${encodeURIComponent("仅创始人可编辑首页内容")}`);
   }
 
   const mission = String(formData.get("mission") ?? "").trim();
@@ -65,7 +63,7 @@ export async function saveHomeContentAction(formData: FormData) {
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    // Demo mode：不持久化
+    // Demo mode：没有 supabase，直接给"已保存（演示）"反馈
     redirect("/home?notice=saved_demo");
   }
 
@@ -75,17 +73,42 @@ export async function saveHomeContentAction(formData: FormData) {
     announcements,
     home: { mission, vision, values, goals }
   };
-  const { error } = await supabase
+
+  // 用 SSR client 跑 update 会受 RLS 约束。policy "organizations admin update"
+  // 要求 is_org_admin = role in ('owner','admin') 才放行。owner 应该通过。
+  // 但在某些 cookie / impersonation 边界条件下可能仍命中 0 行 —— 通过 .select()
+  // 拿到实际更新的 id 列表，能区分「DB 报错」「0 行被 RLS 过滤」「正常成功」三种结果。
+  const { error, data } = await supabase
     .from("organizations")
     .update({ settings: newSettings })
-    .eq("id", org.id);
+    .eq("id", org.id)
+    .select("id");
+
   if (error) {
-    console.error("[saveHomeContentAction]", error.message);
+    console.error("[saveHomeContentAction] supabase error:", error.message);
     redirect(`/home/edit?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (!data || data.length === 0) {
+    // RLS 拒了或者 org id 对不上。落到这里基本是会话问题，
+    // 把可见的关键信息塞进 URL，方便调试。
+    console.error(
+      "[saveHomeContentAction] 0 rows updated. org=",
+      org.id,
+      "role=",
+      member?.role?.key
+    );
+    redirect(
+      `/home/edit?error=${encodeURIComponent(
+        "保存影响 0 行 — 数据库认为你没有权限写入。请退出账号重新登录后再试。"
+      )}`
+    );
   }
 
   revalidatePath("/home");
   revalidatePath("/home/edit");
   revalidatePath("/dashboard");
+  // 顶部 banner 也要重新拉
+  revalidatePath("/", "layout");
   redirect("/home?notice=saved");
 }

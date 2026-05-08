@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { NoticeBanner } from "@/components/ui/notice-banner";
 import { RiskBadge, StatusBadge } from "@/components/ui/status";
 import { getMembers } from "@/lib/data/queries";
 import { getProjectApprovalRequests, getProjects, getTasks } from "@/lib/projects";

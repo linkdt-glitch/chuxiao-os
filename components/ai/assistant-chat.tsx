@@ -1,9 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Bot, Send, UserRound } from "lucide-react";
+/**
+ * AssistantChat —— 初晓 AI 对话界面
+ *
+ * 视觉参考：Claude Code 对话面板
+ *  - 中央单列，max-w-3xl
+ *  - 用户消息：右对齐 + 柔和 bubble
+ *  - 助手消息：全宽，无 bubble，avatar + 名字 + 纯文本（whitespace-pre-wrap）
+ *  - 底部 floating composer：圆角大卡片 + 发送按钮
+ *  - 空状态：hero 欢迎 + 4 张 starter prompt 卡（替代原来的右侧栏）
+ *
+ * 保留：流式接收、思考动画文案 ("AI 正在光速思考")、错误处理
+ */
+
+import { useEffect, useRef, useState } from "react";
+import { ArrowUp, Sparkles } from "lucide-react";
 import { AIThinking } from "@/components/ui/ai-thinking";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Message = {
@@ -11,23 +23,45 @@ type Message = {
   content: string;
 };
 
-const starterPrompts = [
-  "帮我用 5 条要点说明初晓 OS 今天适合怎么开始使用。",
-  "请帮我设计一个小公司使用 AI Agent 的安全规则。",
-  "请帮我把本周工作复盘成：做得好、问题、下一步行动。"
+const STARTER_PROMPTS = [
+  {
+    title: "本周工作复盘",
+    detail: "帮我把本周工作复盘成：做得好、问题、下一步行动。"
+  },
+  {
+    title: "AI Agent 安全规则",
+    detail: "请帮我设计一个小公司使用 AI Agent 的安全规则。"
+  },
+  {
+    title: "经营会议提纲",
+    detail: "给我一份月度经营复盘会议的提纲（含数据、风险、决策）。"
+  },
+  {
+    title: "招聘 JD 草稿",
+    detail: "给一份高级前端工程师的 JD 草稿，要突出 AI 工程能力。"
+  }
 ];
 
+const INITIAL_MESSAGE: Message = {
+  role: "assistant",
+  content:
+    "你好，我是初晓 AI 助手。可以帮你梳理思路、起草文档、做决策、做经营复盘 —— 直接问我吧。"
+};
+
 export function AssistantChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "你好，我是初晓 OS 的企业 AI 助手。你可以问我经营、任务、审批、文件、Agent、复盘和流程优化相关问题。"
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const showStarter = messages.length === 1 && messages[0].role === "assistant" && !pending;
+
+  // 新消息到来时自动滚到底部
+  useEffect(() => {
+    scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, pending]);
 
   async function sendMessage(content = input) {
     const question = content.trim();
@@ -35,8 +69,6 @@ export function AssistantChat() {
 
     const nextMessages: Message[] = [...messages, { role: "user", content: question }];
     const assistantIndex = nextMessages.length;
-    // Insert empty assistant placeholder; AIThinking 卡片会在 content 为空时
-    // 显示，第一个流式 chunk 到达时自动接管。
     setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setPending(true);
@@ -66,7 +98,7 @@ export function AssistantChat() {
         answer += decoder.decode(value, { stream: true });
         setMessages((current) =>
           current.map((message, index) =>
-            index === assistantIndex ? { ...message, content: answer || "正在生成..." } : message
+            index === assistantIndex ? { ...message, content: answer } : message
           )
         );
       }
@@ -78,107 +110,163 @@ export function AssistantChat() {
           )
         );
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "AI 助手调用失败。");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AI 助手调用失败。");
       setMessages(nextMessages);
     } finally {
       setPending(false);
     }
   }
 
+  function pickStarter(detail: string) {
+    sendMessage(detail);
+  }
+
   return (
-    <div className="grid min-h-[680px] gap-4 lg:grid-cols-[1fr_320px]">
-      <section className="flex min-h-[680px] flex-col rounded-lg border border-white/75 bg-white/72 shadow-sm backdrop-blur-xl">
-        <div className="border-b border-slate-200/70 p-4">
-          <div className="font-semibold">初晓 AI 对话</div>
-          <div className="text-sm text-muted-foreground">连接当前启用的 AI Provider，调用记录会进入 AI 调用日志。</div>
-        </div>
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {messages.map((message, index) => {
-            // Hide empty assistant bubble — the AIThinking card below replaces it.
-            if (message.role === "assistant" && !message.content.trim()) return null;
+    <div className="mx-auto flex w-full max-w-3xl flex-col">
+      {/* 消息区 */}
+      <div className="flex flex-col gap-7 pb-40 pt-2">
+        {messages.map((message, index) => {
+          // pending 中且最后一条 assistant 还没拿到第一个 chunk → 用 thinking 卡片代替
+          const isStreamingPlaceholder =
+            pending && index === messages.length - 1 && message.role === "assistant" && !message.content.trim();
+          if (isStreamingPlaceholder) {
             return (
-              <div key={`${message.role}-${index}`} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                <div className="flex max-w-[82%] gap-3">
-                  {message.role === "assistant" ? (
-                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-                      <Bot className="h-4 w-4" />
-                    </div>
-                  ) : null}
-                  <div
-                    className={
-                      message.role === "user"
-                        ? "rounded-lg bg-gradient-to-b from-orange-400 to-orange-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
-                        : "rounded-lg border border-slate-200/70 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm"
-                    }
-                  >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+              <div key={`thinking-${index}`} className="flex gap-3">
+                <AssistantAvatar />
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <RoleLabel role="assistant" />
+                  <div className="mt-2 max-w-md">
+                    <AIThinking label="AI 正在光速思考" variant="card" />
                   </div>
-                  {message.role === "user" ? (
-                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                      <UserRound className="h-4 w-4" />
-                    </div>
-                  ) : null}
                 </div>
               </div>
             );
-          })}
-          {/* AIThinking 卡片在 pending + 最后一条 assistant 还没内容时显示，
-             第一个流式 chunk 到达后自动消失，真实回复 bubble 接管。 */}
-          {pending && (messages[messages.length - 1]?.content ?? "").trim() === "" ? (
-            <div className="flex justify-start">
-              <div className="max-w-[85%]">
-                <AIThinking label="AI 正在光速思考" variant="card" />
+          }
+
+          if (message.role === "user") {
+            return (
+              <div key={`u-${index}`} className="flex justify-end">
+                <div className="max-w-[88%] rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] leading-7 text-slate-100">
+                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={`a-${index}`} className="flex gap-3">
+              <AssistantAvatar />
+              <div className="min-w-0 flex-1 pt-0.5">
+                <RoleLabel role="assistant" />
+                <div className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-100">
+                  {message.content}
+                  {pending && index === messages.length - 1 ? (
+                    <span className="ml-0.5 inline-block h-4 w-1.5 translate-y-[2px] animate-pulse bg-amber-300/70 align-baseline" />
+                  ) : null}
+                </div>
               </div>
             </div>
-          ) : null}
-        </div>
-        <div className="border-t border-slate-200/70 p-4">
-          {error ? <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</div> : null}
-          <div className="flex gap-2">
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  sendMessage();
-                }
-              }}
-              className="min-h-12"
-              placeholder="输入问题，Enter 发送，Shift + Enter 换行"
-            />
-            <Button type="button" className="h-auto px-4" onClick={() => sendMessage()} disabled={pending || !input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </section>
-      <aside className="space-y-4">
-        <div className="rounded-lg border border-white/75 bg-white/72 p-4 shadow-sm backdrop-blur-xl">
-          <div className="font-semibold">可以这样问</div>
-          <div className="mt-3 space-y-2">
-            {starterPrompts.map((prompt) => (
+          );
+        })}
+
+        {/* 空状态：starter prompts */}
+        {showStarter ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {STARTER_PROMPTS.map((prompt) => (
               <button
-                key={prompt}
+                key={prompt.title}
                 type="button"
-                className="w-full rounded-md border border-slate-200/70 bg-white/70 p-3 text-left text-sm text-slate-700 transition hover:border-orange-200 hover:bg-orange-50/70"
-                onClick={() => {
-                  setInput(prompt);
-                  inputRef.current?.focus();
-                }}
+                onClick={() => pickStarter(prompt.detail)}
+                className="group rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/[0.06]"
               >
-                {prompt}
+                <div className="text-[14px] font-medium text-slate-100">{prompt.title}</div>
+                <div className="mt-1 line-clamp-2 text-[12px] text-slate-400 group-hover:text-slate-300">
+                  {prompt.detail}
+                </div>
               </button>
             ))}
           </div>
+        ) : null}
+
+        <div ref={scrollAnchorRef} aria-hidden />
+      </div>
+
+      {/* 底部 floating composer */}
+      <div className="sticky bottom-0 -mx-4 px-4 pb-4 sm:-mx-6 sm:px-6">
+        <div
+          className="pointer-events-none absolute inset-x-0 -top-12 h-12"
+          style={{
+            background: "linear-gradient(to bottom, transparent, rgba(2,6,17,0.85))"
+          }}
+        />
+        {error ? (
+          <div className="relative mb-2 rounded-xl border border-rose-500/30 bg-rose-500/[0.10] px-3 py-2 text-[13px] text-rose-200">
+            {error}
+          </div>
+        ) : null}
+        <div
+          className="relative rounded-2xl border border-white/[0.10] bg-white/[0.04] p-2"
+          style={{
+            boxShadow: "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)"
+          }}
+        >
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="问点什么…  Enter 发送，Shift+Enter 换行"
+            className="min-h-12 resize-none border-0 bg-transparent text-[15px] leading-7 shadow-none focus-visible:ring-0"
+            rows={1}
+          />
+          <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1">
+            <span className="text-[10px] tracking-wider text-slate-500">
+              {pending ? "AI 在思考…" : "Enter 发送 · Shift+Enter 换行"}
+            </span>
+            <button
+              type="button"
+              onClick={() => sendMessage()}
+              disabled={pending || !input.trim()}
+              className="grid h-8 w-8 place-items-center rounded-xl bg-amber-500 text-slate-950 transition-colors hover:bg-amber-400 disabled:bg-white/[0.06] disabled:text-slate-500"
+              aria-label="发送"
+            >
+              <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
-        <div className="rounded-lg border border-white/75 bg-white/72 p-4 text-sm text-muted-foreground shadow-sm backdrop-blur-xl">
-          <div className="mb-2 font-semibold text-foreground">安全边界</div>
-          AI 助手当前只提供分析、建议、总结和草稿，不会自动付款、删数据、改权限或对外发送内容。
+        <div className="relative mt-2 text-center text-[10px] text-slate-500">
+          AI 助手只提供分析、建议、总结、草稿 —— 不会自动付款 / 删数据 / 改权限 / 对外发送。
         </div>
-      </aside>
+      </div>
+    </div>
+  );
+}
+
+function AssistantAvatar() {
+  return (
+    <div
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
+      style={{
+        background: "radial-gradient(circle at 50% 40%, rgba(251,191,36,0.30), rgba(8,12,28,0.92))",
+        boxShadow: "0 0 0 1px rgba(251,191,36,0.35), 0 0 12px rgba(251,191,36,0.20)"
+      }}
+      aria-hidden
+    >
+      <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+    </div>
+  );
+}
+
+function RoleLabel({ role }: { role: "user" | "assistant" }) {
+  return (
+    <div className="text-[12px] font-semibold tracking-wide text-slate-300">
+      {role === "assistant" ? "初晓 AI" : "你"}
     </div>
   );
 }

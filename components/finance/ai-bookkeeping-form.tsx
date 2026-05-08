@@ -8,6 +8,7 @@ import { ConfettiBurst } from "@/components/energy/confetti-burst";
 import { AIThinking } from "@/components/ui/ai-thinking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -227,6 +228,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">输入一句话、语音或票据图片后，AI 会在这里生成待确认草稿。</div>
           ) : (
             <form action={confirmAction} className="grid gap-4 md:grid-cols-2">
+              <FormPendingOverlay label="正在保存记账..." estimatedSeconds={2} />
               <input type="hidden" name="parse_log_id" value={parseState.parseLogId ?? ""} />
               {(parseState.pendingFileIds ?? []).map((fileId) => <input key={fileId} type="hidden" name="pending_file_id" value={fileId} />)}
               <div className="md:col-span-2 rounded-md bg-muted p-3 text-sm">

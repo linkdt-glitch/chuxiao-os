@@ -61,31 +61,29 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
           <div
             className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-h-[72vh] overflow-hidden rounded-[20px] animate-app-sheet-in"
             style={{
-              background: "rgba(4,8,22,0.96)",
-              border: "1px solid rgba(249,115,22,0.18)",
-              boxShadow:
-                "0 -24px 60px rgba(0,0,0,0.65), 0 0 40px rgba(249,115,22,0.08)",
-              backdropFilter: "blur(28px)",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 -8px 32px -8px rgba(15,23,42,0.18), 0 1px 2px rgba(15,23,42,0.06)"
             }}
           >
             {/* Sheet header */}
             <div
               className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
+              style={{ borderBottom: "1px solid #e2e8f0" }}
             >
               <div>
-                <div className="text-sm font-semibold text-slate-100">全部入口</div>
-                <div className="font-mono text-[10px] tracking-wider text-orange-500/45">
+                <div className="text-sm font-semibold text-slate-900">全部入口</div>
+                <div className="font-mono text-[10px] tracking-wider text-orange-600">
                   SELECT MODULE
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-200 active:scale-95"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:text-slate-800 active:scale-95"
                 style={{
-                  background: "rgba(249,115,22,0.08)",
-                  border: "1px solid rgba(249,115,22,0.18)",
+                  background: "#fff7ed",
+                  border: "1px solid #fed7aa",
                 }}
                 aria-label="关闭"
               >
@@ -175,10 +173,10 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
       <nav
         className="fixed inset-x-0 bottom-0 z-30 px-2 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 lg:hidden"
         style={{
-          background: "rgba(2,5,16,0.92)",
-          borderTop: "1px solid rgba(249,115,22,0.14)",
-          boxShadow: "0 -12px 40px rgba(0,0,0,0.55)",
-          backdropFilter: "blur(28px)",
+          background: "rgba(255,255,255,0.94)",
+          borderTop: "1px solid #e2e8f0",
+          boxShadow: "0 -1px 2px rgba(15,23,42,0.04)",
+          backdropFilter: "blur(10px)",
         }}
       >
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
@@ -194,10 +192,9 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
                 style={
                   active
                     ? {
-                        background: "rgba(249,115,22,0.12)",
-                        border: "1px solid rgba(249,115,22,0.28)",
-                        color: "#fb923c",
-                        boxShadow: "0 0 14px rgba(249,115,22,0.15)",
+                        background: "rgba(249,115,22,0.10)",
+                        border: "1px solid rgba(249,115,22,0.30)",
+                        color: "#c2410c",
                       }
                     : {
                         color: "#475569",
@@ -225,10 +222,9 @@ export function MobileTabbar({ modules }: { modules: NavigationModule[] }) {
             style={
               moreActive
                 ? {
-                    background: "rgba(249,115,22,0.12)",
-                    border: "1px solid rgba(249,115,22,0.28)",
-                    color: "#fb923c",
-                    boxShadow: "0 0 14px rgba(249,115,22,0.15)",
+                    background: "rgba(249,115,22,0.10)",
+                    border: "1px solid rgba(249,115,22,0.30)",
+                    color: "#c2410c",
                   }
                 : { color: "#475569" }
             }

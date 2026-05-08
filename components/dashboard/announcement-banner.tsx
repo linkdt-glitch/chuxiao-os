@@ -17,15 +17,15 @@ export function AnnouncementBanner({ announcements }: { announcements?: string[]
       className="relative overflow-hidden"
       aria-label="系统公告"
       style={{
-        background: "linear-gradient(90deg, rgba(5,10,22,0.98) 0%, rgba(8,14,28,0.96) 50%, rgba(5,10,22,0.98) 100%)",
-        borderBottom: "1px solid rgba(249,115,22,0.18)",
+        background: "#fff7ed",
+        borderBottom: "1px solid #fed7aa",
       }}
     >
       {/* Top shimmer line */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.6) 50%, transparent 100%)",
+          background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.45) 50%, transparent 100%)",
           animation: "shimmer-line 4s ease-in-out infinite",
         }}
       />
@@ -34,7 +34,7 @@ export function AnnouncementBanner({ announcements }: { announcements?: string[]
       <div
         className="absolute left-0 top-0 z-10 flex h-full items-center px-3"
         style={{
-          background: "linear-gradient(90deg, rgba(5,10,22,0.99) 55%, transparent 100%)",
+          background: "linear-gradient(90deg, #fff7ed 55%, transparent 100%)",
           minWidth: 28,
         }}
       >
@@ -52,7 +52,7 @@ export function AnnouncementBanner({ announcements }: { announcements?: string[]
       <div
         className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16"
         style={{
-          background: "linear-gradient(270deg, rgba(5,10,22,0.99) 0%, transparent 100%)",
+          background: "linear-gradient(270deg, #fff7ed 0%, transparent 100%)",
         }}
       />
 
@@ -80,7 +80,7 @@ export function AnnouncementBanner({ announcements }: { announcements?: string[]
                 style={{
                   fontSize: 13,
                   fontWeight: 500,
-                  color: "rgba(226,232,240,0.95)",
+                  color: "#92400e",
                   letterSpacing: "0.01em",
                 }}
               >

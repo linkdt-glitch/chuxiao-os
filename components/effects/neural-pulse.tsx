@@ -60,11 +60,11 @@ export function NeuralPulse() {
       <div className="text-center">
         <div
           className="font-mono text-[9px] font-semibold tracking-[0.24em]"
-          style={{ color: "rgba(249,115,22,0.65)", textShadow: "0 0 8px rgba(249,115,22,0.4)" }}
+          style={{ color: "rgba(234,88,12,0.85)" }}
         >
           AI 核心 · 在线
         </div>
-        <div className="mt-0.5 font-mono text-[8px] tracking-[0.14em] text-slate-600">
+        <div className="mt-0.5 font-mono text-[8px] tracking-[0.14em] text-slate-500">
           初晓 OS · v1.0
         </div>
       </div>

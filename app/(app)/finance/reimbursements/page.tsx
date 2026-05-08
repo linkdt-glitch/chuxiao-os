@@ -135,7 +135,7 @@ export default async function ReimbursementsPage({
       <section className="mb-6" id="approval-workbench">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="flex items-center gap-2 text-[16px] font-semibold tracking-tight text-slate-100">
+            <h2 className="flex items-center gap-2 text-[16px] font-semibold tracking-tight text-slate-900">
               <Sparkles className="h-4 w-4 text-amber-300" />
               快捷记账审批
               <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-200">
@@ -154,7 +154,7 @@ export default async function ReimbursementsPage({
             showActions={dashboard.canApprove}
           />
         ) : (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] px-4 py-6">
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6">
             <EmptyState
               title="暂无快捷记账待审批"
               description="员工通过 AI 记账或手动记账提交审批后，会先汇入这里。"
@@ -167,7 +167,7 @@ export default async function ReimbursementsPage({
       <section>
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-[16px] font-semibold tracking-tight text-slate-100">
+            <h2 className="text-[16px] font-semibold tracking-tight text-slate-900">
               正式报销单工作台
             </h2>
             <p className="mt-0.5 text-[12px] text-slate-400">
@@ -221,8 +221,8 @@ function CleanMetric({
     <Wrapper
       {...wrapperProps}
       className={
-        "block rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5 transition-colors " +
-        (href ? "hover:border-white/[0.12] hover:bg-white/[0.05]" : "")
+        "block rounded-2xl border border-slate-200 bg-white px-4 py-3.5 transition-colors " +
+        (href ? "hover:border-orange-300 hover:bg-orange-50/50" : "")
       }
     >
       <div className="flex items-center justify-between gap-2">

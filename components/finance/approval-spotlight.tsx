@@ -50,7 +50,7 @@ export function ApprovalSpotlight({
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
             <div>
-              <div className="text-[15px] font-semibold text-slate-100">财务审批 · 全部清空</div>
+              <div className="text-[15px] font-semibold text-slate-900">财务审批 · 全部清空</div>
               <div className="text-[12px] text-muted-foreground">
                 没有待你处理的报销 / 支出审批，可以专心看仪表盘。
               </div>
@@ -87,7 +87,7 @@ export function ApprovalSpotlight({
           </div>
           <div className="min-w-0">
             <div className="flex items-baseline gap-2">
-              <span className="text-[15px] font-semibold text-slate-100">财务审批</span>
+              <span className="text-[15px] font-semibold text-slate-900">财务审批</span>
               <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium tabular-nums text-amber-200">
                 {totalCount} 待审
               </span>
@@ -113,7 +113,7 @@ export function ApprovalSpotlight({
         {showMore ? (
           <Link
             href="/finance/reimbursements"
-            className="block rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center text-[12px] text-amber-300 transition-colors hover:bg-white/[0.05]"
+            className="block rounded-xl border border-orange-200 bg-orange-50/40 px-3 py-2 text-center text-[12px] text-amber-300 transition-colors hover:bg-orange-50"
           >
             还有 {totalCount - previewRecords.length} 条待审，进入完整工作台处理 →
           </Link>
@@ -128,7 +128,7 @@ function ApprovalRow({ record }: { record: FinanceRecord }) {
   const category = [record.category?.name, record.subcategory?.name].filter(Boolean).join(" / ") || "未分类";
   const hasAttachment = (record.attachments?.length ?? 0) > 0;
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 transition-colors hover:bg-white/[0.04]">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:bg-orange-50/40">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -147,7 +147,7 @@ function ApprovalRow({ record }: { record: FinanceRecord }) {
             )}
             <span className="font-mono text-[11px] tabular-nums text-slate-500">{record.record_no}</span>
           </div>
-          <div className="mt-1 truncate text-[14px] font-medium text-slate-100">{record.description}</div>
+          <div className="mt-1 truncate text-[14px] font-medium text-slate-900">{record.description}</div>
           <div className="mt-0.5 text-[12px] text-muted-foreground">
             {submitter} · {record.occurred_at} · {category}
           </div>

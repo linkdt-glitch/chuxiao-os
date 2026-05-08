@@ -69,7 +69,7 @@ export default async function AIWorkforcePage() {
       {/* ── 次要：其他 AI 能力（精简） ────────────────────────── */}
       <div className="mt-10">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-[15px] font-semibold tracking-tight text-slate-200">
+          <h2 className="text-[15px] font-semibold tracking-tight text-slate-700">
             其他 AI 能力
           </h2>
           <span className="text-[11px] text-slate-500">
@@ -248,13 +248,13 @@ function CompactMetric({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[12px] uppercase tracking-[0.12em] text-slate-500">{label}</span>
         <Icon className="h-3.5 w-3.5 text-slate-500" />
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-[24px] font-semibold tabular-nums text-slate-100">{value}</span>
+        <span className="text-[24px] font-semibold tabular-nums text-slate-900">{value}</span>
         {hint ? <span className="text-[11px] text-slate-500">{hint}</span> : null}
       </div>
     </div>
@@ -276,12 +276,12 @@ function SecondaryLink({
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
+      className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-orange-300 hover:bg-orange-50/50"
     >
       <div className="flex min-w-0 items-center gap-3">
         <Icon className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-orange-300" />
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-medium text-slate-100">{label}</div>
+          <div className="truncate text-[13px] font-medium text-slate-900">{label}</div>
           {hint ? <div className="truncate text-[11px] text-slate-500">{hint}</div> : null}
         </div>
       </div>

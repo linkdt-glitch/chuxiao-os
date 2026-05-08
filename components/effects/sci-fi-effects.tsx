@@ -47,7 +47,8 @@ export function SciFiEffects() {
       vx: (Math.random() - 0.5) * 0.30,
       vy: (Math.random() - 0.5) * 0.30,
       r:  Math.random() * 1.2 + 0.5,
-      o:  Math.random() * 0.40 + 0.15,
+      // 白底下橙色粒子需要更低 alpha 才不显眼（深色主题用 0.15-0.55）
+      o:  Math.random() * 0.16 + 0.06,
     }));
 
     let particleRaf: number | undefined;
@@ -70,7 +71,7 @@ export function SciFiEffects() {
           const dy = pi.y - pj.y;
           const dSq = dx * dx + dy * dy;
           if (dSq < LINK_DIST_SQ) {
-            const alpha = 0.09 * (1 - Math.sqrt(dSq) / LINK_DIST);
+            const alpha = 0.04 * (1 - Math.sqrt(dSq) / LINK_DIST);
             ctx.strokeStyle = `rgba(249,115,22,${alpha.toFixed(3)})`;
             ctx.beginPath();
             ctx.moveTo(pi.x, pi.y);

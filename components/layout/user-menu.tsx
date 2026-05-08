@@ -78,13 +78,12 @@ export function UserMenu({
             className="grid h-9 w-9 place-items-center rounded-full sm:hidden"
             style={{
               background:
-                "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.22), rgba(3,7,18,0.96))",
-              boxShadow:
-                "0 0 12px rgba(249,115,22,0.20), 0 0 0 1px rgba(249,115,22,0.32)"
+                "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), #ffffff)",
+              border: "1px solid rgba(249,115,22,0.30)"
             }}
             aria-label="账户菜单"
           >
-            <UserIcon className="h-4 w-4 text-orange-300" />
+            <UserIcon className="h-4 w-4 text-orange-600" />
           </span>
         </button>
       </DropdownMenu.Trigger>
@@ -95,26 +94,24 @@ export function UserMenu({
           sideOffset={8}
           className="z-[60] min-w-[240px] overflow-hidden rounded-lg p-1.5 outline-none"
           style={{
-            background: "rgba(4,8,20,0.98)",
-            border: "1px solid rgba(249,115,22,0.32)",
-            boxShadow:
-              "0 24px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.08) inset, 0 0 24px rgba(249,115,22,0.10)",
-            backdropFilter: "blur(14px)"
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 2px rgba(15,23,42,0.06), 0 12px 32px -8px rgba(15,23,42,0.18)"
           }}
         >
           {/* Header (mobile shows user info inside menu since trigger is just an avatar) */}
           <div
             className="mb-1 px-3 py-2 sm:hidden"
-            style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
+            style={{ borderBottom: "1px solid #e2e8f0" }}
           >
-            <div className="text-sm font-medium text-slate-200">{userName}</div>
+            <div className="text-sm font-medium text-slate-900">{userName}</div>
             <div className="font-mono text-[10px] text-slate-500">{userEmail}</div>
             <div className="mt-1.5">
               <span
-                className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide text-orange-400"
+                className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide text-orange-700"
                 style={{
-                  background: "rgba(249,115,22,0.10)",
-                  border: "1px solid rgba(249,115,22,0.26)"
+                  background: "#fff7ed",
+                  border: "1px solid #fed7aa"
                 }}
               >
                 {role}
@@ -125,9 +122,9 @@ export function UserMenu({
           <DropdownMenu.Item asChild>
             <Link
               href="/settings"
-              className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-200 outline-none transition-colors hover:bg-orange-500/[0.08] focus:bg-orange-500/[0.10]"
+              className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 outline-none transition-colors hover:bg-orange-50 focus:bg-orange-50"
             >
-              <Settings className="h-4 w-4 text-slate-400" />
+              <Settings className="h-4 w-4 text-slate-500" />
               系统设置
             </Link>
           </DropdownMenu.Item>
@@ -135,15 +132,12 @@ export function UserMenu({
           {/* 创始人专属：以成员身份查看（impersonate） */}
           {showImpersonateSubmenu ? (
             <>
-              <DropdownMenu.Separator
-                className="my-1 h-px"
-                style={{ background: "rgba(249,115,22,0.10)" }}
-              />
+              <DropdownMenu.Separator className="my-1 h-px bg-slate-200" />
               <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-amber-100 outline-none transition-colors data-[highlighted]:bg-amber-500/[0.10]">
-                  <Eye className="h-4 w-4 text-amber-300" />
+                <DropdownMenu.SubTrigger className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-amber-700 outline-none transition-colors data-[highlighted]:bg-amber-50">
+                  <Eye className="h-4 w-4 text-amber-600" />
                   以成员身份查看
-                  <span className="ml-auto text-xs text-amber-200/55">›</span>
+                  <span className="ml-auto text-xs text-amber-500">›</span>
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.SubContent
@@ -151,14 +145,12 @@ export function UserMenu({
                     alignOffset={-4}
                     className="z-[70] min-w-[240px] max-h-[320px] overflow-y-auto rounded-lg p-1.5 outline-none"
                     style={{
-                      background: "rgba(4,8,20,0.98)",
-                      border: "1px solid rgba(252,211,77,0.30)",
-                      boxShadow:
-                        "0 24px 50px rgba(0,0,0,0.55), 0 0 24px rgba(252,211,77,0.10)",
-                      backdropFilter: "blur(14px)"
+                      background: "#ffffff",
+                      border: "1px solid #fed7aa",
+                      boxShadow: "0 1px 2px rgba(15,23,42,0.06), 0 12px 32px -8px rgba(15,23,42,0.18)"
                     }}
                   >
-                    <div className="px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-amber-300/70">
+                    <div className="px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-amber-700">
                       选择要切换的成员
                     </div>
                     {impersonationCandidates.map((candidate) => {
@@ -173,10 +165,10 @@ export function UserMenu({
                             formData.set("user_id", candidate.user_id);
                             void impersonateMemberAction(formData);
                           }}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm text-slate-200 outline-none transition-colors data-[highlighted]:bg-amber-500/[0.10]"
+                          className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm text-slate-700 outline-none transition-colors data-[highlighted]:bg-amber-50"
                         >
                           <span className="truncate">{candidate.display_name}</span>
-                          <span className="shrink-0 rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] text-amber-200">
+                          <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] text-amber-700">
                             {candidateRole}
                           </span>
                         </DropdownMenu.Item>
@@ -191,27 +183,21 @@ export function UserMenu({
           {/* 已经在查看模式 → 显示退出按钮 */}
           {impersonating ? (
             <>
-              <DropdownMenu.Separator
-                className="my-1 h-px"
-                style={{ background: "rgba(252,211,77,0.20)" }}
-              />
+              <DropdownMenu.Separator className="my-1 h-px bg-amber-100" />
               <DropdownMenu.Item
                 onSelect={(e) => {
                   e.preventDefault();
                   void exitImpersonationAction();
                 }}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-amber-200 outline-none transition-colors data-[highlighted]:bg-amber-500/[0.12]"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-amber-700 outline-none transition-colors data-[highlighted]:bg-amber-50"
               >
-                <Eye className="h-4 w-4 text-amber-300" />
+                <Eye className="h-4 w-4 text-amber-600" />
                 退出查看模式
               </DropdownMenu.Item>
             </>
           ) : null}
 
-          <DropdownMenu.Separator
-            className="my-1 h-px"
-            style={{ background: "rgba(249,115,22,0.10)" }}
-          />
+          <DropdownMenu.Separator className="my-1 h-px bg-slate-200" />
 
           {/* Switch account — onSelect fires the server action directly,
               no <form> nesting (radix Item swallowed the form submit). */}
@@ -220,9 +206,9 @@ export function UserMenu({
               e.preventDefault();
               void switchAccountAction();
             }}
-            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-orange-200 outline-none transition-colors data-[highlighted]:bg-orange-500/[0.10]"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-orange-700 outline-none transition-colors data-[highlighted]:bg-orange-50"
           >
-            <Repeat className="h-4 w-4 text-orange-400" />
+            <Repeat className="h-4 w-4 text-orange-600" />
             切换账号
           </DropdownMenu.Item>
 
@@ -231,9 +217,9 @@ export function UserMenu({
               e.preventDefault();
               void logoutAction();
             }}
-            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-300 outline-none transition-colors data-[highlighted]:bg-red-500/[0.12]"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 outline-none transition-colors data-[highlighted]:bg-red-50"
           >
-            <LogOut className="h-4 w-4 text-red-400" />
+            <LogOut className="h-4 w-4 text-red-500" />
             退出登录
           </DropdownMenu.Item>
         </DropdownMenu.Content>

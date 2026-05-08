@@ -177,7 +177,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex-1" />
 
         {/* Always-animating neural core */}
-        <div style={{ borderTop: "1px solid rgba(249,115,22,0.08)" }}>
+        <div style={{ borderTop: "1px solid #e2e8f0" }}>
           <NeuralPulse />
         </div>
       </nav>

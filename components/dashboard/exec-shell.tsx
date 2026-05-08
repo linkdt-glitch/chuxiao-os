@@ -34,8 +34,8 @@ export function ExecCard({
     <Tag
       className={cn(
         "relative overflow-hidden rounded-2xl",
-        "border border-white/[0.06] bg-white/[0.04]",
-        "shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_24px_48px_-24px_rgba(0,0,0,0.55)]",
+        "border border-slate-200 bg-white",
+        "shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.10)]",
         // 不用 backdrop-blur — 每个 card 都开 blur 复合层会让 dashboard 变卡
         className
       )}
@@ -60,16 +60,16 @@ export function CardHead({
   return (
     <div className="flex items-baseline justify-between gap-3 px-5 pt-5 pb-2">
       <div className="min-w-0">
-        <h3 className="truncate text-[13px] font-semibold tracking-tight text-slate-200">
+        <h3 className="truncate text-[13px] font-semibold tracking-tight text-slate-700">
           {title}
         </h3>
         {hint ? (
-          <p className="mt-0.5 truncate text-[11px] text-slate-500">{hint}</p>
+          <p className="mt-0.5 truncate text-[11px] text-slate-9000">{hint}</p>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         {meta ? (
-          <span className="text-[11px] tabular-nums text-slate-500">{meta}</span>
+          <span className="text-[11px] tabular-nums text-slate-9000">{meta}</span>
         ) : null}
         {cta ? (
           <Link
@@ -116,19 +116,19 @@ export function TodayBrief({
   return (
     <section className="mb-7">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="text-2xl font-semibold tracking-tight text-slate-100 sm:text-[28px]">
+        <div className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[28px]">
           {greeting}
         </div>
-        <div className="font-mono text-[11px] tracking-wider text-slate-500">
+        <div className="font-mono text-[11px] tracking-wider text-slate-9000">
           {dateString}
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-white/[0.06] bg-white/[0.04] px-5 py-4">
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
         <div className="flex items-start gap-3">
           <span className={cn("mt-2 h-1.5 w-1.5 shrink-0 rounded-full", dot)} />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] leading-relaxed text-slate-100">
+            <p className="text-[15px] leading-relaxed text-slate-900">
               {headline}
             </p>
             {detail ? (
@@ -181,7 +181,7 @@ export function HeroMetric({
   href?: string;
 }) {
   const valueColor = {
-    default: "text-slate-50",
+    default: "text-slate-900",
     good: "text-emerald-300",
     bad: "text-rose-300",
     warn: "text-amber-300"
@@ -191,13 +191,13 @@ export function HeroMetric({
   const wrapperProps = href ? { href } : {};
 
   return (
-    <ExecCard className="group transition-colors hover:border-white/[0.10]">
+    <ExecCard className="group transition-colors hover:border-orange-300">
       <Wrapper
         {...wrapperProps}
         className="block px-5 pb-5 pt-5"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-medium uppercase tracking-[0.12em] text-slate-500">
+          <span className="text-[12px] font-medium uppercase tracking-[0.12em] text-slate-9000">
             {label}
           </span>
           {delta ? <DeltaChip {...delta} /> : null}
@@ -234,7 +234,7 @@ export function DeltaChip({
   const palette = {
     good: "text-emerald-300 bg-emerald-500/10",
     bad: "text-rose-300 bg-rose-500/10",
-    neutral: "text-slate-300 bg-white/5"
+    neutral: "text-slate-600 bg-slate-100"
   }[tone];
   const arrow = direction === "up" ? "↑" : direction === "down" ? "↓" : "·";
   return (
@@ -317,7 +317,7 @@ export function RunwayBar({
 }) {
   if (months === null) {
     return (
-      <div className="text-[11px] text-slate-500">需积累 ≥3 个月支出数据后估算</div>
+      <div className="text-[11px] text-slate-9000">需积累 ≥3 个月支出数据后估算</div>
     );
   }
   const pct = Math.min(100, (months / cap) * 100);
@@ -325,18 +325,18 @@ export function RunwayBar({
   const fill = { rose: "#fb7185", amber: "#fbbf24", emerald: "#34d399" }[tone];
   return (
     <div>
-      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all"
           style={{ width: `${pct}%`, background: fill, boxShadow: `0 0 12px ${fill}80` }}
         />
         {/* 6-month safe-line marker */}
         <div
-          className="absolute inset-y-0 w-px bg-white/[0.20]"
+          className="absolute inset-y-0 w-px bg-slate-300"
           style={{ left: `${(6 / cap) * 100}%` }}
         />
       </div>
-      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-slate-500">
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-slate-9000">
         <span>0</span>
         <span className="text-slate-400">6 月安全线</span>
         <span>{cap}+</span>
@@ -360,15 +360,15 @@ export function MonthBars({
         const exPct = (d.expense / max) * 100;
         return (
           <div key={d.label} className="grid grid-cols-[36px_1fr] items-center gap-3">
-            <div className="font-mono text-[11px] tabular-nums text-slate-500">{d.label}</div>
+            <div className="font-mono text-[11px] tabular-nums text-slate-9000">{d.label}</div>
             <div className="space-y-1">
-              <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.04]">
+              <div className="relative h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
                   className="absolute inset-y-0 left-0 rounded-full"
                   style={{ width: `${inPct}%`, background: "linear-gradient(90deg, #34d399 0%, #6ee7b7 100%)" }}
                 />
               </div>
-              <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.04]">
+              <div className="relative h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
                   className="absolute inset-y-0 left-0 rounded-full"
                   style={{ width: `${exPct}%`, background: "linear-gradient(90deg, #fb923c 0%, #fbbf24 100%)" }}
@@ -411,27 +411,27 @@ export function RankRow({
       {...wrapperProps}
       className={cn(
         "block rounded-xl px-3 py-2.5 transition-colors",
-        href ? "hover:bg-white/[0.04]" : ""
+        href ? "hover:bg-slate-100" : ""
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex min-w-0 items-baseline gap-3">
-          <span className="w-5 shrink-0 font-mono text-[11px] tabular-nums text-slate-500">
+          <span className="w-5 shrink-0 font-mono text-[11px] tabular-nums text-slate-9000">
             {String(rank).padStart(2, "0")}
           </span>
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-medium text-slate-100">{primary}</div>
+            <div className="truncate text-[14px] font-medium text-slate-900">{primary}</div>
             {primaryHint ? (
-              <div className="mt-0.5 truncate text-[11px] text-slate-500">{primaryHint}</div>
+              <div className="mt-0.5 truncate text-[11px] text-slate-9000">{primaryHint}</div>
             ) : null}
           </div>
         </div>
-        <div className="shrink-0 text-right text-[14px] font-semibold tabular-nums text-slate-100">
+        <div className="shrink-0 text-right text-[14px] font-semibold tabular-nums text-slate-900">
           {secondary}
         </div>
       </div>
       {bar ? (
-        <div className="ml-8 mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.04]">
+        <div className="ml-8 mt-1.5 h-1 overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full rounded-full"
             style={{ width: `${pct}%`, background: fill }}
@@ -473,16 +473,16 @@ export function DecisionCard({
             {palette.label}
           </span>
           {metric ? (
-            <span className="font-mono text-[10px] tabular-nums text-slate-500">{metric}</span>
+            <span className="font-mono text-[10px] tabular-nums text-slate-9000">{metric}</span>
           ) : null}
         </div>
-        <h4 className="mt-3 text-[15px] font-semibold leading-snug text-slate-100">
+        <h4 className="mt-3 text-[15px] font-semibold leading-snug text-slate-900">
           {title}
         </h4>
         <p className="mt-1.5 flex-1 text-[12px] leading-relaxed text-slate-400">
           {judgment}
         </p>
-        <div className="mt-3 border-t border-white/[0.05] pt-3 text-[12px] font-medium text-amber-300/90">
+        <div className="mt-3 border-t border-slate-200 pt-3 text-[12px] font-medium text-amber-300/90">
           → {action}
         </div>
       </div>
@@ -509,20 +509,20 @@ export function AlertPill({
   const isHot = tone === "alert" || numericValue > 0;
   const tonePalette = isHot
     ? { dot: "bg-amber-400", text: "text-amber-200", value: "text-amber-200" }
-    : { dot: "bg-slate-600", text: "text-slate-300", value: "text-slate-400" };
+    : { dot: "bg-slate-600", text: "text-slate-600", value: "text-slate-400" };
 
   return (
     <Link
       href={href}
       className={cn(
-        "group flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-3 transition-colors",
-        "hover:border-white/[0.12] hover:bg-white/[0.06]"
+        "group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-colors",
+        "hover:border-orange-300 hover:bg-slate-100"
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tonePalette.dot)} />
         <Icon className={cn("h-4 w-4 shrink-0", tonePalette.text)} />
-        <span className="truncate text-[13px] text-slate-300">{label}</span>
+        <span className="truncate text-[13px] text-slate-600">{label}</span>
       </div>
       <span className={cn("shrink-0 text-[16px] font-semibold tabular-nums", tonePalette.value)}>
         {value}
@@ -549,10 +549,10 @@ export function InlineStat({
         ? "text-rose-300"
         : tone === "warn"
           ? "text-amber-300"
-          : "text-slate-100";
+          : "text-slate-900";
   return (
     <div>
-      <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+      <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-9000">
         {label}
       </div>
       <div className={cn("mt-0.5 text-[14px] font-semibold tabular-nums", color)}>

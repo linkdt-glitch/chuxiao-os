@@ -147,7 +147,7 @@ export function AssistantChat() {
           if (message.role === "user") {
             return (
               <div key={`u-${index}`} className="flex justify-end">
-                <div className="max-w-[88%] rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] leading-7 text-slate-100">
+                <div className="max-w-[88%] rounded-2xl bg-slate-100 px-4 py-3 text-[15px] leading-7 text-slate-900">
                   <div className="whitespace-pre-wrap break-words">{message.content}</div>
                 </div>
               </div>
@@ -159,10 +159,10 @@ export function AssistantChat() {
               <AssistantAvatar />
               <div className="min-w-0 flex-1 pt-0.5">
                 <RoleLabel role="assistant" />
-                <div className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-100">
+                <div className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-900">
                   {message.content}
                   {pending && index === messages.length - 1 ? (
-                    <span className="ml-0.5 inline-block h-4 w-1.5 translate-y-[2px] animate-pulse bg-amber-300/70 align-baseline" />
+                    <span className="ml-0.5 inline-block h-4 w-1.5 translate-y-[2px] animate-pulse bg-orange-500/80 align-baseline" />
                   ) : null}
                 </div>
               </div>
@@ -178,10 +178,10 @@ export function AssistantChat() {
                 key={prompt.title}
                 type="button"
                 onClick={() => pickStarter(prompt.detail)}
-                className="group rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/[0.06]"
+                className="group rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-orange-300 hover:bg-orange-50"
               >
-                <div className="text-[14px] font-medium text-slate-100">{prompt.title}</div>
-                <div className="mt-1 line-clamp-2 text-[12px] text-slate-400 group-hover:text-slate-300">
+                <div className="text-[14px] font-medium text-slate-900">{prompt.title}</div>
+                <div className="mt-1 line-clamp-2 text-[12px] text-slate-500 group-hover:text-slate-700">
                   {prompt.detail}
                 </div>
               </button>
@@ -197,18 +197,18 @@ export function AssistantChat() {
         <div
           className="pointer-events-none absolute inset-x-0 -top-12 h-12"
           style={{
-            background: "linear-gradient(to bottom, transparent, rgba(2,6,17,0.85))"
+            background: "linear-gradient(to bottom, transparent, rgba(250,250,249,0.92))"
           }}
         />
         {error ? (
-          <div className="relative mb-2 rounded-xl border border-rose-500/30 bg-rose-500/[0.10] px-3 py-2 text-[13px] text-rose-200">
+          <div className="relative mb-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
             {error}
           </div>
         ) : null}
         <div
-          className="relative rounded-2xl border border-white/[0.10] bg-white/[0.04] p-2"
+          className="relative rounded-2xl border border-slate-200 bg-white p-2"
           style={{
-            boxShadow: "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)"
+            boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.10)"
           }}
         >
           <Textarea
@@ -222,25 +222,25 @@ export function AssistantChat() {
               }
             }}
             placeholder="问点什么…  Enter 发送，Shift+Enter 换行"
-            className="min-h-12 resize-none border-0 bg-transparent text-[15px] leading-7 shadow-none focus-visible:ring-0"
+            className="min-h-12 resize-none border-0 bg-transparent text-[15px] leading-7 shadow-none focus-visible:ring-0 focus-visible:shadow-none"
             rows={1}
           />
           <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1">
-            <span className="text-[10px] tracking-wider text-slate-500">
+            <span className="text-[10px] tracking-wider text-slate-400">
               {pending ? "AI 在思考…" : "Enter 发送 · Shift+Enter 换行"}
             </span>
             <button
               type="button"
               onClick={() => sendMessage()}
               disabled={pending || !input.trim()}
-              className="grid h-8 w-8 place-items-center rounded-xl bg-amber-500 text-slate-950 transition-colors hover:bg-amber-400 disabled:bg-white/[0.06] disabled:text-slate-500"
+              className="grid h-8 w-8 place-items-center rounded-xl bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400"
               aria-label="发送"
             >
               <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
             </button>
           </div>
         </div>
-        <div className="relative mt-2 text-center text-[10px] text-slate-500">
+        <div className="relative mt-2 text-center text-[10px] text-slate-400">
           AI 助手只提供分析、建议、总结、草稿 —— 不会自动付款 / 删数据 / 改权限 / 对外发送。
         </div>
       </div>
@@ -253,19 +253,19 @@ function AssistantAvatar() {
     <div
       className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
       style={{
-        background: "radial-gradient(circle at 50% 40%, rgba(251,191,36,0.30), rgba(8,12,28,0.92))",
-        boxShadow: "0 0 0 1px rgba(251,191,36,0.35), 0 0 12px rgba(251,191,36,0.20)"
+        background: "radial-gradient(circle at 50% 40%, rgba(251,191,36,0.45), #ffffff)",
+        boxShadow: "0 0 0 1px rgba(251,146,60,0.40), 0 1px 4px rgba(249,115,22,0.20)"
       }}
       aria-hidden
     >
-      <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+      <Sparkles className="h-3.5 w-3.5 text-orange-600" />
     </div>
   );
 }
 
 function RoleLabel({ role }: { role: "user" | "assistant" }) {
   return (
-    <div className="text-[12px] font-semibold tracking-wide text-slate-300">
+    <div className="text-[12px] font-semibold tracking-wide text-slate-700">
       {role === "assistant" ? "初晓 AI" : "你"}
     </div>
   );

@@ -1,25 +1,24 @@
 "use client";
 
 /**
- * 咪咪 —— 三花曼基康电子宠物 (cuteness pass v2)
+ * 咪咪 —— 三花曼基康电子宠物 (cuteness pass v3 - 带翅膀)
  *
- * 一只用站点琥珀色线条画的曼基康（短腿）三花猫，跟着每个人在系统底部
- * padding 区里走动、坐发呆、打哈欠、睡觉、撒娇。
+ * 一只长着双翅的曼基康（短腿）三花猫，跟着每个人在系统底部 padding 区里
+ * 走动 / 发呆 / 打哈欠 / 睡觉 / 撒娇。
+ *
+ * v3 升级：
+ *  - 加了一对天使风双翅（白绒 + 琥珀线 + 内羽细节），idle / walking 时
+ *    缓拍，撒娇时疾拍，睡觉时折叠
+ *  - 走动时身后有 sparkle 残留点 (✦) 错位时差冒出 — 像踩着星光
+ *  - 撒娇时眼睛变成爱心 ♥
+ *  - 替换硬地面阴影为柔色 radial glow，sit 时呼吸感
+ *  - 严格禁止"倒退跑": walking → 不再直接走到 walking; 边界停在 sit;
+ *    rAF 延后 32ms 启动让翻转视觉先 commit
  *
  * 行为约束：
- *  - 永远面向走动方向，不会"倒退跑"。撞到屏幕边缘 → 切回 sit，下一轮再
- *    挑新方向（更像真猫：走到边停下、左右看看、再回头）
- *  - 撞墙不会原地反弹翻转（避免动作生硬）
- *  - 睡觉时身体不挪动；走动状态才推进 x 坐标
- *
- * 可爱化升级：
- *  - 大眼睛 + 双高光（anime 反光感）
- *  - 撒娇 / 悬停时显示脸颊红晕（pulse 淡入淡出）
- *  - 撒娇跳跃用 Disney squash & stretch 12 法则
- *  - 尾巴分两段，尾尖独立二次摆动（secondary motion）
- *  - sit 时偶发耳朵抽动 / 尾巴翻飞 / 头微歪 micro-action
- *  - hover 时眯眼笑 + 红晕，离开恢复
- *  - 点击触发 jiggle 颤抖 + cute-hop + 4 颗大小不一的爱心
+ *  - 永远面向走动方向（视觉与位移方向同步）
+ *  - 撞墙不会原地反弹，而是切回 sit，下一轮再选方向
+ *  - 起步前如离墙太近自动选反方向
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -49,8 +48,8 @@ function nextStateFrom(current: CatState): CatState {
     return "playing";
   }
   if (current === "walking") {
-    if (r < 0.65) return "sit";
-    if (r < 0.85) return "walking";
+    // 严格不允许 walking → walking, 防止瞬间换向"倒退"; 必须经过 sit / playing
+    if (r < 0.85) return "sit";
     return "playing";
   }
   if (current === "sleeping") return "yawning";
@@ -79,7 +78,6 @@ export function CompanionCat() {
   const [hidden, setHidden] = useState(false);
 
   const stateRef = useRef<CatState>("sit");
-  const directionRef = useRef<Direction>("right");
   const positionRef = useRef(50);
   const rafRef = useRef<number | null>(null);
   const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,9 +88,6 @@ export function CompanionCat() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-  useEffect(() => {
-    directionRef.current = direction;
-  }, [direction]);
   useEffect(() => {
     positionRef.current = position;
   }, [position]);
@@ -110,7 +105,8 @@ export function CompanionCat() {
     return () => window.removeEventListener("resize", checkLayout);
   }, []);
 
-  // 状态机：到点切换
+  // 状态机：到点切换。direction 只在 sit/yawning/playing → walking 转换时
+  // 选定一次，避免任何 walking 中途换向。
   useEffect(() => {
     const duration = randInRange(STATE_DURATIONS[state]);
     stateTimerRef.current = setTimeout(() => {
@@ -118,7 +114,8 @@ export function CompanionCat() {
       if (next === "walking") {
         const pos = positionRef.current;
         // 离墙太近时朝相反方向走，不会"撞墙倒退"
-        const dir: Direction = pos < 18 ? "right" : pos > 82 ? "left" : Math.random() < 0.5 ? "left" : "right";
+        const dir: Direction =
+          pos < 18 ? "right" : pos > 82 ? "left" : Math.random() < 0.5 ? "left" : "right";
         setDirection(dir);
       }
       if (next === "playing") {
@@ -133,39 +130,48 @@ export function CompanionCat() {
     };
   }, [state]);
 
-  // 走动：rAF 沿 x 轴推进；到达边界后切回 sit（不会原地翻转倒退）
+  // 走动：捕获本次启动时的 direction，保证位置更新方向 == 视觉朝向。
+  // 启动前先等 32ms 让 SVG 翻转 commit，避免"启动瞬间 1 帧倒退"。
+  // 到达边界时切回 sit（不会原地反弹翻转）。
   useEffect(() => {
     if (state !== "walking") {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
-    let lastT = performance.now();
-    const step = (t: number) => {
-      const dt = (t - lastT) / 1000;
-      lastT = t;
-      const speed = 5.5; // % per second of viewport width
-      const dir = directionRef.current === "right" ? 1 : -1;
-      let next = positionRef.current + dir * speed * dt;
-      const reachedEdge = next < 4 || next > 96;
-      if (reachedEdge) {
-        // 走到边停下，不会原地倒退
-        next = Math.max(4, Math.min(96, next));
+    const initialDirection = direction;
+    let cancelled = false;
+    const startId = setTimeout(() => {
+      if (cancelled) return;
+      let lastT = performance.now();
+      const step = (t: number) => {
+        const dt = (t - lastT) / 1000;
+        lastT = t;
+        const speed = 5.5; // % per second of viewport width
+        const dir = initialDirection === "right" ? 1 : -1;
+        let next = positionRef.current + dir * speed * dt;
+        const reachedEdge = next < 4 || next > 96;
+        if (reachedEdge) {
+          next = Math.max(4, Math.min(96, next));
+          positionRef.current = next;
+          setPosition(next);
+          if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
+          stateTimerRef.current = null;
+          setState("sit"); // 到边停下；下一轮再按位置选新方向
+          return;
+        }
         positionRef.current = next;
         setPosition(next);
-        if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
-        stateTimerRef.current = null;
-        setState("sit"); // 切到 sit 后下一轮 nextStateFrom 会按位置挑新方向
-        return;
-      }
-      positionRef.current = next;
-      setPosition(next);
+        rafRef.current = requestAnimationFrame(step);
+      };
       rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
+    }, 32);
+
     return () => {
+      cancelled = true;
+      clearTimeout(startId);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [state]);
+  }, [state, direction]);
 
   // sit 期间偶发 micro-action：耳朵抽动 / 尾巴翻飞
   useEffect(() => {
@@ -180,7 +186,6 @@ export function CompanionCat() {
         const r = Math.random();
         const quirk: IdleQuirk = r < 0.5 ? "ear-twitch" : "tail-flick";
         setIdleQuirk(quirk);
-        // 抽完恢复
         setTimeout(() => setIdleQuirk("calm"), 700);
         schedule();
       }, wait);
@@ -205,8 +210,8 @@ export function CompanionCat() {
 
   if (hidden) return null;
 
-  // 是否表现出"被关心"的样子（hover / play / yawn 时眯眼 + 红晕）
   const showCute = hovering || state === "playing" || state === "yawning";
+  const showHeartEyes = state === "playing" || jiggling;
 
   return (
     <div
@@ -226,7 +231,7 @@ export function CompanionCat() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="逗弄咪咪（三花曼基康）"
+        aria-label="逗弄咪咪（带翅膀的三花曼基康）"
         onClick={handlePlay}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -246,7 +251,7 @@ export function CompanionCat() {
             style={{
               position: "absolute",
               left: "50%",
-              top: -6,
+              top: -10,
               transform: "translateX(-50%)",
               width: 60,
               height: 28,
@@ -281,7 +286,13 @@ export function CompanionCat() {
             transformOrigin: "center bottom"
           }}
         >
-          <CatSvg state={state} direction={direction} idleQuirk={idleQuirk} showCute={showCute} />
+          <CatSvg
+            state={state}
+            direction={direction}
+            idleQuirk={idleQuirk}
+            showCute={showCute}
+            showHeartEyes={showHeartEyes}
+          />
         </div>
       </div>
     </div>
@@ -306,15 +317,25 @@ function CatSvg({
   state,
   direction,
   idleQuirk,
-  showCute
+  showCute,
+  showHeartEyes
 }: {
   state: CatState;
   direction: Direction;
   idleQuirk: IdleQuirk;
   showCute: boolean;
+  showHeartEyes: boolean;
 }) {
   if (state === "sleeping") return <CatSleeping />;
-  return <CatStanding state={state} direction={direction} idleQuirk={idleQuirk} showCute={showCute} />;
+  return (
+    <CatStanding
+      state={state}
+      direction={direction}
+      idleQuirk={idleQuirk}
+      showCute={showCute}
+      showHeartEyes={showHeartEyes}
+    />
+  );
 }
 
 /* ─── 站立 / 走动 / 坐 / 撒娇 ─────────────────────────────────────── */
@@ -323,12 +344,14 @@ function CatStanding({
   state,
   direction,
   idleQuirk,
-  showCute
+  showCute,
+  showHeartEyes
 }: {
   state: CatState;
   direction: Direction;
   idleQuirk: IdleQuirk;
   showCute: boolean;
+  showHeartEyes: boolean;
 }) {
   const flip = direction === "left" ? "scaleX(-1)" : "scaleX(1)";
   const bob =
@@ -340,28 +363,65 @@ function CatStanding({
           ? "cat-breathe 1.6s ease-in-out infinite"
           : "none";
 
-  // 偶发 micro-action 控制
   const earTwitchAnim = idleQuirk === "ear-twitch" ? "cat-ear-twitch 0.7s ease-in-out 1" : "none";
   const tailFlickAnim =
     idleQuirk === "tail-flick"
       ? "cat-tail-sway 0.5s ease-in-out 1"
       : "cat-tail-sway 2.4s ease-in-out infinite";
 
+  const wingAnim =
+    state === "playing"
+      ? "cat-wing-flap-fast 0.45s ease-in-out infinite"
+      : state === "walking"
+        ? "cat-wing-flap 1.1s ease-in-out infinite"
+        : "cat-wing-flap 1.8s ease-in-out infinite";
+
   return (
     <svg
       viewBox="0 0 80 60"
-      width="68"
-      height="52"
+      width="72"
+      height="56"
       style={{
         overflow: "visible",
         transform: flip,
         animation: bob,
         transformOrigin: "center bottom",
-        filter: "drop-shadow(0 3px 8px rgba(245,158,11,0.20))"
+        filter: "drop-shadow(0 3px 10px rgba(245,158,11,0.22))"
       }}
     >
-      {/* 地面阴影 */}
-      <ellipse cx="42" cy="58" rx="22" ry="2" fill="rgba(245,158,11,0.22)" />
+      <defs>
+        <radialGradient id="cat-ground-glow" cx="0.5" cy="1" r="0.55">
+          <stop offset="0%" stopColor="rgba(251, 191, 36, 0.55)" />
+          <stop offset="60%" stopColor="rgba(251, 191, 36, 0.18)" />
+          <stop offset="100%" stopColor="rgba(251, 191, 36, 0)" />
+        </radialGradient>
+        <linearGradient id="cat-wing-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255, 252, 245, 0.96)" />
+          <stop offset="100%" stopColor="rgba(254, 240, 200, 0.9)" />
+        </linearGradient>
+      </defs>
+
+      {/* 地面柔光（替代硬阴影） */}
+      <ellipse
+        cx="42"
+        cy="58"
+        rx="26"
+        ry="4.5"
+        fill="url(#cat-ground-glow)"
+        style={{
+          transformOrigin: "42px 58px",
+          animation: state === "sit" ? "cat-glow-pulse 2.8s ease-in-out infinite" : "none"
+        }}
+      />
+
+      {/* 走动时身后 sparkle 残留 */}
+      {state === "walking" ? (
+        <g aria-hidden style={{ pointerEvents: "none" }}>
+          <Sparkle x={20} y={54} size={2.4} delay={0} />
+          <Sparkle x={22} y={50} size={1.8} delay={0.45} />
+          <Sparkle x={18} y={56} size={1.4} delay={0.9} />
+        </g>
+      ) : null}
 
       {/* 尾巴主段 + 尾尖二次摆动 */}
       <g style={{ transformOrigin: "22px 46px", animation: tailFlickAnim }}>
@@ -372,7 +432,6 @@ function CatStanding({
           fill="none"
           strokeLinecap="round"
         />
-        {/* 尾尖：白绒 + 独立二次摆动 */}
         <g style={{ transformOrigin: "12px 18px", animation: "cat-tail-tip-wave 1.6s ease-in-out infinite" }}>
           <circle cx="12" cy="18" r="2.2" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" />
         </g>
@@ -396,6 +455,35 @@ function CatStanding({
       <circle cx="30" cy="58.4" r="0.8" fill="#fb923c" />
       <circle cx="50" cy="58.4" r="0.8" fill="#fb923c" />
 
+      {/* 翅膀 - 后翅（较大，更靠后） */}
+      <g style={{ transformOrigin: "44px 39px", animation: wingAnim }}>
+        <path
+          d="M 44 39 Q 30 28, 28 12 Q 38 14, 48 32 Z"
+          fill="url(#cat-wing-grad)"
+          stroke="#f59e0b"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        {/* 内羽细节 */}
+        <path d="M 38 28 Q 33 22, 32 14" stroke="#f59e0b" strokeWidth="0.55" fill="none" opacity="0.85" />
+        <path d="M 42 32 Q 39 26, 38 18" stroke="#f59e0b" strokeWidth="0.45" fill="none" opacity="0.65" />
+        {/* 翅尖一抹粉橙 */}
+        <ellipse cx="29" cy="14" rx="2.2" ry="1.3" fill="#fb923c" opacity="0.45" />
+      </g>
+
+      {/* 翅膀 - 前翅（较小、错相） */}
+      <g style={{ transformOrigin: "46px 40px", animation: wingAnim, animationDelay: "-0.18s" }}>
+        <path
+          d="M 46 40 Q 36 32, 36 20 Q 44 22, 50 34 Z"
+          fill="url(#cat-wing-grad)"
+          stroke="#f59e0b"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <path d="M 42 32 Q 39 27, 39 22" stroke="#f59e0b" strokeWidth="0.5" fill="none" opacity="0.75" />
+        <ellipse cx="37" cy="22" rx="2" ry="1.2" fill="#fb923c" opacity="0.4" />
+      </g>
+
       {/* 头 */}
       <circle cx="60" cy="32" r="13" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
 
@@ -412,21 +500,23 @@ function CatStanding({
       {/* 头部橙色斑（三花头花） */}
       <path d="M 53 25 Q 58 22, 63 27 Q 60 31, 54 30 Z" fill="#fb923c" opacity="0.7" />
 
-      {/* 大眼睛（含眨眼），撒娇/悬停时眯眼笑 */}
-      {showCute ? (
+      {/* 眼睛：撒娇 → 爱心；hover/yawn → 眯眼笑；其它 → 大眼带高光 */}
+      {showHeartEyes ? (
+        <>
+          <HeartEye cx={55} cy={32} />
+          <HeartEye cx={65} cy={32} />
+        </>
+      ) : showCute ? (
         <>
           <path d="M 53 31.5 Q 55 33.5, 57 31.5" stroke="#1e293b" strokeWidth="1.3" fill="none" strokeLinecap="round" />
           <path d="M 63 31.5 Q 65 33.5, 67 31.5" stroke="#1e293b" strokeWidth="1.3" fill="none" strokeLinecap="round" />
         </>
       ) : (
         <g style={{ transformOrigin: "60px 32px", animation: "cat-blink 5.5s ease-in-out infinite" }}>
-          {/* 眼白 */}
           <ellipse cx="55" cy="32" rx="2.4" ry="2.8" fill="#fef9c3" stroke="#1e293b" strokeWidth="0.6" />
           <ellipse cx="65" cy="32" rx="2.4" ry="2.8" fill="#fef9c3" stroke="#1e293b" strokeWidth="0.6" />
-          {/* 瞳孔 */}
           <ellipse cx="55" cy="32.2" rx="1.4" ry="2.2" fill="#1e293b" />
           <ellipse cx="65" cy="32.2" rx="1.4" ry="2.2" fill="#1e293b" />
-          {/* 双高光（大 + 小） */}
           <circle cx="55.6" cy="31" r="0.7" fill="#ffffff" />
           <circle cx="65.6" cy="31" r="0.7" fill="#ffffff" />
           <circle cx="54.4" cy="32.6" r="0.3" fill="#ffffff" opacity="0.7" />
@@ -466,7 +556,6 @@ function CatStanding({
         <>
           <path d="M 60 37 Q 58 39.5, 56 38.5" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
           <path d="M 60 37 Q 62 39.5, 64 38.5" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
-          {/* 小舌头 */}
           <ellipse cx="60" cy="39" rx="1.2" ry="0.7" fill="#fb7185" />
         </>
       ) : (
@@ -485,24 +574,80 @@ function CatStanding({
   );
 }
 
-/* ─── 睡觉（蜷缩） ────────────────────────────────────────── */
+/** 4-pointed sparkle. */
+function Sparkle({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+  return (
+    <g
+      style={{
+        transformOrigin: `${x}px ${y}px`,
+        animation: "cat-walk-trail 1.4s ease-out infinite",
+        animationDelay: `${delay}s`
+      }}
+    >
+      <path
+        d={`M ${x} ${y - size} L ${x + size * 0.25} ${y - size * 0.25} L ${x + size} ${y} L ${x + size * 0.25} ${y + size * 0.25} L ${x} ${y + size} L ${x - size * 0.25} ${y + size * 0.25} L ${x - size} ${y} L ${x - size * 0.25} ${y - size * 0.25} Z`}
+        fill="#fbbf24"
+        opacity="0.95"
+      />
+    </g>
+  );
+}
+
+/** 心形眼（撒娇 / 点击瞬间）。 */
+function HeartEye({ cx, cy }: { cx: number; cy: number }) {
+  // 中心 (cx, cy) 周围画一个 ~6px 宽的爱心
+  const d = `
+    M ${cx} ${cy + 2}
+    C ${cx - 3} ${cy}, ${cx - 3} ${cy - 2.5}, ${cx - 1.5} ${cy - 2.5}
+    C ${cx - 0.5} ${cy - 2.5}, ${cx} ${cy - 1.5}, ${cx} ${cy - 0.5}
+    C ${cx} ${cy - 1.5}, ${cx + 0.5} ${cy - 2.5}, ${cx + 1.5} ${cy - 2.5}
+    C ${cx + 3} ${cy - 2.5}, ${cx + 3} ${cy}, ${cx} ${cy + 2}
+    Z
+  `;
+  return <path d={d} fill="#fb7185" stroke="#1e293b" strokeWidth="0.5" strokeLinejoin="round" />;
+}
+
+/* ─── 睡觉（蜷缩）────────────────────────────────────────── */
 
 function CatSleeping() {
   return (
     <svg
       viewBox="0 0 80 60"
-      width="68"
-      height="52"
+      width="72"
+      height="56"
       style={{
         overflow: "visible",
         animation: "cat-breathe 3.4s ease-in-out infinite",
         filter: "drop-shadow(0 3px 8px rgba(245,158,11,0.16))"
       }}
     >
-      <ellipse cx="42" cy="58" rx="26" ry="2.5" fill="rgba(245,158,11,0.18)" />
+      <defs>
+        <radialGradient id="cat-ground-glow-sleep" cx="0.5" cy="1" r="0.55">
+          <stop offset="0%" stopColor="rgba(251, 191, 36, 0.45)" />
+          <stop offset="100%" stopColor="rgba(251, 191, 36, 0)" />
+        </radialGradient>
+      </defs>
+
+      <ellipse cx="42" cy="58" rx="28" ry="4.5" fill="url(#cat-ground-glow-sleep)" />
 
       {/* 蜷成大椭圆 */}
       <ellipse cx="42" cy="48" rx="26" ry="11" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
+
+      {/* 折叠的翅膀（贴在背上的两个小弧） */}
+      <path
+        d="M 32 44 Q 38 38, 44 42"
+        stroke="#f59e0b"
+        strokeWidth="1.4"
+        fill="rgba(255, 252, 245, 0.85)"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M 38 45 Q 44 39, 50 43"
+        stroke="#f59e0b"
+        strokeWidth="1.2"
+        fill="rgba(254, 240, 200, 0.85)"
+        strokeLinejoin="round"
+      />
 
       {/* 尾巴绕在身体上 */}
       <path
@@ -514,8 +659,8 @@ function CatSleeping() {
       />
 
       {/* 三花斑 */}
-      <path d="M 30 44 Q 36 40, 42 44 Q 38 47, 32 47 Z" fill="#fb923c" opacity="0.8" />
-      <path d="M 50 50 Q 56 47, 60 51 Q 56 53, 50 52 Z" fill="#1e293b" opacity="0.5" />
+      <path d="M 30 50 Q 36 47, 40 50 Q 36 52, 30 51 Z" fill="#fb923c" opacity="0.55" />
+      <path d="M 50 51 Q 56 48, 60 52 Q 56 54, 50 53 Z" fill="#1e293b" opacity="0.45" />
 
       {/* 头蜷在身上 */}
       <circle cx="58" cy="44" r="10" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.6" />
@@ -533,7 +678,7 @@ function CatSleeping() {
       {/* 鼻 */}
       <path d="M 57 47 L 59 47 L 58 48 Z" fill="#fb923c" />
 
-      {/* Z 飘浮（错位 + 时差） */}
+      {/* Z 飘浮 */}
       <text
         x="68"
         y="22"

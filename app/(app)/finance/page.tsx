@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Download, FileSpreadsheet, NotebookPen, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
+import { ApprovalSpotlight } from "@/components/finance/approval-spotlight";
 import { FinanceExecutiveDashboard } from "@/components/finance/finance-executive-dashboard";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
 import { MySubmissionsPanel } from "@/components/finance/my-submissions-panel";
@@ -113,10 +114,20 @@ export default async function FinancePage() {
   // ────────────────────────────────────────────────────────────────────────
   // 创始人 / 管理员视图：完整仪表盘
   // ────────────────────────────────────────────────────────────────────────
-  const [summary, executiveDashboard] = await Promise.all([
+  const [summary, executiveDashboard, pendingApprovalRecords] = await Promise.all([
     getFinanceSummary(),
-    getFinanceExecutiveDashboard()
+    getFinanceExecutiveDashboard(),
+    // 顶部「财务审批聚光灯」用：拉 5 条优先级最高的待审记录
+    getFinanceRecords({
+      status: "pending_approval",
+      limit: 5,
+      include_attachments: true
+    })
   ]);
+  const pendingApprovalAmount = pendingApprovalRecords.reduce(
+    (sum, record) => sum + Number(record.amount),
+    0
+  );
   const cards = [
     { label: "本月收入", value: money(summary.monthIncome), tone: "text-emerald-700", hint: "已批准 / 已入账收入" },
     { label: "本月支出", value: money(summary.monthExpense), tone: "text-red-700", hint: "已批准 / 已入账支出" },
@@ -160,6 +171,13 @@ export default async function FinancePage() {
         }
       />
 
+      {/* ⭐ 财务审批聚光灯 — owner/admin 进财务中心第一眼看到的最重要任务 */}
+      <ApprovalSpotlight
+        records={pendingApprovalRecords}
+        totalCount={summary.pendingReimbursements}
+        totalAmount={pendingApprovalAmount}
+      />
+
       {/* 4 个核心指标 */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((item) => (
@@ -181,44 +199,24 @@ export default async function FinancePage() {
         <FinanceExecutiveDashboard data={executiveDashboard} />
       </div>
 
-      {/* 最近流水 + 待审批 */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>最近流水</CardTitle>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/finance/records">
-                查看全部<ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <FinanceRecordsTable
-              records={summary.recentRecords}
-              emptyTitle="暂无本月流水"
-              emptyDescription="先记录一条收入、支出或报销，财务能量中心就会开始形成判断。"
-            />
-          </CardContent>
-        </Card>
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ReceiptText className="h-4 w-4" /> 待审批报销
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">{summary.pendingReimbursements}</div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                需要负责人判断的报销和支出会在这里汇总。
-              </p>
-              <Button asChild className="mt-4 w-full" variant="outline">
-                <Link href="/finance/reimbursements">进入审批</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* 最近流水（待审批已上移到顶部 ApprovalSpotlight） */}
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>最近流水</CardTitle>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/finance/records">
+              查看全部<ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <FinanceRecordsTable
+            records={summary.recentRecords}
+            emptyTitle="暂无本月流水"
+            emptyDescription="先记录一条收入、支出或报销，财务能量中心就会开始形成判断。"
+          />
+        </CardContent>
+      </Card>
     </>
   );
 }

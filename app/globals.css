@@ -787,6 +787,62 @@ main select option {
   .cat-companion-root { display: none !important; }
 }
 
+/* ─── AI thinking animation v2 (脑电波 + 声纹) ─────────── */
+
+/* 中心 sparkles 图标缓慢呼吸 */
+@keyframes ai-think-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(249,115,22,0.50)); }
+  50%      { transform: scale(1.10); filter: drop-shadow(0 0 14px rgba(249,115,22,0.70)); }
+}
+
+/* 同心扩散光环（sonar ripple）—— 两道时差错开 */
+@keyframes ai-think-ripple {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* 轨道粒子（不同半径靠 element 自己定，这里只负责旋转） */
+@keyframes ai-think-orbit-a {
+  from { transform: rotate(0deg)   translateX(26px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(26px) rotate(-360deg); }
+}
+@keyframes ai-think-orbit-b {
+  from { transform: rotate(120deg) translateX(20px) rotate(-120deg); }
+  to   { transform: rotate(480deg) translateX(20px) rotate(-480deg); }
+}
+@keyframes ai-think-orbit-c {
+  from { transform: rotate(240deg) translateX(32px) rotate(-240deg); }
+  to   { transform: rotate(600deg) translateX(32px) rotate(-600deg); }
+}
+
+/* 音波条 —— 5 根错位反弹模拟"思考的脉搏" */
+@keyframes ai-think-bar-1 {
+  0%, 100% { transform: scaleY(0.20); }
+  50%      { transform: scaleY(0.95); }
+}
+@keyframes ai-think-bar-2 {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1.00); }
+}
+@keyframes ai-think-bar-3 {
+  0%, 100% { transform: scaleY(0.50); }
+  50%      { transform: scaleY(0.85); }
+}
+@keyframes ai-think-bar-4 {
+  0%, 100% { transform: scaleY(0.30); }
+  50%      { transform: scaleY(0.75); }
+}
+@keyframes ai-think-bar-5 {
+  0%, 100% { transform: scaleY(0.40); }
+  50%      { transform: scaleY(0.90); }
+}
+
+/* 文字阶梯滑入（替换循环短句时） */
+@keyframes ai-think-text-in {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── 首页欢迎 hero 动画 ────────────────────────────────── */
 
 @keyframes home-greet-in {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronRight, Eye, FileImage, Files, Search, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, Eye, FileImage, Files, Search, X } from "lucide-react";
 import { approveFinanceRecordAction, rejectFinanceRecordAction } from "@/app/(app)/finance/actions";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { Badge } from "@/components/ui/badge";
@@ -315,54 +315,32 @@ export function FinanceApprovalWorkbench({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-white/80 bg-gradient-to-br from-white/90 via-cyan-50/78 to-indigo-50/72 p-4 shadow-[0_18px_56px_rgba(15,23,42,0.075)] backdrop-blur-xl">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/80 bg-white/75 px-3 py-1 text-xs font-medium text-cyan-800">
-              <Sparkles className="h-3.5 w-3.5" />
-              财务审批驾驶台
-            </div>
-            <h2 className="mt-3 text-xl font-semibold text-slate-950">按报销人员查看，先看票据再审批</h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              待审记录按员工自动归组，支持批量通过、逐笔查看票据、快速驳回并填写原因。适合每天集中处理报销和支出审批。
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 xl:min-w-[520px]">
-            <div className="rounded-2xl border border-white/80 bg-white/72 p-3 shadow-sm">
-              <div className="text-xs text-muted-foreground">待审人员</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-950">{groups.length}</div>
-            </div>
-            <div className="rounded-2xl border border-white/80 bg-white/72 p-3 shadow-sm">
-              <div className="text-xs text-muted-foreground">待审金额</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-950">{money(totalAmount)}</div>
-            </div>
-            <div className="rounded-2xl border border-white/80 bg-white/72 p-3 shadow-sm">
-              <div className="text-xs text-muted-foreground">票据附件</div>
-              <div className="mt-1 text-2xl font-semibold text-slate-950">{attachmentCount}</div>
-            </div>
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/75 p-3 shadow-sm">
-              <div className="text-xs text-amber-700">缺票据记录</div>
-              <div className="mt-1 text-2xl font-semibold text-amber-950">{missingAttachmentCount}</div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative w-full lg:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索员工、编号、供应商、说明、类目" className="pl-9" />
-          </label>
-          {showActions && selectedIds.length ? (
-            <form action={approveFinanceRecordAction} className="flex flex-col gap-2 rounded-2xl border border-cyan-200 bg-cyan-50/80 p-2 sm:flex-row sm:items-center">
-              <span className="px-2 text-sm font-medium text-cyan-950">已选 {selectedIds.length} 笔 · {money(selectedTotal)}</span>
-              {selectedIds.map((id) => <input key={id} type="hidden" name="id" value={id} />)}
-              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds([])}>取消</Button>
-              <ConfirmSubmitButton confirmText={`确认批量批准 ${selectedIds.length} 笔财务审批？`} size="sm">
-                <Check className="h-4 w-4" />批量通过
-              </ConfirmSubmitButton>
-            </form>
-          ) : null}
-        </div>
+    <div className="space-y-3">
+      {/* 顶部：紧凑统计 chip + 搜索 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Stat label="待审人员" value={groups.length.toString()} />
+        <Stat label="待审金额" value={money(totalAmount)} accent="amber" />
+        <Stat label="票据附件" value={attachmentCount.toString()} />
+        {missingAttachmentCount > 0 ? (
+          <Stat label="缺票据" value={missingAttachmentCount.toString()} accent="rose" />
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label className="relative w-full sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索员工、编号、商家、类目..." className="pl-9" />
+        </label>
+        {showActions && selectedIds.length ? (
+          <form action={approveFinanceRecordAction} className="ml-auto flex flex-wrap items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/[0.10] px-3 py-1.5 text-[13px] text-emerald-100">
+            <span>已选 {selectedIds.length} 笔 · {money(selectedTotal)}</span>
+            {selectedIds.map((id) => <input key={id} type="hidden" name="id" value={id} />)}
+            <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds([])}>取消</Button>
+            <ConfirmSubmitButton confirmText={`确认批量批准 ${selectedIds.length} 笔财务审批？`} size="sm">
+              <Check className="h-4 w-4" />批量通过
+            </ConfirmSubmitButton>
+          </form>
+        ) : null}
       </div>
 
       {!filteredRecords.length ? (
@@ -478,8 +456,8 @@ export function FinanceApprovalWorkbench({
                           <>
                             <form action={approveFinanceRecordAction}>
                               <input type="hidden" name="id" value={record.id} />
-                              <ConfirmSubmitButton confirmText="确认批准这条财务审批？" size="sm" variant="secondary">
-                                批准
+                              <ConfirmSubmitButton confirmText="确认批准这条财务审批？" size="sm">
+                                <Check className="h-4 w-4" />通过
                               </ConfirmSubmitButton>
                             </form>
                             <RejectInlineButton
@@ -511,5 +489,31 @@ export function FinanceApprovalWorkbench({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** 工作台顶部用的紧凑 stat chip。 */
+function Stat({
+  label,
+  value,
+  accent = "neutral"
+}: {
+  label: string;
+  value: string;
+  accent?: "neutral" | "amber" | "rose";
+}) {
+  const palette = {
+    neutral: { dot: "bg-slate-400", text: "text-slate-200", border: "border-white/[0.06]", bg: "bg-white/[0.03]" },
+    amber: { dot: "bg-amber-400", text: "text-amber-200", border: "border-amber-500/30", bg: "bg-amber-500/[0.10]" },
+    rose: { dot: "bg-rose-400", text: "text-rose-200", border: "border-rose-500/30", bg: "bg-rose-500/[0.10]" }
+  }[accent];
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] tabular-nums ${palette.border} ${palette.bg} ${palette.text}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${palette.dot}`} />
+      <span className="text-slate-400">{label}</span>
+      <span className="font-medium">{value}</span>
+    </span>
   );
 }

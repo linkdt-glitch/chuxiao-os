@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowUpDown, CalendarDays, Check, ChevronDown, CircleDollarSign, Clock3, Eye, FileImage, Filter, Layers3, ReceiptText, Search, UserRoundCheck, X } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, CalendarDays, Check, ChevronDown, Clock3, Eye, FileImage, Filter, Layers3, ReceiptText, Search, UserRoundCheck, X } from "lucide-react";
 import {
   approveExpenseReportAction,
   rejectExpenseReportAction,
@@ -363,45 +363,47 @@ export function ExpenseApprovalWorkbench({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-white/88 via-cyan-50/72 to-indigo-50/70 p-4 shadow-[0_18px_52px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/70 px-3 py-1 text-xs font-medium text-cyan-800">
-              <Layers3 className="h-3.5 w-3.5" />
-              正式报销单工作台
-            </div>
-            <h2 className="mt-3 text-lg font-semibold text-slate-950">按员工优先处理，异常优先复核</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              这里处理员工提交的正式报销单；上方处理 AI 记账和手动记账产生的快捷财务审批。两类审批都归口到财务能量中心，不再分散到独立审批中心。
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[520px] xl:grid-cols-4">
-            <button type="button" onClick={() => setStatus("all")} className="rounded-2xl border border-white/80 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Layers3 className="h-3.5 w-3.5" />全部单据</div>
-              <div className="mt-1 text-xl font-semibold text-slate-950">{statusSummary.all}</div>
-            </button>
-            <button type="button" onClick={() => setStatus("pending_manager")} className="rounded-2xl border border-amber-100 bg-amber-50/80 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-2 text-xs text-amber-700"><Clock3 className="h-3.5 w-3.5" />待一级审批</div>
-              <div className="mt-1 text-xl font-semibold text-amber-950">{statusSummary.pendingManager}</div>
-            </button>
-            <button type="button" onClick={() => setStatus("pending_finance")} className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-2 text-xs text-blue-700"><ReceiptText className="h-3.5 w-3.5" />待财务复核</div>
-              <div className="mt-1 text-xl font-semibold text-blue-950">{statusSummary.pendingFinance}</div>
-            </button>
-            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-cyan-700"><CircleDollarSign className="h-3.5 w-3.5" />待审金额</div>
-              <div className="mt-1 text-xl font-semibold text-cyan-950">{money(statusSummary.pendingAmount)}</div>
-            </div>
-            <button type="button" onClick={() => setOnlyRisk((current) => !current)} className="rounded-2xl border border-rose-100 bg-rose-50/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-2 text-xs text-rose-700"><AlertTriangle className="h-3.5 w-3.5" />异常单据</div>
-              <div className="mt-1 text-xl font-semibold text-rose-950">{statusSummary.risky}</div>
-            </button>
-          </div>
-        </div>
+    <div className="space-y-3">
+      {/* 状态过滤 chips —— 替代之前重型 4-tile gradient hero */}
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterChip
+          active={status === "all" && !onlyRisk}
+          onClick={() => { setStatus("all"); setOnlyRisk(false); }}
+          icon={Layers3}
+          label="全部"
+          value={statusSummary.all}
+        />
+        <FilterChip
+          active={status === "pending_manager"}
+          onClick={() => setStatus("pending_manager")}
+          icon={Clock3}
+          label="待一级"
+          value={statusSummary.pendingManager}
+          tone="amber"
+        />
+        <FilterChip
+          active={status === "pending_finance"}
+          onClick={() => setStatus("pending_finance")}
+          icon={ReceiptText}
+          label="待财务"
+          value={statusSummary.pendingFinance}
+          tone="sky"
+        />
+        <FilterChip
+          active={onlyRisk}
+          onClick={() => setOnlyRisk((c) => !c)}
+          icon={AlertTriangle}
+          label="异常"
+          value={statusSummary.risky}
+          tone="rose"
+        />
+        <span className="ml-auto rounded-full border border-cyan-200/30 bg-cyan-500/[0.10] px-3 py-1 text-[11px] tabular-nums text-cyan-200">
+          待审金额 {money(statusSummary.pendingAmount)}
+        </span>
       </div>
 
-      <div className="rounded-lg border border-white/80 bg-white/72 p-3 shadow-[0_14px_38px_rgba(15,23,42,0.055)] backdrop-blur-xl">
+      {/* 搜索 + 视图切换 */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3">
         <div className="grid gap-3 lg:grid-cols-[1.4fr_160px_160px_auto]">
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -429,10 +431,7 @@ export function ExpenseApprovalWorkbench({
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant={onlyRisk ? "default" : "outline"} onClick={() => setOnlyRisk((current) => !current)}>
-            <AlertTriangle className="h-4 w-4" />
-            只看异常
-          </Button>
+          <span className="self-center text-[11px] uppercase tracking-[0.14em] text-slate-500">分组：</span>
           {([
             ["employee", "按员工"],
             ["date", "按日期"],
@@ -594,5 +593,45 @@ export function ExpenseApprovalWorkbench({
 
       {activeReport ? <ExpenseDetailDrawer report={activeReport} canApprove={canApprove} onClose={() => setActiveReport(null)} /> : null}
     </div>
+  );
+}
+
+/** 顶部状态过滤 chip：active 时高亮，附带数字徽标。 */
+function FilterChip({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  value,
+  tone = "neutral"
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  tone?: "neutral" | "amber" | "sky" | "rose";
+}) {
+  const palette = {
+    neutral: { activeBg: "bg-white/[0.10]", activeBorder: "border-white/30", activeText: "text-slate-100", inactiveDot: "text-slate-400" },
+    amber: { activeBg: "bg-amber-500/15", activeBorder: "border-amber-500/40", activeText: "text-amber-100", inactiveDot: "text-amber-300" },
+    sky: { activeBg: "bg-sky-500/15", activeBorder: "border-sky-500/40", activeText: "text-sky-100", inactiveDot: "text-sky-300" },
+    rose: { activeBg: "bg-rose-500/15", activeBorder: "border-rose-500/40", activeText: "text-rose-100", inactiveDot: "text-rose-300" }
+  }[tone];
+  const cls = active
+    ? `${palette.activeBg} ${palette.activeBorder} ${palette.activeText}`
+    : "bg-white/[0.03] border-white/[0.06] text-slate-300 hover:border-white/[0.18]";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${cls}`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${active ? "" : palette.inactiveDot}`} />
+      <span>{label}</span>
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/15" : "bg-white/[0.06]"}`}>
+        {value}
+      </span>
+    </button>
   );
 }

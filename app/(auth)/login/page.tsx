@@ -66,7 +66,10 @@ export default async function LoginPage({
                   />
                 </div>
               </div>
-              <div className="bg-gradient-to-r from-slate-950 via-orange-700 to-red-500 bg-clip-text text-2xl font-semibold tracking-normal text-transparent">
+              <div
+                className="bg-gradient-to-r from-amber-200 via-orange-300 to-amber-200 bg-clip-text text-2xl font-semibold tracking-wide text-transparent"
+                style={{ filter: "drop-shadow(0 0 14px rgba(251,191,36,0.45))" }}
+              >
                 Kairosmini
               </div>
             </div>

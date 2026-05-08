@@ -60,7 +60,7 @@ export function FinanceRecordForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">金额</Label>
-            <Input id="amount" name="amount" type="number" min="0" step="0.01" required defaultValue={defaults?.amount ?? ""} className={fieldClass} inputMode="decimal" />
+            <Input id="amount" name="amount" type="number" min="0" step="0.001" required defaultValue={defaults?.amount ?? ""} className={fieldClass} inputMode="decimal" placeholder="0.000" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="occurred_at">日期</Label>

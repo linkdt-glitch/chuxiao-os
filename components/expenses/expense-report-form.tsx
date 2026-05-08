@@ -89,7 +89,7 @@ export function ExpenseReportForm({
 
           <div className="space-y-2">
             <Label htmlFor="amount">金额</Label>
-            <Input id="amount" name="amount" required type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" className={fieldClass} />
+            <Input id="amount" name="amount" required type="number" min="0" step="0.001" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.000" className={fieldClass} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="occurred_at">发生日期</Label>

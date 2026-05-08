@@ -20,7 +20,7 @@ function money(record: FinanceRecord) {
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency: record.currency || "CNY",
-    maximumFractionDigits: 2
+    maximumFractionDigits: 3
   }).format(Number(record.amount) || 0);
 }
 

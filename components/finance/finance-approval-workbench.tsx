@@ -35,7 +35,7 @@ function money(amount: number, currency = "CNY") {
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 3
   }).format(Number(amount) || 0);
 }
 

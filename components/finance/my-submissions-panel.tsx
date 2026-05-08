@@ -7,7 +7,11 @@ import type { FinanceRecord, FinanceRecordStatus } from "@/lib/finance/types";
 import type { ExpenseReport, ExpenseStatus } from "@/lib/finance/expenses";
 
 function money(value: number, currency = "CNY") {
-  return new Intl.NumberFormat("zh-CN", { style: "currency", currency }).format(value);
+  return new Intl.NumberFormat("zh-CN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 3
+  }).format(value);
 }
 
 function formatDate(value: string) {

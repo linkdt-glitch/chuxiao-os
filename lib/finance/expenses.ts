@@ -247,7 +247,8 @@ export function money(value: number, currency = "CNY") {
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2
+    // 支持精确到 3 位小数 — 与表单输入精度对齐
+    maximumFractionDigits: 3
   }).format(value || 0);
 }
 

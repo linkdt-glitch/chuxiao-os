@@ -42,7 +42,7 @@ export default async function FinanceAccountsPage() {
               </div>
               <div className="space-y-2">
                 <Label>期初余额</Label>
-                <Input name="opening_balance" type="number" step="0.01" defaultValue="0" />
+                <Input name="opening_balance" type="number" step="0.001" defaultValue="0" />
               </div>
               <Button type="submit" className="w-full">创建账户</Button>
             </form>

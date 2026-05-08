@@ -37,7 +37,8 @@ function today() {
 }
 
 function parseAmount(text: string) {
-  const match = text.match(/(\d+(?:\.\d{1,2})?)\s*(元|块|人民币|cny|CNY|美元|usd|USD)?/);
+  // 支持 1-3 位小数（与表单 step=0.001 对齐）
+  const match = text.match(/(\d+(?:\.\d{1,3})?)\s*(元|块|人民币|cny|CNY|美元|usd|USD)?/);
   return match ? Number(match[1]) : null;
 }
 

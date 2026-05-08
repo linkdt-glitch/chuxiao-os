@@ -245,7 +245,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
               </div>
               <div className="space-y-2">
                 <Label>金额</Label>
-                <Input name="amount" type="number" step="0.01" required defaultValue={parsed.amount ?? ""} />
+                <Input name="amount" type="number" step="0.001" required defaultValue={parsed.amount ?? ""} inputMode="decimal" placeholder="0.000" />
               </div>
               <div className="space-y-2">
                 <Label>币种</Label>

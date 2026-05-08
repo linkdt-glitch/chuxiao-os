@@ -150,7 +150,7 @@ export function money(value: number, currency = "CNY") {
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 3
   }).format(value || 0);
 }
 

@@ -109,7 +109,7 @@ export default async function ExpenseSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="budget_amount">金额</Label>
-                <Input id="budget_amount" name="amount" type="number" min="0" step="0.01" required />
+                <Input id="budget_amount" name="amount" type="number" min="0" step="0.001" required />
               </div>
               <FormSubmitButton>保存预算</FormSubmitButton>
             </form>
@@ -140,11 +140,11 @@ export default async function ExpenseSettingsPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="min_amount">最低金额</Label>
-                  <Input id="min_amount" name="min_amount" type="number" min="0" step="0.01" defaultValue="0" />
+                  <Input id="min_amount" name="min_amount" type="number" min="0" step="0.001" defaultValue="0" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="max_amount">最高金额</Label>
-                  <Input id="max_amount" name="max_amount" type="number" min="0" step="0.01" placeholder="留空代表不限" />
+                  <Input id="max_amount" name="max_amount" type="number" min="0" step="0.001" placeholder="留空代表不限" />
                 </div>
               </div>
               <div className="space-y-2">

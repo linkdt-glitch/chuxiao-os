@@ -44,7 +44,7 @@ export default async function ExpenseTemplatesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="amount">常用金额</Label>
-                <Input id="amount" name="amount" type="number" min="0" step="0.01" />
+                <Input id="amount" name="amount" type="number" min="0" step="0.001" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="merchant_name">商家</Label>

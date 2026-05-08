@@ -78,16 +78,18 @@ export default async function HomeEditPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>愿景</CardTitle>
-            <CardDescription>3-5 年后我们想成为的样子。</CardDescription>
+            <CardTitle>愿景（支持多段落）</CardTitle>
+            <CardDescription>
+              这是首页最显眼的内容。可以写多段，用空行 (Enter 两次) 分段。展示时会按段落排版。
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               name="vision"
               defaultValue={content.vision ?? ""}
-              rows={3}
-              placeholder="例：成为 AI 原生公司的操作系统标准。"
-              className="text-[15px]"
+              rows={12}
+              placeholder={"我们相信，每个普通人都该有顶级团队的杠杆。\n\nAI 不是工具，而是可以信任的同事。我们要让 AI 真正参与决策、执行、复盘，把信息差变成执行差，把执行差变成结果差。\n\n3-5 年后，初晓 OS 会成为 AI 原生公司的操作系统标准 —— 像 Office 之于文档、Notion 之于知识、Figma 之于设计。"}
+              className="text-[15px] leading-7"
             />
           </CardContent>
         </Card>

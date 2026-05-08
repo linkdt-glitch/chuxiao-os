@@ -52,7 +52,7 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
 
   const sections = [
     { title: "核心",     keys: ["dashboard"] },
-    { title: "业务模块", keys: ["projects", "ai_workforce", "finance"] },
+    { title: "业务模块", keys: ["projects", "finance", "ai_workforce"] },
     { title: "平台",     keys: ["governance", "knowledge"] },
     { title: "进化",     keys: ["evolution", "energy"] },
     { title: "系统",     keys: ["organization", "modules", "ai-settings", "settings"] }

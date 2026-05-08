@@ -83,20 +83,20 @@ export default async function HomePage({
       <div className="mt-4">
         <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={160}>
           {content.values.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {content.values.map((value, i) => (
                 <div
                   key={`${value.title}-${i}`}
-                  className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition-colors hover:border-white/[0.12] hover:bg-white/[0.05]"
+                  className="flex min-h-[160px] flex-col rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 transition-colors hover:border-white/[0.12] hover:bg-white/[0.05]"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-500/15 font-mono text-[11px] font-bold text-amber-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-500/15 font-mono text-[12px] font-bold text-amber-200">
                       {i + 1}
                     </span>
-                    <span className="text-[15px] font-semibold text-slate-100">{value.title}</span>
+                    <span className="text-[17px] font-semibold text-slate-100">{value.title}</span>
                   </div>
                   {value.description ? (
-                    <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+                    <p className="mt-3 flex-1 text-[14px] leading-7 text-slate-300">
                       {value.description}
                     </p>
                   ) : null}

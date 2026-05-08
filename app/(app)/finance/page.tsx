@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Download, FileSpreadsheet, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, Download, FileSpreadsheet, NotebookPen, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
 import { FinanceExecutiveDashboard } from "@/components/finance/finance-executive-dashboard";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
 import { MySubmissionsPanel } from "@/components/finance/my-submissions-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentMember } from "@/lib/auth";
 import { getExpenseReports } from "@/lib/finance/expenses";
 import { canViewAllFinance } from "@/lib/finance/permissions";
@@ -42,29 +42,70 @@ export default async function FinancePage() {
       <>
         <PageHeader
           title="我的报销与记账"
-          description="查看你自己提交的报销 / 支出 / 记账：哪些已通过、哪些还在审批、哪些被驳回（含原因）。"
-          action={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button asChild>
-                <Link href="/finance/ai-bookkeeping">
-                  <Sparkles className="h-4 w-4" />一句话记账
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/finance/records/new">
-                  <Plus className="h-4 w-4" />手动记账
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/finance/reimbursements/new">
-                  <ReceiptText className="h-4 w-4" />新建报销
-                </Link>
-              </Button>
-            </div>
-          }
+          description="记一笔（自己的日常收支）/ 申请报销（垫付费用找公司报销）/ 在下方查看报销审批反馈。"
         />
 
-        <MySubmissionsPanel records={reimbursementRecords} expenseReports={myOwnReports} />
+        {/* 两类入口：记账 + 报销，每一类都有「一句话 AI」+「手动」两种方式 */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* 记账 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <NotebookPen className="h-4 w-4 text-orange-400" /> 记一笔
+              </CardTitle>
+              <CardDescription>
+                记录你的日常收入、支出、转账。无需审批，自动归到你的流水。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button asChild className="w-full justify-start">
+                <Link href="/finance/ai-bookkeeping">
+                  <Sparkles className="h-4 w-4" />
+                  <span>一句话 AI 记账</span>
+                  <span className="ml-auto text-xs opacity-70">说一句就生成</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/finance/records/new">
+                  <Plus className="h-4 w-4" />
+                  <span>手动记账</span>
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 报销 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ReceiptText className="h-4 w-4 text-orange-400" /> 申请报销
+              </CardTitle>
+              <CardDescription>
+                把已经替公司垫付的费用提交报销，等待负责人审批；提交后下方会显示状态。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button asChild className="w-full justify-start">
+                <Link href="/finance/ai-bookkeeping?intent=reimbursement">
+                  <Sparkles className="h-4 w-4" />
+                  <span>一句话 AI 报销</span>
+                  <span className="ml-auto text-xs opacity-70">描述一下就行</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/finance/reimbursements/new">
+                  <Plus className="h-4 w-4" />
+                  <span>手动新建报销</span>
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 报销反馈 */}
+        <div className="mt-6">
+          <MySubmissionsPanel records={reimbursementRecords} expenseReports={myOwnReports} />
+        </div>
       </>
     );
   }

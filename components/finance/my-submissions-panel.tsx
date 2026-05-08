@@ -102,19 +102,19 @@ export function MySubmissionsPanel({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ReceiptText className="h-4 w-4" /> 我的报销与支出
+          <ReceiptText className="h-4 w-4" /> 报销反馈
         </CardTitle>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/finance/reimbursements/new">新建报销</Link>
-        </Button>
+        <p className="mt-1 text-sm text-muted-foreground">
+          已提交报销的当前状态：等待审批 / 已通过 / 已驳回；被驳回时会附上原因。
+        </p>
       </CardHeader>
       <CardContent>
         {totalCount === 0 ? (
           <EmptyState
-            title="还没有提交过报销 / 支出"
-            description="点击右上角「新建报销」或「手动记账」，提交后这里会显示状态：等待审批、已通过、已驳回；驳回时会附上原因。"
+            title="还没有提交过报销"
+            description="在上方「申请报销」用一句话 AI 或手动新建报销，提交后这里会显示状态。"
           />
         ) : (
           <div className="space-y-3">

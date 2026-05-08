@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// 服务端 Node 进程统一用北京时间，避免 Render 默认 UTC 让所有 new Date()
+// 显示给用户时少 8 小时。客户端浏览器自动用用户本地时区。
+process.env.TZ = process.env.TZ || "Asia/Shanghai";
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

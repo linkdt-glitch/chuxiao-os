@@ -4,7 +4,10 @@
  * 右边：组织名 + 日期 + 在线指示
  *
  * 动画全部 CSS keyframes，无 JS 状态。
+ * 时间统一显示北京时间 (Asia/Shanghai)，避免服务端跑在 UTC 时区时差。
  */
+
+import { formatBeijingDateTime, getBeijingHour } from "@/lib/utils/beijing-time";
 
 const HOURLY_GREETING: Array<{ from: number; text: string }> = [
   { from: 5, text: "早上好" },
@@ -18,15 +21,6 @@ function greetForHour(h: number) {
   return [...HOURLY_GREETING].sort((a, b) => b.from - a.from).find((g) => h >= g.from)?.text ?? "你好";
 }
 
-function dateLabel(d: Date) {
-  const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][d.getDay()];
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getFullYear()}.${m}.${day} · ${week} · ${hh}:${mm}`;
-}
-
 export function WelcomeHero({
   userName,
   organizationName
@@ -35,7 +29,7 @@ export function WelcomeHero({
   organizationName: string;
 }) {
   const now = new Date();
-  const greeting = greetForHour(now.getHours());
+  const greeting = greetForHour(getBeijingHour(now));
 
   return (
     <section
@@ -109,7 +103,7 @@ export function WelcomeHero({
           style={{ animation: "home-greet-in 700ms cubic-bezier(0.2,0.8,0.2,1) 200ms both" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.95)]" />
-          {dateLabel(now)}
+          {formatBeijingDateTime(now)}
         </div>
       </div>
     </section>

@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getCurrentMember, getCurrentOrganization, getCurrentUser } from "@/lib/auth";
 import { getCockpitData } from "@/lib/data/cockpit";
 import { getDashboardData } from "@/lib/data/queries";
+import { formatBeijingDateTime, getBeijingHour } from "@/lib/utils/beijing-time";
 
 function money(value: number, options?: { compact?: boolean }) {
   if (options?.compact && Math.abs(value) >= 10000) {
@@ -38,7 +39,7 @@ function money(value: number, options?: { compact?: boolean }) {
 }
 
 function greetingFor(now: Date) {
-  const h = now.getHours();
+  const h = getBeijingHour(now);
   if (h < 5) return "深夜好";
   if (h < 11) return "早上好";
   if (h < 13) return "中午好";
@@ -47,12 +48,7 @@ function greetingFor(now: Date) {
 }
 
 function dateLineFor(now: Date) {
-  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][now.getDay()];
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  return `${now.getFullYear()}.${m}.${d} · ${weekday} · ${hh}:${mm}`;
+  return formatBeijingDateTime(now);
 }
 
 /**

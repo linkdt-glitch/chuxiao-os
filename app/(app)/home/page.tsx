@@ -67,31 +67,34 @@ export default async function HomePage({
           </SectionCard>
         </div>
 
-        {/* 3) 价值观 — 主体内容，5 卡横排，文字大、可以容纳完整描述 */}
-        <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={120}>
+        {/* 3) 价值观 — 不分卡，行内列表；字号比使命/愿景更小 */}
+        <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={120} compact>
           {content.values.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <ul className="divide-y divide-white/[0.05]">
               {content.values.map((value, i) => (
-                <div
+                <li
                   key={`${value.title}-${i}`}
-                  className="flex min-h-[140px] flex-col rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 transition-colors hover:border-amber-500/30 hover:bg-amber-500/[0.05]"
+                  className="flex items-baseline gap-3 py-1.5 first:pt-0 last:pb-0"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-500/15 font-mono text-[11px] font-bold text-amber-200">
-                      {i + 1}
-                    </span>
-                    <span className="text-[16px] font-semibold text-slate-100">{value.title}</span>
-                  </div>
+                  <span className="w-5 shrink-0 font-mono text-[10px] tabular-nums text-amber-300/80">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="shrink-0 text-[12.5px] font-medium text-slate-100">
+                    {value.title}
+                  </span>
                   {value.description ? (
-                    <p className="mt-2.5 flex-1 text-[13px] leading-[1.7] text-slate-300">
-                      {value.description}
-                    </p>
+                    <>
+                      <span className="shrink-0 text-slate-600">·</span>
+                      <span className="text-[12px] leading-relaxed text-slate-400">
+                        {value.description}
+                      </span>
+                    </>
                   ) : null}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               还没有写下价值观，请创始人来设定。
             </p>
           )}

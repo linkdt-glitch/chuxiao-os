@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 咪咪 —— 三花曼基康电子宠物 (cuteness pass v3 - 带翅膀)
+ * 咪咪 —— 三花曼基康电子宠物 (cuteness pass v3)
  *
  * 一只长着双翅的曼基康（短腿）三花猫，跟着每个人在系统底部 padding 区里
  * 走动 / 发呆 / 打哈欠 / 睡觉 / 撒娇。
@@ -251,7 +251,7 @@ export function CompanionCat() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="逗弄咪咪（带翅膀的三花曼基康）"
+        aria-label="逗弄咪咪（三花曼基康）"
         onClick={handlePlay}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -389,13 +389,6 @@ function CatStanding({
       ? "cat-tail-sway 0.5s ease-in-out 1"
       : "cat-tail-sway 2.4s ease-in-out infinite";
 
-  const wingAnim =
-    state === "playing"
-      ? "cat-wing-flap-fast 0.45s ease-in-out infinite"
-      : state === "walking"
-        ? "cat-wing-flap 1.1s ease-in-out infinite"
-        : "cat-wing-flap 1.8s ease-in-out infinite";
-
   return (
     <svg
       viewBox="0 0 80 60"
@@ -415,10 +408,6 @@ function CatStanding({
           <stop offset="60%" stopColor="rgba(251, 191, 36, 0.18)" />
           <stop offset="100%" stopColor="rgba(251, 191, 36, 0)" />
         </radialGradient>
-        <linearGradient id="cat-wing-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255, 252, 245, 0.96)" />
-          <stop offset="100%" stopColor="rgba(254, 240, 200, 0.9)" />
-        </linearGradient>
       </defs>
 
       {/* 地面柔光（替代硬阴影） */}
@@ -474,31 +463,6 @@ function CatStanding({
       {/* 小肉垫 */}
       <circle cx="30" cy="58.4" r="0.8" fill="#fb923c" />
       <circle cx="50" cy="58.4" r="0.8" fill="#fb923c" />
-
-      {/* 天使翅膀 — 后翅（较大，更靠后；多片羽毛叠层） */}
-      <g style={{ transformOrigin: "44px 39px", animation: wingAnim }}>
-        {/* Primary 长羽（最外层，drawn first 在底） */}
-        <AngelFeather rootX={44} rootY={39} tipX={22} tipY={13} fatness={1.7} fill="url(#cat-wing-grad)" />
-        <AngelFeather rootX={44} rootY={39} tipX={26} tipY={16} fatness={1.7} fill="rgba(255,252,245,0.94)" />
-        <AngelFeather rootX={44} rootY={39} tipX={30} tipY={19} fatness={1.6} fill="url(#cat-wing-grad)" />
-        <AngelFeather rootX={44} rootY={39} tipX={34} tipY={22} fatness={1.5} fill="rgba(255,252,245,0.94)" />
-        <AngelFeather rootX={44} rootY={39} tipX={37} tipY={26} fatness={1.4} fill="url(#cat-wing-grad)" />
-        {/* Covert 小羽（近根，叠在上层） */}
-        <AngelFeather rootX={44} rootY={39} tipX={40} tipY={30} fatness={1.3} fill="rgba(255,250,235,0.96)" />
-        <AngelFeather rootX={44} rootY={39} tipX={42} tipY={34} fatness={1.1} fill="rgba(255,250,235,0.92)" />
-        {/* 翅尖一抹粉橙 */}
-        <ellipse cx="22" cy="13" rx="2.2" ry="1.3" fill="#fb923c" opacity="0.45" />
-      </g>
-
-      {/* 天使翅膀 — 前翅（较小，相位差 0.18s） */}
-      <g style={{ transformOrigin: "46px 40px", animation: wingAnim, animationDelay: "-0.18s" }}>
-        <AngelFeather rootX={46} rootY={40} tipX={28} tipY={18} fatness={1.7} fill="url(#cat-wing-grad)" />
-        <AngelFeather rootX={46} rootY={40} tipX={32} tipY={21} fatness={1.6} fill="rgba(255,252,245,0.94)" />
-        <AngelFeather rootX={46} rootY={40} tipX={36} tipY={24} fatness={1.5} fill="url(#cat-wing-grad)" />
-        <AngelFeather rootX={46} rootY={40} tipX={40} tipY={28} fatness={1.4} fill="rgba(255,252,245,0.94)" />
-        <AngelFeather rootX={46} rootY={40} tipX={43} tipY={32} fatness={1.2} fill="rgba(255,250,235,0.94)" />
-        <ellipse cx="28" cy="18" rx="1.8" ry="1.1" fill="#fb923c" opacity="0.4" />
-      </g>
 
       {/* 头 */}
       <circle cx="60" cy="32" r="13" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
@@ -609,54 +573,6 @@ function Sparkle({ x, y, size, delay }: { x: number; y: number; size: number; de
   );
 }
 
-/**
- * 单片天使羽毛 —— 从 root 指向 tip 的水滴形 path。
- * 多片叠加 + 渐进缩短就形成「天使翅膀」层次感。
- */
-function AngelFeather({
-  rootX,
-  rootY,
-  tipX,
-  tipY,
-  fatness = 1.7,
-  fill,
-  stroke = "#f59e0b",
-  strokeWidth = 0.7
-}: {
-  rootX: number;
-  rootY: number;
-  tipX: number;
-  tipY: number;
-  fatness?: number;
-  fill: string;
-  stroke?: string;
-  strokeWidth?: number;
-}) {
-  const dx = rootX - tipX;
-  const dy = rootY - tipY;
-  const len = Math.hypot(dx, dy) || 1;
-  // 与轴线垂直的方向，用来撑出羽片宽度
-  const px = (-dy / len) * fatness;
-  const py = (dx / len) * fatness;
-  const cx = tipX + dx * 0.45;
-  const cy = tipY + dy * 0.45;
-  const aX = cx + px;
-  const aY = cy + py;
-  const bX = cx - px;
-  const bY = cy - py;
-  const d = `M ${tipX} ${tipY} Q ${aX} ${aY}, ${rootX} ${rootY} Q ${bX} ${bY}, ${tipX} ${tipY} Z`;
-  return (
-    <path
-      d={d}
-      fill={fill}
-      stroke={stroke}
-      strokeWidth={strokeWidth}
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
-  );
-}
-
 /** 心形眼（撒娇 / 点击瞬间）。 */
 function HeartEye({ cx, cy }: { cx: number; cy: number }) {
   // 中心 (cx, cy) 周围画一个 ~6px 宽的爱心
@@ -697,11 +613,6 @@ function CatSleeping() {
       {/* 蜷成大椭圆 */}
       <ellipse cx="42" cy="48" rx="26" ry="11" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
 
-      {/* 折叠的天使翅膀（睡觉时几片小羽毛贴在背上） */}
-      <AngelFeather rootX={42} rootY={45} tipX={30} tipY={42} fatness={1.5} fill="rgba(255,252,245,0.94)" />
-      <AngelFeather rootX={42} rootY={45} tipX={34} tipY={40} fatness={1.4} fill="rgba(254,240,200,0.92)" />
-      <AngelFeather rootX={42} rootY={45} tipX={38} tipY={39} fatness={1.2} fill="rgba(255,252,245,0.94)" />
-      <AngelFeather rootX={42} rootY={45} tipX={42} tipY={39} fatness={1.0} fill="rgba(254,240,200,0.92)" />
 
       {/* 尾巴绕在身体上 */}
       <path

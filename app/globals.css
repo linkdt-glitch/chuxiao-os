@@ -826,18 +826,6 @@ main .text-purple-700 { color: #c084fc !important; }
   80%      { transform: rotate(1deg); }
 }
 
-/* 翅膀拍打（idle / walking 时） */
-@keyframes cat-wing-flap {
-  0%, 100% { transform: rotate(0deg) scaleY(1); }
-  50%      { transform: rotate(-13deg) scaleY(0.92); }
-}
-
-/* 翅膀疾速振翅（playing 时） */
-@keyframes cat-wing-flap-fast {
-  0%, 100% { transform: rotate(0deg) scaleY(1); }
-  50%      { transform: rotate(-26deg) scaleY(0.82); }
-}
-
 /* 走路时尾后 sparkle 残留 */
 @keyframes cat-walk-trail {
   0%   { transform: translate(0, 0) scale(0.3); opacity: 0; }

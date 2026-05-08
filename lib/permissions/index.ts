@@ -3,7 +3,7 @@ import { getCurrentMember } from "@/lib/auth";
 const rolePermissionMap: Record<string, string[]> = {
   owner: ["*"],
   admin: [
-    "dashboard.read",
+    // 注意：dashboard.read 仅限 owner —— 老板驾驶舱是创始人专属视图
     "organization.manage",
     "modules.manage",
     "approvals.manage",
@@ -86,7 +86,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "ai_feedback.view"
   ],
   manager: [
-    "dashboard.read",
+    // 注意：dashboard.read 仅限 owner
     "approvals.manage",
     "logs.read",
     "events.read",
@@ -185,7 +185,7 @@ const rolePermissionMap: Record<string, string[]> = {
     // 故意不给：dashboard.read / governance.view / evolution.view / energy.view
     // 故意不给：feedback.* / sop_record.* / review_record.*（属于进化/能量子能力）
   ],
-  agent: ["dashboard.read", "files.read", "finance.view", "projects.view", "tasks.view", "knowledge.view", "evolution.view", "feedback.create", "ai_workforce.view", "agent.view", "agent.run", "ai_feedback.create"]
+  agent: ["files.read", "finance.view", "projects.view", "tasks.view", "knowledge.view", "evolution.view", "feedback.create", "ai_workforce.view", "agent.view", "agent.run", "ai_feedback.create"]
 };
 
 export async function hasPermission(permissionKey: string) {

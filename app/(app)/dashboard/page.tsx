@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   AlertTriangle,
   Banknote,
@@ -20,7 +21,7 @@ import {
   TodayBrief
 } from "@/components/dashboard/exec-shell";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getCurrentOrganization, getCurrentUser } from "@/lib/auth";
+import { getCurrentMember, getCurrentOrganization, getCurrentUser } from "@/lib/auth";
 import { getCockpitData } from "@/lib/data/cockpit";
 import { getDashboardData } from "@/lib/data/queries";
 
@@ -128,6 +129,13 @@ function pickBriefing({
 }
 
 export default async function CockpitPage() {
+  // 老板驾驶舱 = 创始人专属。其他角色（含 admin / manager / member / agent）
+  // 一律重定向到任务计划中心，避免泄露经营全局数据。
+  const member = await getCurrentMember();
+  if (member?.role?.key !== "owner") {
+    redirect("/projects");
+  }
+
   const [organization, user, cockpit, basics] = await Promise.all([
     getCurrentOrganization(),
     getCurrentUser(),

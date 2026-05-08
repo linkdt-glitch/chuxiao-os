@@ -69,25 +69,24 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
     <aside
       className="fixed inset-y-0 left-0 z-20 hidden w-72 lg:block"
       style={{
-        background: "linear-gradient(180deg, rgba(3,7,18,0.98) 0%, rgba(2,6,16,0.97) 100%)",
-        borderRight: "1px solid rgba(249,115,22,0.14)",
-        boxShadow: "8px 0 32px rgba(249,115,22,0.05), 18px 0 60px rgba(0,0,0,0.65)",
+        background: "#fafaf9",
+        borderRight: "1px solid #e2e8f0",
       }}
     >
-      {/* Dot-grid overlay */}
+      {/* 极淡橙色点纹（白底点纹更淡，仅做质感） */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(circle, rgba(249,115,22,0.13) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(circle, rgba(249,115,22,0.10) 1px, transparent 1px)",
           backgroundSize: "24px 24px",
-          opacity: 0.35,
+          opacity: 0.4,
         }}
       />
 
       {/* Logo header */}
       <div
         className="relative flex h-20 items-center px-5"
-        style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
+        style={{ borderBottom: "1px solid #e2e8f0" }}
       >
         <div className="flex min-w-0 items-center gap-3">
           {/* Logo mark — 精简动画：发光呼吸 + 单粒子绕轨 + 主图微缩。
@@ -109,7 +108,8 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden"
               style={{
-                background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), rgba(3,7,18,0.97))",
+                background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.16), #ffffff)",
+                border: "1px solid rgba(249,115,22,0.20)",
                 animation: "logo-glow-pulse 3s ease-in-out infinite",
               }}
             >
@@ -126,10 +126,10 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
 
           {/* Brand text */}
           <div className="min-w-0">
-            <div className="truncate bg-gradient-to-r from-orange-400 via-amber-300 to-orange-400 bg-clip-text text-sm font-semibold text-transparent">
+            <div className="truncate bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-sm font-semibold text-transparent">
               初晓 OS 系统
             </div>
-            <div className="font-mono text-[10px] tracking-[0.18em] text-orange-500/45">
+            <div className="font-mono text-[10px] tracking-[0.18em] text-orange-500/65">
               企业智能操作系统
             </div>
           </div>
@@ -204,25 +204,23 @@ function NavSection({
           <div
             className={cn(
               "group relative flex min-h-[2.4rem] items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200 overflow-hidden",
-              active ? "text-orange-400" : "text-slate-400",
+              active ? "text-orange-700 font-medium" : "text-slate-700",
               disabled && "cursor-not-allowed opacity-45"
             )}
             style={
               active
                 ? {
-                    background: "rgba(249,115,22,0.09)",
+                    background: "rgba(249,115,22,0.10)",
                     borderLeft: "2px solid rgba(249,115,22,0.85)",
-                    boxShadow:
-                      "inset 0 0 24px rgba(249,115,22,0.07), 0 0 14px rgba(249,115,22,0.07)",
                   }
                 : { borderLeft: "2px solid transparent" }
             }
           >
-            {/* Hover glow layer */}
+            {/* Hover layer */}
             {!active && !disabled && (
               <span
                 className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 rounded-md"
-                style={{ background: "rgba(249,115,22,0.05)" }}
+                style={{ background: "rgba(249,115,22,0.06)" }}
               />
             )}
 
@@ -230,13 +228,8 @@ function NavSection({
             <Icon
               className={cn(
                 "h-4 w-4 shrink-0 relative z-10 transition-colors",
-                active ? "text-orange-400" : "text-slate-500 group-hover:text-slate-300"
+                active ? "text-orange-600" : "text-slate-500 group-hover:text-slate-700"
               )}
-              style={
-                active
-                  ? { filter: "drop-shadow(0 0 5px rgba(249,115,22,0.7))" }
-                  : undefined
-              }
             />
 
             {/* Label */}
@@ -277,13 +270,13 @@ function CollapsibleSection({
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
-        className="group mb-1.5 flex w-full items-center gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-orange-500/[0.05]"
+        className="group mb-1.5 flex w-full items-center gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-orange-500/[0.06]"
       >
         <ChevronDown
-          className="h-3 w-3 shrink-0 text-orange-500/50 transition-transform group-hover:text-orange-400"
+          className="h-3 w-3 shrink-0 text-slate-400 transition-transform group-hover:text-orange-500"
           style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
         />
-        <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40 group-hover:text-orange-400/70">
+        <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-slate-400 group-hover:text-orange-600">
           {title}
         </span>
         <div
@@ -308,14 +301,13 @@ function HomeNavLink({ pathname }: { pathname: string }) {
         <div
           className={cn(
             "group relative flex min-h-[2.4rem] items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm transition-all duration-200",
-            active ? "text-orange-400" : "text-slate-300"
+            active ? "text-orange-700 font-medium" : "text-slate-700"
           )}
           style={
             active
               ? {
-                  background: "rgba(249,115,22,0.09)",
-                  borderLeft: "2px solid rgba(249,115,22,0.85)",
-                  boxShadow: "inset 0 0 24px rgba(249,115,22,0.07), 0 0 14px rgba(249,115,22,0.07)"
+                  background: "rgba(249,115,22,0.10)",
+                  borderLeft: "2px solid rgba(249,115,22,0.85)"
                 }
               : { borderLeft: "2px solid transparent" }
           }
@@ -323,15 +315,14 @@ function HomeNavLink({ pathname }: { pathname: string }) {
           {!active && (
             <span
               className="pointer-events-none absolute inset-0 rounded-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              style={{ background: "rgba(249,115,22,0.05)" }}
+              style={{ background: "rgba(249,115,22,0.06)" }}
             />
           )}
           <Home
             className={cn(
               "relative z-10 h-4 w-4 shrink-0 transition-colors",
-              active ? "text-orange-400" : "text-slate-400 group-hover:text-slate-200"
+              active ? "text-orange-600" : "text-slate-500 group-hover:text-slate-700"
             )}
-            style={active ? { filter: "drop-shadow(0 0 5px rgba(249,115,22,0.7))" } : undefined}
           />
           <span className="relative z-10 min-w-0 flex-1 truncate font-medium">首页</span>
         </div>

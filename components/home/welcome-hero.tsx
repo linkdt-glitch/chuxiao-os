@@ -33,30 +33,31 @@ export function WelcomeHero({
 
   return (
     <section
-      className="relative overflow-hidden rounded-2xl border border-amber-500/15"
+      className="relative overflow-hidden rounded-2xl border border-amber-200/50"
       style={{
+        // 浅色版日出渐变：从右上的暖橙日晕散到左下的奶白
         background:
-          "linear-gradient(110deg, rgba(251,146,60,0.10) 0%, rgba(251,191,36,0.06) 25%, rgba(8,12,28,0.92) 65%, rgba(4,8,20,0.95) 100%)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)"
+          "linear-gradient(115deg, #ffffff 0%, #fff7ed 35%, #fed7aa 100%)",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -16px rgba(249,115,22,0.18)"
       }}
     >
-      {/* 太阳光晕（背景） */}
+      {/* 太阳光晕（右上角，浅底更可见） */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-12 -top-10 h-40 w-40 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(251,191,36,0.45) 0%, rgba(251,146,60,0.20) 35%, rgba(251,146,60,0) 70%)",
-          filter: "blur(6px)",
+            "radial-gradient(circle, rgba(251,191,36,0.65) 0%, rgba(251,146,60,0.30) 35%, rgba(251,146,60,0) 70%)",
+          filter: "blur(8px)",
           animation: "home-sun-pulse 6s ease-in-out infinite"
         }}
       />
-      {/* 漂浮粒子 */}
+      {/* 漂浮粒子（白底用更橘的颜色） */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {[
-          { left: "18%", top: "28%", size: 2, delay: "0s", dur: "9s" },
-          { left: "46%", top: "62%", size: 2.5, delay: "1.4s", dur: "11s" },
-          { left: "72%", top: "32%", size: 2, delay: "2.8s", dur: "10s" }
+          { left: "18%", top: "28%", size: 2.5, delay: "0s", dur: "9s" },
+          { left: "46%", top: "62%", size: 3, delay: "1.4s", dur: "11s" },
+          { left: "72%", top: "32%", size: 2.5, delay: "2.8s", dur: "10s" }
         ].map((p, i) => (
           <span
             key={i}
@@ -66,8 +67,8 @@ export function WelcomeHero({
               top: p.top,
               width: p.size,
               height: p.size,
-              background: "rgba(251,191,36,0.85)",
-              boxShadow: "0 0 6px rgba(251,191,36,0.6)",
+              background: "rgba(249,115,22,0.55)",
+              boxShadow: "0 0 6px rgba(249,115,22,0.30)",
               animation: `home-particle-drift ${p.dur} ease-in-out infinite`,
               animationDelay: p.delay
             }}
@@ -78,31 +79,31 @@ export function WelcomeHero({
       <div className="relative z-10 flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
         <div className="min-w-0">
           <div
-            className="font-mono text-[10px] tracking-[0.26em] text-amber-300/70"
+            className="font-mono text-[10px] tracking-[0.26em] text-orange-700/85"
             style={{ animation: "home-greet-in 500ms cubic-bezier(0.2,0.8,0.2,1) both" }}
           >
             {organizationName.toUpperCase()}
           </div>
           <h1
-            className="mt-1 truncate text-[22px] font-semibold tracking-tight text-slate-50 sm:text-[26px]"
+            className="mt-1 truncate text-[22px] font-semibold tracking-tight text-slate-900 sm:text-[26px]"
             style={{ animation: "home-greet-in 600ms cubic-bezier(0.2,0.8,0.2,1) 80ms both" }}
           >
             <span
-              className="bg-gradient-to-r from-amber-200 via-orange-300 to-amber-200 bg-clip-text text-transparent"
-              style={{ filter: "drop-shadow(0 0 14px rgba(251,191,36,0.30))" }}
+              className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-transparent"
+              style={{ filter: "drop-shadow(0 0 8px rgba(249,115,22,0.20))" }}
             >
               {greeting}
             </span>
-            <span className="ml-2 text-slate-200">{userName}</span>
+            <span className="ml-2 text-slate-800">{userName}</span>
             <span className="ml-2 text-[18px] text-slate-400 sm:text-[20px]">·</span>
-            <span className="ml-2 text-[15px] font-normal text-slate-300 sm:text-[16px]">欢迎回家</span>
+            <span className="ml-2 text-[15px] font-normal text-slate-600 sm:text-[16px]">欢迎回家</span>
           </h1>
         </div>
         <div
-          className="flex shrink-0 items-center gap-2 self-start rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 font-mono text-[11px] tabular-nums tracking-wider text-amber-200 sm:self-center"
+          className="flex shrink-0 items-center gap-2 self-start rounded-full border border-orange-300 bg-white/80 px-3 py-1 font-mono text-[11px] tabular-nums tracking-wider text-orange-700 sm:self-center"
           style={{ animation: "home-greet-in 700ms cubic-bezier(0.2,0.8,0.2,1) 200ms both" }}
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.95)]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
           {formatBeijingDateTime(now)}
         </div>
       </div>

@@ -3,24 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --background: 222 47% 4%;
-  --foreground: 220 14% 96%;       /* brighter — was 90% */
-  --card: 222 44% 6%;
-  --card-foreground: 220 14% 96%;
-  --primary: 20 88% 50%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 222 40% 10%;
-  --secondary-foreground: 220 13% 85%;
-  --muted: 222 38% 9%;
-  --muted-foreground: 220 8% 64%;  /* brighter — was 50% */
-  --accent: 20 88% 52%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 70% 55%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 222 30% 18%;
-  --input: 222 36% 11%;
+  /* 浅色 + 暖橙：Stripe-ish light theme，保留品牌橙色 accent */
+  --background: 30 33% 98%;        /* 暖白底 #fafaf9 */
+  --foreground: 222 47% 11%;       /* slate-900 */
+  --card: 0 0% 100%;               /* 纯白卡 */
+  --card-foreground: 222 47% 11%;
+  --primary: 20 88% 50%;           /* orange-500 #f97316 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 30% 95%;         /* 极浅暖灰 */
+  --secondary-foreground: 222 47% 25%;
+  --muted: 30 33% 96%;
+  --muted-foreground: 215 16% 47%; /* slate-500 */
+  --accent: 20 100% 96%;           /* orange-50 hover 高亮 */
+  --accent-foreground: 20 88% 30%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 215 16% 89%;           /* slate-200 */
+  --input: 215 16% 95%;
   --ring: 20 88% 50%;
-  --radius: 6px;
+  --radius: 8px;
 }
 
 * {
@@ -30,17 +31,14 @@
 body {
   @apply bg-background text-foreground antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  /* 简化背景：原本 5 层 fixed gradient 在每次滚动都要重绘，去掉 3 层装饰光晕，
-     保留点阵纹 + 一道左上橙色光晕 + 基础渐变。 */
+  /* 暖白底 + 极淡橙色 mesh，跟 Stripe 那种克制浅色背景同款，但用品牌橙做暖调 */
   background:
-    radial-gradient(circle, rgba(249,115,22,0.07) 1px, transparent 1px),
-    radial-gradient(ellipse 80% 50% at 15% 0%, rgba(249,115,22,0.10) 0%, transparent 60%),
-    linear-gradient(160deg, #020617 0%, #050d1a 35%, #020617 65%, #030a16 100%);
-  background-size: 28px 28px, 100% 100%, 100% 100%;
+    radial-gradient(ellipse 80% 50% at 15% 0%, rgba(249,115,22,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(251,191,36,0.05) 0%, transparent 60%),
+    linear-gradient(180deg, #fafaf9 0%, #fffaf2 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
   background-attachment: fixed;
   min-height: 100vh;
-  /* No infinite background animation — it forces a full-viewport repaint
-     every frame and is a major source of jank. Static dot grid is enough. */
 }
 
 html {
@@ -60,76 +58,71 @@ textarea {
 }
 
 ::selection {
-  background: rgba(249, 115, 22, 0.36);
-  color: #fff;
+  background: rgba(249, 115, 22, 0.22);
+  color: #0f172a;
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(249, 115, 22, 0.2) transparent;
+  scrollbar-color: rgba(249, 115, 22, 0.30) transparent;
 }
 
-/* ─── Surface utilities ─────────────────────────────── */
+/* ─── Surface utilities (浅色版) ─────────────────────── */
 
 .surface-gradient {
   background:
-    radial-gradient(circle, rgba(249,115,22,0.05) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(4,8,20,0.97) 0%, rgba(3,7,17,0.95) 100%);
+    radial-gradient(circle, rgba(249,115,22,0.04) 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff 0%, #fafaf9 100%);
   background-size: 24px 24px, 100% 100%;
-  backdrop-filter: blur(24px) saturate(1.2);
 }
 
 .panel-gradient {
-  background: linear-gradient(180deg, rgba(10,16,32,0.90), rgba(7,12,24,0.86));
-  backdrop-filter: blur(18px) saturate(1.1);
+  background: linear-gradient(180deg, #ffffff, #fafaf9);
 }
 
 .mac-window {
-  border: 1px solid rgba(249,115,22,0.13);
+  border: 1px solid #e2e8f0;
   box-shadow:
-    0 0 0 1px rgba(249,115,22,0.05) inset,
-    0 24px 60px rgba(0,0,0,0.50),
-    0 0 40px rgba(249,115,22,0.04);
+    0 1px 2px rgba(15,23,42,0.04),
+    0 16px 32px -16px rgba(15,23,42,0.10);
 }
 
 .brand-glow {
   box-shadow:
-    0 0 30px rgba(249,115,22,0.40),
-    0 0 60px rgba(249,115,22,0.18),
+    0 0 20px rgba(249,115,22,0.20),
     0 0 0 1px rgba(249,115,22,0.30) inset;
 }
 
 .brand-mark-frame {
-  background: radial-gradient(circle at 50% 40%, rgba(249,115,22,0.22), rgba(4,8,20,0.95));
+  background: radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), #fafaf9);
   box-shadow:
-    0 0 24px rgba(249,115,22,0.28),
+    0 0 16px rgba(249,115,22,0.22),
     0 0 0 1px rgba(249,115,22,0.22);
 }
 
 .brand-wordmark-frame {
   border-radius: 18px;
   border: 1px solid rgba(249,115,22,0.22);
-  background: linear-gradient(180deg, rgba(10,16,32,0.92), rgba(6,10,22,0.86));
-  box-shadow: 0 18px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(249,115,22,0.08) inset;
+  background: #ffffff;
+  box-shadow: 0 8px 24px -12px rgba(249,115,22,0.18), 0 0 0 1px rgba(249,115,22,0.05);
 }
 
-/* ─── Sci-fi utilities ──────────────────────────────── */
+/* ─── Sci-fi utilities (浅色版) ─────────────────────── */
 
 .neon-border {
-  border: 1px solid rgba(249,115,22,0.28);
-  box-shadow: 0 0 14px rgba(249,115,22,0.12), inset 0 0 14px rgba(249,115,22,0.04);
+  border: 1px solid rgba(249,115,22,0.30);
+  box-shadow: 0 0 10px rgba(249,115,22,0.10);
 }
 
 .hud-panel {
-  background: rgba(6,11,24,0.88);
-  border: 1px solid rgba(249,115,22,0.18);
-  box-shadow: 0 0 24px rgba(249,115,22,0.08), 0 24px 50px rgba(0,0,0,0.55);
-  backdrop-filter: blur(20px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 16px 32px -16px rgba(15,23,42,0.10);
 }
 
 .neon-text {
-  color: #f97316;
-  text-shadow: 0 0 10px rgba(249,115,22,0.65), 0 0 24px rgba(249,115,22,0.32);
+  color: #ea580c;
+  text-shadow: 0 0 10px rgba(249,115,22,0.30);
 }
 
 /* ─── Card spotlight (mouse-tracked inner glow) ─────── */
@@ -653,73 +646,13 @@ main select option {
   color: rgb(226, 232, 240);
 }
 
-/* ─── Legacy light-surface safety net inside (app) ───── */
-/* Many older page-level utilities still use bg-white/X, border-slate-200,
-   text-slate-700/800/900 — promote them to dark-friendly equivalents
-   when they appear inside the main app area. */
+/* ─── 浅色主题：取消旧的暗色 safety net ───────────────
+   原来这块把 bg-white/X / pastel / slate-text 强制改成深色，是为了
+   兼容深色赛博朋克主题。现在切到浅色后，这些 light-friendly 的旧类名
+   恰好就是我们要的，所以全部移除。
+   ─────────────────────────────────────────────── */
 
-main [class*="bg-white/"] {
-  background-color: rgba(8, 13, 28, 0.55) !important;
-}
-main [class*="bg-white/"][class*="hover:"]:hover {
-  background-color: rgba(249, 115, 22, 0.06) !important;
-}
-
-main [class*="border-slate-200"],
-main [class*="border-white/"] {
-  border-color: rgba(249, 115, 22, 0.14) !important;
-}
-
-main .text-slate-700,
-main .text-slate-800,
-main .text-slate-900,
-main .text-gray-700,
-main .text-gray-800,
-main .text-gray-900,
-main .text-foreground {
-  color: rgb(226, 232, 240) !important; /* slate-200 */
-}
-
-/* Light pastel utility backgrounds → soft dark accent */
-main [class*="bg-amber-50"],
-main [class*="bg-orange-50"],
-main [class*="bg-sky-50"],
-main [class*="bg-emerald-50"],
-main [class*="bg-cyan-50"],
-main [class*="bg-rose-50"],
-main [class*="bg-red-50"],
-main [class*="bg-purple-50"],
-main [class*="bg-slate-50"],
-main [class*="bg-gray-50"] {
-  background-color: rgba(8, 13, 28, 0.45) !important;
-}
-
-main [class*="bg-amber-100"],
-main [class*="bg-orange-100"],
-main [class*="bg-sky-100"],
-main [class*="bg-emerald-100"] {
-  background-color: rgba(249, 115, 22, 0.08) !important;
-}
-
-/* Pastel text colors in dark theme — bump saturation */
-main .text-orange-600,
-main .text-orange-700 { color: #fb923c !important; }
-main .text-amber-600,
-main .text-amber-700 { color: #fbbf24 !important; }
-main .text-emerald-600,
-main .text-emerald-700,
-main .text-green-600,
-main .text-green-700 { color: #34d399 !important; }
-main .text-red-600,
-main .text-red-700,
-main .text-rose-600,
-main .text-rose-700 { color: #f87171 !important; }
-main .text-sky-600,
-main .text-sky-700,
-main .text-cyan-600,
-main .text-cyan-700 { color: #38bdf8 !important; }
-main .text-purple-600,
-main .text-purple-700 { color: #c084fc !important; }
+/* 浅色下白色背景半透明 (bg-white/72 等) 直接生效 — 不再覆盖 */
 
 /* ─── Responsive ────────────────────────────────────── */
 

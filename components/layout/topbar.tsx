@@ -20,10 +20,9 @@ export function Topbar({
     <header
       className="sticky top-0 z-10 flex h-14 items-center justify-between px-3 lg:h-16 lg:px-8"
       style={{
-        background: "rgba(2,6,17,0.94)",
-        borderBottom: "1px solid rgba(249,115,22,0.15)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(249,115,22,0.07) inset",
-        // backdrop-blur 28px + saturate 太重，简化为低半径 blur
+        background: "rgba(255,255,255,0.92)",
+        borderBottom: "1px solid #e2e8f0",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
         backdropFilter: "blur(10px)",
       }}
     >
@@ -47,9 +46,9 @@ export function Topbar({
           />
         </div>
         <div className="min-w-0 leading-tight">
-          <div className="truncate text-sm font-semibold text-slate-100">{organization.name}</div>
-          <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-orange-500/55">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.85)" }} />
+          <div className="truncate text-sm font-semibold text-slate-900">{organization.name}</div>
+          <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-orange-500/85">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
             系统在线
           </div>
         </div>

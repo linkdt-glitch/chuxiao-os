@@ -4,39 +4,43 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
+        // 主 CTA：橙色渐变 + 轻软投影
         default: [
-          "bg-gradient-to-b from-orange-400 via-orange-500 to-red-500 text-white font-semibold",
-          "shadow-[0_0_20px_rgba(249,115,22,0.35),0_4px_16px_rgba(0,0,0,0.4)]",
-          "hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(249,115,22,0.55),0_8px_24px_rgba(0,0,0,0.45)]",
-          "active:translate-y-0 active:shadow-[0_0_12px_rgba(249,115,22,0.35)]",
+          "bg-gradient-to-b from-orange-500 to-orange-600 text-white font-semibold",
+          "shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_-4px_rgba(249,115,22,0.40)]",
+          "hover:from-orange-500 hover:to-orange-700 hover:-translate-y-0.5",
+          "hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_8px_16px_-4px_rgba(249,115,22,0.50)]",
+          "active:translate-y-0",
         ].join(" "),
+        // 次级：浅橙底 + 橙边
         secondary: [
-          "text-slate-200 font-medium",
-          "bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.22)]",
-          "shadow-[0_0_10px_rgba(249,115,22,0.08)]",
-          "hover:bg-[rgba(249,115,22,0.14)] hover:border-[rgba(249,115,22,0.38)] hover:-translate-y-0.5",
-          "hover:shadow-[0_0_18px_rgba(249,115,22,0.18)]",
+          "text-orange-700 font-medium",
+          "bg-orange-50 border border-orange-200",
+          "hover:bg-orange-100 hover:border-orange-300 hover:-translate-y-0.5",
           "active:translate-y-0",
         ].join(" "),
+        // outline：白底 + 浅灰边，hover 变橙
         outline: [
-          "text-slate-300 font-medium",
-          "bg-transparent border border-[rgba(249,115,22,0.18)]",
-          "hover:border-[rgba(249,115,22,0.45)] hover:text-orange-400 hover:bg-[rgba(249,115,22,0.06)] hover:-translate-y-0.5",
-          "active:translate-y-0",
+          "text-slate-700 font-medium",
+          "bg-white border border-slate-200",
+          "hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/50",
+          "hover:-translate-y-0.5 active:translate-y-0",
         ].join(" "),
+        // ghost：透明 hover 变浅橙
         ghost: [
-          "text-slate-400 shadow-none",
-          "hover:bg-[rgba(249,115,22,0.07)] hover:text-slate-200",
+          "text-slate-600",
+          "hover:bg-orange-50 hover:text-orange-700",
           "active:scale-95",
         ].join(" "),
+        // destructive：红
         destructive: [
-          "bg-gradient-to-b from-red-500 to-red-700 text-white font-semibold",
-          "shadow-[0_0_16px_rgba(239,68,68,0.35),0_4px_16px_rgba(0,0,0,0.4)]",
-          "hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(239,68,68,0.5)]",
+          "bg-gradient-to-b from-red-500 to-red-600 text-white font-semibold",
+          "shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_-4px_rgba(239,68,68,0.40)]",
+          "hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_8px_16px_-4px_rgba(239,68,68,0.50)]",
           "active:translate-y-0",
         ].join(" "),
       },

@@ -60,17 +60,17 @@ export default async function HomePage({
         {/* 2) 使命 + 愿景 — 顶部并排 2 列，紧凑短句 */}
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard icon={Compass} label="使命" accent="amber" delayMs={0} compact>
-            <p className="text-[13.5px] leading-relaxed text-slate-100">{content.mission ?? "—"}</p>
+            <p className="text-[13.5px] leading-relaxed text-slate-900">{content.mission ?? "—"}</p>
           </SectionCard>
           <SectionCard icon={Telescope} label="愿景" accent="orange" delayMs={60} compact>
-            <p className="text-[13.5px] leading-relaxed text-slate-100">{content.vision ?? "—"}</p>
+            <p className="text-[13.5px] leading-relaxed text-slate-900">{content.vision ?? "—"}</p>
           </SectionCard>
         </div>
 
         {/* 3) 价值观 — 不分卡，行内列表；字号比使命/愿景更小 */}
         <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={120} compact>
           {content.values.length ? (
-            <ul className="divide-y divide-white/[0.05]">
+            <ul className="divide-y divide-slate-200">
               {content.values.map((value, i) => (
                 <li
                   key={`${value.title}-${i}`}
@@ -79,7 +79,7 @@ export default async function HomePage({
                   <span className="w-5 shrink-0 font-mono text-[10px] tabular-nums text-amber-300/80">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="shrink-0 text-[12.5px] font-medium text-slate-100">
+                  <span className="shrink-0 text-[12.5px] font-medium text-slate-900">
                     {value.title}
                   </span>
                   {value.description ? (
@@ -108,11 +108,11 @@ export default async function HomePage({
                 {content.goals.slice(0, 3).map((goal, i) => (
                   <li
                     key={`${goal.title}-${i}`}
-                    className="rounded-lg border border-white/[0.06] bg-white/[0.025] p-2"
+                    className="rounded-lg border border-slate-200 bg-slate-50/60 p-2"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <span className="truncate text-[12.5px] font-medium text-slate-100">
+                        <span className="truncate text-[12.5px] font-medium text-slate-900">
                           {goal.title}
                         </span>
                       </div>
@@ -124,7 +124,7 @@ export default async function HomePage({
                     </div>
                     {typeof goal.progress === "number" ? (
                       <div className="mt-1.5 flex items-center gap-2">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-200">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -157,7 +157,7 @@ export default async function HomePage({
                 {content.announcements.slice(0, 4).map((line, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-rose-400" />
-                    <span className="text-[12.5px] leading-relaxed text-slate-200">{line}</span>
+                    <span className="text-[12.5px] leading-relaxed text-slate-700">{line}</span>
                   </li>
                 ))}
                 {content.announcements.length > 4 ? (
@@ -206,10 +206,10 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   const palette = {
-    amber: { dot: "bg-amber-300", iconBg: "bg-amber-500/15", iconText: "text-amber-300", border: "border-amber-500/15" },
-    orange: { dot: "bg-orange-300", iconBg: "bg-orange-500/15", iconText: "text-orange-300", border: "border-orange-500/15" },
-    emerald: { dot: "bg-emerald-300", iconBg: "bg-emerald-500/15", iconText: "text-emerald-300", border: "border-emerald-500/15" },
-    rose: { dot: "bg-rose-300", iconBg: "bg-rose-500/15", iconText: "text-rose-300", border: "border-rose-500/15" }
+    amber: { dot: "bg-amber-500", iconBg: "bg-amber-100", iconText: "text-amber-700", border: "border-slate-200" },
+    orange: { dot: "bg-orange-500", iconBg: "bg-orange-100", iconText: "text-orange-700", border: "border-slate-200" },
+    emerald: { dot: "bg-emerald-500", iconBg: "bg-emerald-100", iconText: "text-emerald-700", border: "border-slate-200" },
+    rose: { dot: "bg-rose-500", iconBg: "bg-rose-100", iconText: "text-rose-700", border: "border-slate-200" }
   }[accent];
 
   const padding = compact ? "p-3" : "p-4";
@@ -220,17 +220,17 @@ function SectionCard({
 
   return (
     <section
-      className={`home-card-in relative overflow-hidden rounded-2xl border ${palette.border} bg-white/[0.025] ${padding}`}
+      className={`home-card-in relative overflow-hidden rounded-2xl border ${palette.border} bg-white ${padding}`}
       style={{
         animationDelay: `${delayMs}ms`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)"
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -16px rgba(15,23,42,0.08)"
       }}
     >
       <div className={`${headerMb} flex items-center gap-2`}>
         <div className={`grid ${iconSize} place-items-center rounded-lg ${palette.iconBg}`}>
           <Icon className={`${iconInner} ${palette.iconText}`} />
         </div>
-        <span className={`${labelSize} font-medium uppercase tracking-[0.18em] text-slate-400`}>
+        <span className={`${labelSize} font-medium uppercase tracking-[0.18em] text-slate-500`}>
           {label}
         </span>
         <span className={`ml-auto h-1.5 w-1.5 rounded-full ${palette.dot}`} />

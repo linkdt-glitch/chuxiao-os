@@ -34,9 +34,9 @@ export function ExecCard({
     <Tag
       className={cn(
         "relative overflow-hidden rounded-2xl",
-        "border border-white/[0.06] bg-white/[0.025]",
+        "border border-white/[0.06] bg-white/[0.04]",
         "shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_24px_48px_-24px_rgba(0,0,0,0.55)]",
-        "backdrop-blur-md",
+        // 不用 backdrop-blur — 每个 card 都开 blur 复合层会让 dashboard 变卡
         className
       )}
     >
@@ -124,7 +124,7 @@ export function TodayBrief({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] px-5 py-4 backdrop-blur-md">
+      <div className="mt-4 rounded-2xl border border-white/[0.06] bg-white/[0.04] px-5 py-4">
         <div className="flex items-start gap-3">
           <span className={cn("mt-2 h-1.5 w-1.5 shrink-0 rounded-full", dot)} />
           <div className="min-w-0 flex-1">
@@ -515,8 +515,8 @@ export function AlertPill({
     <Link
       href={href}
       className={cn(
-        "group flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 backdrop-blur-md transition-colors",
-        "hover:border-white/[0.12] hover:bg-white/[0.04]"
+        "group flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-3 transition-colors",
+        "hover:border-white/[0.12] hover:bg-white/[0.06]"
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">

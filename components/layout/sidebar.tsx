@@ -90,51 +90,22 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         style={{ borderBottom: "1px solid rgba(249,115,22,0.10)" }}
       >
         <div className="flex min-w-0 items-center gap-3">
-          {/* Logo mark — always animating */}
+          {/* Logo mark — 精简动画：发光呼吸 + 单粒子绕轨 + 主图微缩。
+              旧版有 conic-gradient blur ring + 3 颗轨道粒子 + sphere-3d 共 7 道动画
+              全屏一直跑，GPU 压力大；删掉重复装饰，只保留特征性动效。 */}
           <div className="relative h-10 w-10 shrink-0">
-            {/* Soft rotating scanner sweep (blurred conic arc, no harsh line) */}
-            <div
-              className="pointer-events-none absolute"
-              style={{
-                inset: -6, borderRadius: 20,
-                background: "conic-gradient(from 0deg, rgba(249,115,22,0.45) 0deg, rgba(249,115,22,0.10) 50deg, transparent 110deg, transparent 360deg)",
-                filter: "blur(3px)",
-                animation: "logo-ring-spin 6s linear infinite",
-              }}
-            />
-
-            {/* Orbiting particles — three dots circling at different speeds. */}
+            {/* 单颗轨道粒子 */}
             <span
               className="pointer-events-none absolute left-1/2 top-1/2 block h-1.5 w-1.5 rounded-full"
               style={{
                 marginLeft: -3, marginTop: -3,
                 background: "rgba(249,200,140,0.95)",
-                boxShadow: "0 0 8px rgba(249,115,22,0.95), 0 0 16px rgba(249,115,22,0.55)",
-                animation: "logo-orbit 6s linear infinite",
-              }}
-            />
-            <span
-              className="pointer-events-none absolute left-1/2 top-1/2 block h-1 w-1 rounded-full"
-              style={{
-                marginLeft: -2, marginTop: -2,
-                background: "rgba(255,180,120,0.85)",
-                boxShadow: "0 0 6px rgba(249,115,22,0.7)",
-                animation: "logo-orbit 8s linear infinite reverse",
-                animationDelay: "-2s",
-              }}
-            />
-            <span
-              className="pointer-events-none absolute left-1/2 top-1/2 block h-[3px] w-[3px] rounded-full"
-              style={{
-                marginLeft: -1.5, marginTop: -1.5,
-                background: "rgba(255,200,140,0.7)",
-                boxShadow: "0 0 4px rgba(249,115,22,0.5)",
-                animation: "logo-orbit 10s linear infinite",
-                animationDelay: "-4s",
+                boxShadow: "0 0 8px rgba(249,115,22,0.95)",
+                animation: "logo-orbit 7s linear infinite",
               }}
             />
 
-            {/* Logo frame */}
+            {/* Logo frame + glow pulse */}
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden"
               style={{
@@ -142,26 +113,14 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
                 animation: "logo-glow-pulse 3s ease-in-out infinite",
               }}
             >
-              {/* The sphere itself — 3D gyro tilt + energy pulse + glitch */}
-              <div
-                style={{
-                  width: "100%", height: "100%",
-                  animation: "logo-sphere-3d 8s ease-in-out infinite",
-                  transformOrigin: "center center",
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                <Image
-                  src="/brand/kairosmini-mark.svg"
-                  alt="初晓 OS"
-                  width={512}
-                  height={512}
-                  className="h-full w-full object-contain"
-                  style={{
-                    animation: "logo-sphere-energy 3.2s ease-in-out infinite",
-                  }}
-                />
-              </div>
+              <Image
+                src="/brand/kairosmini-mark.svg"
+                alt="初晓 OS"
+                width={512}
+                height={512}
+                className="h-full w-full object-contain"
+                style={{ animation: "logo-sphere-energy 3.2s ease-in-out infinite" }}
+              />
             </div>
           </div>
 

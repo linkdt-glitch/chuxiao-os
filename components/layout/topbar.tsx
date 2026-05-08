@@ -20,10 +20,11 @@ export function Topbar({
     <header
       className="sticky top-0 z-10 flex h-14 items-center justify-between px-3 lg:h-16 lg:px-8"
       style={{
-        background: "rgba(2,6,17,0.90)",
+        background: "rgba(2,6,17,0.94)",
         borderBottom: "1px solid rgba(249,115,22,0.15)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(249,115,22,0.07) inset",
-        backdropFilter: "blur(28px) saturate(1.2)",
+        // backdrop-blur 28px + saturate 太重，简化为低半径 blur
+        backdropFilter: "blur(10px)",
       }}
     >
       {/* Left: back button + brand */}

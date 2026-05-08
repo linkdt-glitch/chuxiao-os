@@ -69,16 +69,23 @@ const MOOD_LABEL: Record<CatState, string> = {
 export function CompanionCat() {
   const [state, setState] = useState<CatState>("sit");
   const [direction, setDirection] = useState<Direction>("right");
-  const [position, setPosition] = useState(50);
   const [showHearts, setShowHearts] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [jiggling, setJiggling] = useState(false);
   const [idleQuirk, setIdleQuirk] = useState<IdleQuirk>("calm");
   const [bottomOffset, setBottomOffset] = useState(20);
   const [hidden, setHidden] = useState(false);
+  // SSR / 首帧不渲染，避免初始 transform 把猫闪到屏幕左边再 snap 回中心
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const stateRef = useRef<CatState>("sit");
+  // 位置完全用 ref 管理：rAF 直接写 DOM transform，不走 React 渲染。
+  // 避免 60fps 的 setState 触发整棵 SVG 树 reconcile（之前是卡顿主因）。
   const positionRef = useRef(50);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,22 +95,37 @@ export function CompanionCat() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-  useEffect(() => {
-    positionRef.current = position;
-  }, [position]);
 
-  // 移动端要让开 tabbar (~64px) + 安全区
+  // 把当前位置百分比直接写到 wrapper 的 transform 上（GPU 合成，不触发 layout/paint）
+  const applyPosition = useCallback((percent: number) => {
+    const clamped = Math.max(4, Math.min(96, percent));
+    positionRef.current = clamped;
+    const node = wrapperRef.current;
+    if (node && typeof window !== "undefined") {
+      const px = (clamped / 100) * window.innerWidth;
+      // translate3d 强制开 GPU 层；后跟 -50% 居中
+      node.style.transform = `translate3d(${px}px, 0, 0) translateX(-50%)`;
+    }
+  }, []);
+
+  // 移动端要让开 tabbar (~64px) + 安全区；resize 时同步重写 transform
   useEffect(() => {
     const checkLayout = () => {
       if (typeof window === "undefined") return;
       const isMobile = window.innerWidth < 1024;
       setBottomOffset(isMobile ? 84 : 20);
       setHidden(window.innerHeight < 480);
+      applyPosition(positionRef.current); // 视窗变了重新映射 px
     };
     checkLayout();
     window.addEventListener("resize", checkLayout);
     return () => window.removeEventListener("resize", checkLayout);
-  }, []);
+  }, [applyPosition]);
+
+  // 首次 mount 把初始 50% 位置写到 DOM（避免首帧居左）
+  useEffect(() => {
+    applyPosition(positionRef.current);
+  }, [applyPosition]);
 
   // 状态机：到点切换。direction 只在 sit/yawning/playing → walking 转换时
   // 选定一次，避免任何 walking 中途换向。
@@ -130,9 +152,8 @@ export function CompanionCat() {
     };
   }, [state]);
 
-  // 走动：捕获本次启动时的 direction，保证位置更新方向 == 视觉朝向。
-  // 启动前先等 32ms 让 SVG 翻转 commit，避免"启动瞬间 1 帧倒退"。
-  // 到达边界时切回 sit（不会原地反弹翻转）。
+  // 走动：捕获本次启动时的 direction，rAF 里直接写 DOM transform，
+  // 不走 setState（避免每帧整棵 SVG reconcile）。
   useEffect(() => {
     if (state !== "walking") {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -146,21 +167,18 @@ export function CompanionCat() {
       const step = (t: number) => {
         const dt = (t - lastT) / 1000;
         lastT = t;
-        const speed = 5.5; // % per second of viewport width
+        const speed = 5.5;
         const dir = initialDirection === "right" ? 1 : -1;
-        let next = positionRef.current + dir * speed * dt;
+        const next = positionRef.current + dir * speed * dt;
         const reachedEdge = next < 4 || next > 96;
         if (reachedEdge) {
-          next = Math.max(4, Math.min(96, next));
-          positionRef.current = next;
-          setPosition(next);
+          applyPosition(Math.max(4, Math.min(96, next)));
           if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
           stateTimerRef.current = null;
-          setState("sit"); // 到边停下；下一轮再按位置选新方向
+          setState("sit");
           return;
         }
-        positionRef.current = next;
-        setPosition(next);
+        applyPosition(next);
         rafRef.current = requestAnimationFrame(step);
       };
       rafRef.current = requestAnimationFrame(step);
@@ -171,7 +189,7 @@ export function CompanionCat() {
       clearTimeout(startId);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [state, direction]);
+  }, [state, direction, applyPosition]);
 
   // sit 期间偶发 micro-action：耳朵抽动 / 尾巴翻飞
   useEffect(() => {
@@ -208,23 +226,25 @@ export function CompanionCat() {
     setState("playing");
   }, []);
 
-  if (hidden) return null;
+  if (!mounted || hidden) return null;
 
   const showCute = hovering || state === "playing" || state === "yawning";
   const showHeartEyes = state === "playing" || jiggling;
 
   return (
     <div
+      ref={wrapperRef}
       className="cat-companion-root"
       style={{
         position: "fixed",
-        left: `${position}%`,
+        left: 0,
         bottom: bottomOffset,
-        transform: "translateX(-50%)",
         zIndex: 30,
         pointerEvents: "none",
-        // 走路时禁用过渡（rAF 会逐帧更新）；其它状态下平滑滑入
-        transition: state === "walking" ? "none" : "left 0.4s ease-out, bottom 0.3s ease-out"
+        willChange: "transform",
+        contain: "layout paint",
+        // 默认初始 transform；mount 后 applyPosition() 会覆盖为正确位置
+        transform: "translate3d(0, 0, 0) translateX(-50%)"
       }}
       aria-hidden={false}
     >

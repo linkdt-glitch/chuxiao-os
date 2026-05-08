@@ -40,7 +40,7 @@ export function NeuralPulse() {
             boxShadow: "0 0 8px rgba(249,115,22,1), 0 0 18px rgba(249,115,22,0.6)",
           }}
         />
-        {/* Orbiting dot 1 — base speed */}
+        {/* Orbiting dot — 单粒子代替 3 颗（精简动画） */}
         <div
           className="animate-neural-orbit absolute"
           style={{ top: "50%", left: "50%", animationDuration: "3s" }}
@@ -50,34 +50,6 @@ export function NeuralPulse() {
               width: 4, height: 4, borderRadius: "50%",
               background: "rgba(249,115,22,0.95)",
               boxShadow: "0 0 6px rgba(249,115,22,0.9)",
-              transform: "translate(-50%, -50%)",
-            }}
-          />
-        </div>
-        {/* Orbiting dot 2 — offset 120° */}
-        <div
-          className="animate-neural-orbit absolute"
-          style={{ top: "50%", left: "50%", animationDuration: "3s", animationDelay: "-1s" }}
-        >
-          <div
-            style={{
-              width: 3, height: 3, borderRadius: "50%",
-              background: "rgba(249,115,22,0.7)",
-              boxShadow: "0 0 5px rgba(249,115,22,0.7)",
-              transform: "translate(-50%, -50%)",
-            }}
-          />
-        </div>
-        {/* Orbiting dot 3 — offset 240° */}
-        <div
-          className="animate-neural-orbit absolute"
-          style={{ top: "50%", left: "50%", animationDuration: "3s", animationDelay: "-2s" }}
-        >
-          <div
-            style={{
-              width: 3, height: 3, borderRadius: "50%",
-              background: "rgba(249,115,22,0.5)",
-              boxShadow: "0 0 4px rgba(249,115,22,0.5)",
               transform: "translate(-50%, -50%)",
             }}
           />

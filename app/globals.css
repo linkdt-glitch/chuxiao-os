@@ -746,3 +746,48 @@ main .text-purple-700 { color: #c084fc !important; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Companion cat (晓晓) animations ────────────────── */
+
+@keyframes cat-walk-bob {
+  0%, 100% { transform: translateY(0); }
+  25%      { transform: translateY(-1.6px); }
+  50%      { transform: translateY(0); }
+  75%      { transform: translateY(-1px); }
+}
+
+@keyframes cat-blink {
+  0%, 88%, 100% { transform: scaleY(1); }
+  92%, 96%      { transform: scaleY(0.05); }
+}
+
+@keyframes cat-tail-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(8deg); }
+}
+
+@keyframes cat-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+
+@keyframes cat-z-float {
+  0%   { transform: translate(0, 0); opacity: 0.85; }
+  100% { transform: translate(4px, -14px); opacity: 0; }
+}
+
+@keyframes cat-heart-float {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  20%  { transform: translate(0, -4px) scale(1); opacity: 1; }
+  100% { transform: translate(0, -22px) scale(0.55); opacity: 0; }
+}
+
+@keyframes cat-hop {
+  0%, 100% { transform: translateY(0); }
+  40%      { transform: translateY(-5px); }
+  60%      { transform: translateY(-2px); }
+}
+
+@media print {
+  .cat-companion-root { display: none !important; }
+}

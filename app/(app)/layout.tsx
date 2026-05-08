@@ -6,6 +6,7 @@ import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
 import { AnnouncementBanner } from "@/components/dashboard/announcement-banner";
 import { SciFiEffects } from "@/components/effects/sci-fi-effects";
+import { CompanionCat } from "@/components/pet/companion-cat";
 import {
   getCurrentMember,
   getCurrentOrganization,
@@ -97,6 +98,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </EnergyProvider>
         <MobileTabbar modules={modules} />
       </div>
+      {/* 全局电子宠物：三花曼基康晓晓 */}
+      <CompanionCat />
     </div>
   );
 }

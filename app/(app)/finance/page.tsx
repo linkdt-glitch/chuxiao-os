@@ -42,38 +42,11 @@ export default async function FinancePage() {
       <>
         <PageHeader
           title="我的报销与记账"
-          description="记一笔（自己的日常收支）/ 申请报销（垫付费用找公司报销）/ 在下方查看报销审批反馈。"
+          description="申请报销（垫付费用找公司报销）/ 记一笔（自己的日常收支）/ 在下方查看报销审批反馈。"
         />
 
-        {/* 两类入口：记账 + 报销，每一类都有「一句话 AI」+「手动」两种方式 */}
+        {/* 两类入口：报销 + 记账，每一类都有「一句话 AI」+「手动」两种方式 */}
         <div className="grid gap-4 lg:grid-cols-2">
-          {/* 记账 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <NotebookPen className="h-4 w-4 text-orange-400" /> 记一笔
-              </CardTitle>
-              <CardDescription>
-                记录你的日常收入、支出、转账。无需审批，自动归到你的流水。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button asChild className="w-full justify-start">
-                <Link href="/finance/ai-bookkeeping">
-                  <Sparkles className="h-4 w-4" />
-                  <span>一句话 AI 记账</span>
-                  <span className="ml-auto text-xs opacity-70">说一句就生成</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start">
-                <Link href="/finance/records/new">
-                  <Plus className="h-4 w-4" />
-                  <span>手动记账</span>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* 报销 */}
           <Card>
             <CardHeader>
@@ -96,6 +69,33 @@ export default async function FinancePage() {
                 <Link href="/finance/reimbursements/new">
                   <Plus className="h-4 w-4" />
                   <span>手动新建报销</span>
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 记账 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <NotebookPen className="h-4 w-4 text-orange-400" /> 记一笔
+              </CardTitle>
+              <CardDescription>
+                记录你的日常收入、支出、转账。无需审批，自动归到你的流水。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button asChild className="w-full justify-start">
+                <Link href="/finance/ai-bookkeeping">
+                  <Sparkles className="h-4 w-4" />
+                  <span>一句话 AI 记账</span>
+                  <span className="ml-auto text-xs opacity-70">说一句就生成</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/finance/records/new">
+                  <Plus className="h-4 w-4" />
+                  <span>手动记账</span>
                 </Link>
               </Button>
             </CardContent>

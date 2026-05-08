@@ -1,29 +1,32 @@
 "use client";
 
 /**
- * 咪咪 —— 三花曼基康电子宠物
+ * 咪咪 —— 三花曼基康电子宠物 (cuteness pass v2)
  *
- * 一只用站点琥珀色线条画的曼基康（短腿）三花猫，跟着每个人在系统里走动、
- * 睡觉、撒娇。不会盖到正文：固定在视窗底部 padding 区（layout 已留 7rem 底
- * padding，移动端会自动让到 tabbar 上方）。
+ * 一只用站点琥珀色线条画的曼基康（短腿）三花猫，跟着每个人在系统底部
+ * padding 区里走动、坐发呆、打哈欠、睡觉、撒娇。
  *
- * 设计要点：
- *  - 暖琥珀色描线 + 奶黄色 fill，与品牌色契合
- *  - 三花特征：体侧橙色斑 + 黑色斑、头部橙色斑、耳廓橙色
- *  - 曼基康特征：短腿 + 圆滚身体 + 大头
- *  - 状态机：sit → walking → sit / sleeping / playing
- *    · 走动：随机方向，撞墙转身
- *    · 睡觉：蜷缩 + Z 飘浮 + 呼吸缩放
- *    · 撒娇：跳跃 + 爱心冒出
- *  - 交互：点击逗弄触发撒娇；hover 显示心情
- *  - 性能：document hidden 时暂停状态机；transition 省力
- *  - 无障碍：role=button + tabIndex；尊重 prefers-reduced-motion（CSS 已处理）
+ * 行为约束：
+ *  - 永远面向走动方向，不会"倒退跑"。撞到屏幕边缘 → 切回 sit，下一轮再
+ *    挑新方向（更像真猫：走到边停下、左右看看、再回头）
+ *  - 撞墙不会原地反弹翻转（避免动作生硬）
+ *  - 睡觉时身体不挪动；走动状态才推进 x 坐标
+ *
+ * 可爱化升级：
+ *  - 大眼睛 + 双高光（anime 反光感）
+ *  - 撒娇 / 悬停时显示脸颊红晕（pulse 淡入淡出）
+ *  - 撒娇跳跃用 Disney squash & stretch 12 法则
+ *  - 尾巴分两段，尾尖独立二次摆动（secondary motion）
+ *  - sit 时偶发耳朵抽动 / 尾巴翻飞 / 头微歪 micro-action
+ *  - hover 时眯眼笑 + 红晕，离开恢复
+ *  - 点击触发 jiggle 颤抖 + cute-hop + 4 颗大小不一的爱心
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type CatState = "sit" | "walking" | "sleeping" | "playing" | "yawning";
 type Direction = "left" | "right";
+type IdleQuirk = "calm" | "ear-twitch" | "tail-flick";
 
 const STATE_DURATIONS: Record<CatState, [number, number]> = {
   sit: [4500, 9500],
@@ -69,6 +72,9 @@ export function CompanionCat() {
   const [direction, setDirection] = useState<Direction>("right");
   const [position, setPosition] = useState(50);
   const [showHearts, setShowHearts] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [jiggling, setJiggling] = useState(false);
+  const [idleQuirk, setIdleQuirk] = useState<IdleQuirk>("calm");
   const [bottomOffset, setBottomOffset] = useState(20);
   const [hidden, setHidden] = useState(false);
 
@@ -78,6 +84,8 @@ export function CompanionCat() {
   const rafRef = useRef<number | null>(null);
   const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jiggleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quirkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -109,14 +117,14 @@ export function CompanionCat() {
       const next = nextStateFrom(stateRef.current);
       if (next === "walking") {
         const pos = positionRef.current;
-        // 离墙太近时朝相反方向走
-        const dir: Direction = pos < 15 ? "right" : pos > 85 ? "left" : Math.random() < 0.5 ? "left" : "right";
+        // 离墙太近时朝相反方向走，不会"撞墙倒退"
+        const dir: Direction = pos < 18 ? "right" : pos > 82 ? "left" : Math.random() < 0.5 ? "left" : "right";
         setDirection(dir);
       }
       if (next === "playing") {
         setShowHearts(true);
         if (heartTimerRef.current) clearTimeout(heartTimerRef.current);
-        heartTimerRef.current = setTimeout(() => setShowHearts(false), 2000);
+        heartTimerRef.current = setTimeout(() => setShowHearts(false), 2200);
       }
       setState(next);
     }, duration);
@@ -125,7 +133,7 @@ export function CompanionCat() {
     };
   }, [state]);
 
-  // 走动动画：rAF 沿 x 轴推进
+  // 走动：rAF 沿 x 轴推进；到达边界后切回 sit（不会原地翻转倒退）
   useEffect(() => {
     if (state !== "walking") {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -138,12 +146,16 @@ export function CompanionCat() {
       const speed = 5.5; // % per second of viewport width
       const dir = directionRef.current === "right" ? 1 : -1;
       let next = positionRef.current + dir * speed * dt;
-      if (next < 4) {
-        next = 4;
-        setDirection("right");
-      } else if (next > 96) {
-        next = 96;
-        setDirection("left");
+      const reachedEdge = next < 4 || next > 96;
+      if (reachedEdge) {
+        // 走到边停下，不会原地倒退
+        next = Math.max(4, Math.min(96, next));
+        positionRef.current = next;
+        setPosition(next);
+        if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
+        stateTimerRef.current = null;
+        setState("sit"); // 切到 sit 后下一轮 nextStateFrom 会按位置挑新方向
+        return;
       }
       positionRef.current = next;
       setPosition(next);
@@ -155,18 +167,46 @@ export function CompanionCat() {
     };
   }, [state]);
 
-  // 标签页隐藏时浏览器自动节流 setTimeout / 暂停 rAF，无需手动处理。
+  // sit 期间偶发 micro-action：耳朵抽动 / 尾巴翻飞
+  useEffect(() => {
+    if (state !== "sit") {
+      setIdleQuirk("calm");
+      if (quirkTimerRef.current) clearTimeout(quirkTimerRef.current);
+      return;
+    }
+    const schedule = () => {
+      const wait = 3500 + Math.random() * 4000;
+      quirkTimerRef.current = setTimeout(() => {
+        const r = Math.random();
+        const quirk: IdleQuirk = r < 0.5 ? "ear-twitch" : "tail-flick";
+        setIdleQuirk(quirk);
+        // 抽完恢复
+        setTimeout(() => setIdleQuirk("calm"), 700);
+        schedule();
+      }, wait);
+    };
+    schedule();
+    return () => {
+      if (quirkTimerRef.current) clearTimeout(quirkTimerRef.current);
+    };
+  }, [state]);
 
-  // 点击逗弄 → 立即撒娇
+  // 点击逗弄 → 立即撒娇（颤抖 + 跳跃 + 爱心）
   const handlePlay = useCallback(() => {
     if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
     setShowHearts(true);
     if (heartTimerRef.current) clearTimeout(heartTimerRef.current);
-    heartTimerRef.current = setTimeout(() => setShowHearts(false), 2000);
+    heartTimerRef.current = setTimeout(() => setShowHearts(false), 2200);
+    setJiggling(true);
+    if (jiggleTimerRef.current) clearTimeout(jiggleTimerRef.current);
+    jiggleTimerRef.current = setTimeout(() => setJiggling(false), 450);
     setState("playing");
   }, []);
 
   if (hidden) return null;
+
+  // 是否表现出"被关心"的样子（hover / play / yawn 时眯眼 + 红晕）
+  const showCute = hovering || state === "playing" || state === "yawning";
 
   return (
     <div
@@ -194,10 +234,12 @@ export function CompanionCat() {
             handlePlay();
           }
         }}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
         className="group relative inline-block select-none"
         style={{ pointerEvents: "auto", cursor: "pointer", outline: "none" }}
       >
-        {/* hearts (撒娇时冒出) */}
+        {/* hearts (撒娇时冒出，4 颗大小不一) */}
         {showHearts ? (
           <div
             aria-hidden
@@ -206,14 +248,15 @@ export function CompanionCat() {
               left: "50%",
               top: -6,
               transform: "translateX(-50%)",
-              width: 40,
-              height: 24,
+              width: 60,
+              height: 28,
               pointerEvents: "none"
             }}
           >
-            <span style={heartStyle(0, 0)}>❤</span>
-            <span style={heartStyle(-12, 0.3)}>❤</span>
-            <span style={heartStyle(12, 0.6)}>❤</span>
+            <span style={heartStyle(0, 0, 16)}>❤</span>
+            <span style={heartStyle(-14, 0.18, 12)}>❤</span>
+            <span style={heartStyle(14, 0.32, 12)}>❤</span>
+            <span style={heartStyle(-6, 0.55, 10)}>❤</span>
           </div>
         ) : null}
 
@@ -232,69 +275,107 @@ export function CompanionCat() {
         </span>
 
         {/* 猫本体 */}
-        <CatSvg state={state} direction={direction} />
+        <div
+          style={{
+            animation: jiggling ? "cat-jiggle 0.45s ease-in-out 1" : "none",
+            transformOrigin: "center bottom"
+          }}
+        >
+          <CatSvg state={state} direction={direction} idleQuirk={idleQuirk} showCute={showCute} />
+        </div>
       </div>
     </div>
   );
 }
 
-function heartStyle(offsetX: number, delay: number): React.CSSProperties {
+function heartStyle(offsetX: number, delay: number, size: number): React.CSSProperties {
   return {
     position: "absolute",
     left: `calc(50% + ${offsetX}px)`,
     top: 0,
     transform: "translateX(-50%)",
-    fontSize: 14,
+    fontSize: size,
     color: "#fb7185",
     filter: "drop-shadow(0 0 6px rgba(251,113,133,0.65))",
-    animation: "cat-heart-float 1.8s ease-out forwards",
+    animation: "cat-heart-float 1.9s ease-out forwards",
     animationDelay: `${delay}s`
   };
 }
 
-function CatSvg({ state, direction }: { state: CatState; direction: Direction }) {
+function CatSvg({
+  state,
+  direction,
+  idleQuirk,
+  showCute
+}: {
+  state: CatState;
+  direction: Direction;
+  idleQuirk: IdleQuirk;
+  showCute: boolean;
+}) {
   if (state === "sleeping") return <CatSleeping />;
-  return <CatStanding state={state} direction={direction} />;
+  return <CatStanding state={state} direction={direction} idleQuirk={idleQuirk} showCute={showCute} />;
 }
 
 /* ─── 站立 / 走动 / 坐 / 撒娇 ─────────────────────────────────────── */
 
-function CatStanding({ state, direction }: { state: CatState; direction: Direction }) {
+function CatStanding({
+  state,
+  direction,
+  idleQuirk,
+  showCute
+}: {
+  state: CatState;
+  direction: Direction;
+  idleQuirk: IdleQuirk;
+  showCute: boolean;
+}) {
   const flip = direction === "left" ? "scaleX(-1)" : "scaleX(1)";
   const bob =
     state === "walking"
       ? "cat-walk-bob 0.6s ease-in-out infinite"
       : state === "playing"
-        ? "cat-hop 0.7s ease-in-out infinite"
+        ? "cat-cute-hop 0.75s ease-in-out infinite"
         : state === "yawning"
           ? "cat-breathe 1.6s ease-in-out infinite"
           : "none";
 
+  // 偶发 micro-action 控制
+  const earTwitchAnim = idleQuirk === "ear-twitch" ? "cat-ear-twitch 0.7s ease-in-out 1" : "none";
+  const tailFlickAnim =
+    idleQuirk === "tail-flick"
+      ? "cat-tail-sway 0.5s ease-in-out 1"
+      : "cat-tail-sway 2.4s ease-in-out infinite";
+
   return (
     <svg
       viewBox="0 0 80 60"
-      width="64"
-      height="48"
+      width="68"
+      height="52"
       style={{
         overflow: "visible",
         transform: flip,
         animation: bob,
-        filter: "drop-shadow(0 3px 8px rgba(245,158,11,0.18))"
+        transformOrigin: "center bottom",
+        filter: "drop-shadow(0 3px 8px rgba(245,158,11,0.20))"
       }}
     >
       {/* 地面阴影 */}
       <ellipse cx="42" cy="58" rx="22" ry="2" fill="rgba(245,158,11,0.22)" />
 
-      {/* 尾巴 + 尾尖白绒 */}
-      <g style={{ transformOrigin: "22px 46px", animation: "cat-tail-sway 2.4s ease-in-out infinite" }}>
+      {/* 尾巴主段 + 尾尖二次摆动 */}
+      <g style={{ transformOrigin: "22px 46px", animation: tailFlickAnim }}>
         <path
-          d="M 22 46 C 8 42, 4 28, 14 18"
+          d="M 22 46 C 8 42, 4 28, 12 18"
           stroke="#f59e0b"
           strokeWidth="2.5"
           fill="none"
           strokeLinecap="round"
         />
-        <circle cx="14" cy="18" r="2" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" />
+        {/* 尾尖：白绒 + 独立二次摆动 */}
+        <g style={{ transformOrigin: "12px 18px", animation: "cat-tail-tip-wave 1.6s ease-in-out infinite" }}>
+          <circle cx="12" cy="18" r="2.2" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" />
+        </g>
       </g>
 
       {/* 后腿（半透露） */}
@@ -311,38 +392,89 @@ function CatStanding({ state, direction }: { state: CatState; direction: Directi
       {/* 前腿（短） */}
       <line x1="30" y1="54" x2="30" y2="58" stroke="#f59e0b" strokeWidth="2.4" strokeLinecap="round" />
       <line x1="50" y1="54" x2="50" y2="58" stroke="#f59e0b" strokeWidth="2.4" strokeLinecap="round" />
+      {/* 小肉垫 */}
+      <circle cx="30" cy="58.4" r="0.8" fill="#fb923c" />
+      <circle cx="50" cy="58.4" r="0.8" fill="#fb923c" />
 
       {/* 头 */}
-      <circle cx="60" cy="32" r="12" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
+      <circle cx="60" cy="32" r="13" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.8" />
 
-      {/* 耳朵 + 内耳橙色 */}
-      <path d="M 51 23 L 53 14 L 58 22 Z" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M 62 22 L 65 14 L 69 23 Z" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M 53 16 L 55 21 L 57 18 Z" fill="#fb923c" />
-      <path d="M 64 16 L 66 22 L 68 17 Z" fill="#fb923c" />
+      {/* 耳朵：耳根偶发抽动 */}
+      <g style={{ transformOrigin: "53px 23px", animation: earTwitchAnim }}>
+        <path d="M 50 23 L 52 13 L 58 22 Z" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M 52 15 L 54 21 L 56 18 Z" fill="#fb923c" />
+      </g>
+      <g style={{ transformOrigin: "67px 23px" }}>
+        <path d="M 62 22 L 66 12 L 70 23 Z" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M 64 15 L 66 22 L 68 17 Z" fill="#fb923c" />
+      </g>
 
       {/* 头部橙色斑（三花头花） */}
       <path d="M 53 25 Q 58 22, 63 27 Q 60 31, 54 30 Z" fill="#fb923c" opacity="0.7" />
 
-      {/* 眼睛（含眨眼），撒娇时眯眼笑 */}
-      {state === "playing" || state === "yawning" ? (
+      {/* 大眼睛（含眨眼），撒娇/悬停时眯眼笑 */}
+      {showCute ? (
         <>
-          <path d="M 53.5 32 Q 55 33.4, 56.5 32" stroke="#1e293b" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-          <path d="M 63.5 32 Q 65 33.4, 66.5 32" stroke="#1e293b" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+          <path d="M 53 31.5 Q 55 33.5, 57 31.5" stroke="#1e293b" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+          <path d="M 63 31.5 Q 65 33.5, 67 31.5" stroke="#1e293b" strokeWidth="1.3" fill="none" strokeLinecap="round" />
         </>
       ) : (
         <g style={{ transformOrigin: "60px 32px", animation: "cat-blink 5.5s ease-in-out infinite" }}>
-          <ellipse cx="55" cy="32" rx="1.2" ry="1.6" fill="#1e293b" />
-          <ellipse cx="65" cy="32" rx="1.2" ry="1.6" fill="#1e293b" />
-          <circle cx="55.4" cy="31.5" r="0.4" fill="#fef9c3" />
-          <circle cx="65.4" cy="31.5" r="0.4" fill="#fef9c3" />
+          {/* 眼白 */}
+          <ellipse cx="55" cy="32" rx="2.4" ry="2.8" fill="#fef9c3" stroke="#1e293b" strokeWidth="0.6" />
+          <ellipse cx="65" cy="32" rx="2.4" ry="2.8" fill="#fef9c3" stroke="#1e293b" strokeWidth="0.6" />
+          {/* 瞳孔 */}
+          <ellipse cx="55" cy="32.2" rx="1.4" ry="2.2" fill="#1e293b" />
+          <ellipse cx="65" cy="32.2" rx="1.4" ry="2.2" fill="#1e293b" />
+          {/* 双高光（大 + 小） */}
+          <circle cx="55.6" cy="31" r="0.7" fill="#ffffff" />
+          <circle cx="65.6" cy="31" r="0.7" fill="#ffffff" />
+          <circle cx="54.4" cy="32.6" r="0.3" fill="#ffffff" opacity="0.7" />
+          <circle cx="64.4" cy="32.6" r="0.3" fill="#ffffff" opacity="0.7" />
         </g>
       )}
 
-      {/* 鼻 + 嘴 */}
-      <path d="M 59 36 L 61 36 L 60 37.5 Z" fill="#fb923c" />
-      <path d="M 60 37.5 Q 58 39, 56 38" stroke="#1e293b" strokeWidth="0.8" fill="none" strokeLinecap="round" />
-      <path d="M 60 37.5 Q 62 39, 64 38" stroke="#1e293b" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+      {/* 脸颊红晕（cute 状态出现） */}
+      {showCute ? (
+        <>
+          <ellipse
+            cx="51"
+            cy="36"
+            rx="2.2"
+            ry="1.3"
+            fill="#fb7185"
+            opacity="0.55"
+            style={{ animation: "cat-blush-pulse 1.4s ease-in-out infinite" }}
+          />
+          <ellipse
+            cx="69"
+            cy="36"
+            rx="2.2"
+            ry="1.3"
+            fill="#fb7185"
+            opacity="0.55"
+            style={{ animation: "cat-blush-pulse 1.4s ease-in-out infinite" }}
+          />
+        </>
+      ) : null}
+
+      {/* 鼻 */}
+      <path d="M 59 35.5 L 61 35.5 L 60 37 Z" fill="#fb923c" />
+
+      {/* 嘴 :3 风（撒娇时张嘴笑） */}
+      {state === "playing" ? (
+        <>
+          <path d="M 60 37 Q 58 39.5, 56 38.5" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+          <path d="M 60 37 Q 62 39.5, 64 38.5" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+          {/* 小舌头 */}
+          <ellipse cx="60" cy="39" rx="1.2" ry="0.7" fill="#fb7185" />
+        </>
+      ) : (
+        <>
+          <path d="M 60 37 Q 58 39, 56 38" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+          <path d="M 60 37 Q 62 39, 64 38" stroke="#1e293b" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+        </>
+      )}
 
       {/* 胡须 */}
       <path d="M 53 35 L 47 34" stroke="#f59e0b" strokeWidth="0.6" strokeLinecap="round" />
@@ -359,8 +491,8 @@ function CatSleeping() {
   return (
     <svg
       viewBox="0 0 80 60"
-      width="64"
-      height="48"
+      width="68"
+      height="52"
       style={{
         overflow: "visible",
         animation: "cat-breathe 3.4s ease-in-out infinite",
@@ -405,7 +537,7 @@ function CatSleeping() {
       <text
         x="68"
         y="22"
-        fontSize="9"
+        fontSize="10"
         fill="#f59e0b"
         fontWeight="700"
         style={{ animation: "cat-z-float 2.6s ease-out infinite" }}
@@ -415,7 +547,7 @@ function CatSleeping() {
       <text
         x="74"
         y="14"
-        fontSize="6"
+        fontSize="7"
         fill="#f59e0b"
         fontWeight="700"
         opacity="0.6"

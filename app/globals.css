@@ -749,43 +749,81 @@ main .text-purple-700 { color: #c084fc !important; }
 
 /* ─── Companion cat (咪咪) animations ────────────────── */
 
+/* 走路：身体微 squash + 一颠一颠 */
 @keyframes cat-walk-bob {
-  0%, 100% { transform: translateY(0); }
-  25%      { transform: translateY(-1.6px); }
-  50%      { transform: translateY(0); }
-  75%      { transform: translateY(-1px); }
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  25%      { transform: translateY(-1.8px) scaleY(1.02); }
+  50%      { transform: translateY(0) scaleY(0.98); }
+  75%      { transform: translateY(-1px) scaleY(1.01); }
 }
 
+/* 撒娇跳跃：迪士尼 squash & stretch 12 法则 */
+@keyframes cat-cute-hop {
+  0%       { transform: translateY(0) scale(1, 1); }
+  18%      { transform: translateY(0) scale(1.08, 0.88); }   /* 蓄力下蹲 */
+  40%      { transform: translateY(-7px) scale(0.92, 1.12); } /* 腾空拉伸 */
+  60%      { transform: translateY(-3px) scale(0.96, 1.06); }
+  80%      { transform: translateY(0) scale(1.06, 0.92); }    /* 落地 squash */
+  100%     { transform: translateY(0) scale(1, 1); }
+}
+
+/* 眨眼：很短的 squeeze */
 @keyframes cat-blink {
   0%, 88%, 100% { transform: scaleY(1); }
   92%, 96%      { transform: scaleY(0.05); }
 }
 
+/* 尾巴主体摆动 */
 @keyframes cat-tail-sway {
-  0%, 100% { transform: rotate(-3deg); }
+  0%, 100% { transform: rotate(-4deg); }
+  50%      { transform: rotate(10deg); }
+}
+
+/* 尾巴尖单独二次摆动（secondary motion） */
+@keyframes cat-tail-tip-wave {
+  0%, 100% { transform: rotate(-6deg); }
   50%      { transform: rotate(8deg); }
 }
 
+/* 耳朵抽动一次（idle 偶发） */
+@keyframes cat-ear-twitch {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  20%           { transform: rotate(-12deg); }
+  40%           { transform: rotate(4deg); }
+}
+
+/* 呼吸：睡觉 / 哈欠 时整体缩放 */
 @keyframes cat-breathe {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.025); }
 }
 
+/* 睡觉时 z 飘起来 */
 @keyframes cat-z-float {
   0%   { transform: translate(0, 0); opacity: 0.85; }
   100% { transform: translate(4px, -14px); opacity: 0; }
 }
 
+/* 撒娇时爱心飘上去 */
 @keyframes cat-heart-float {
-  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
-  20%  { transform: translate(0, -4px) scale(1); opacity: 1; }
-  100% { transform: translate(0, -22px) scale(0.55); opacity: 0; }
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  18%  { transform: translate(0, -3px) scale(1); opacity: 1; }
+  100% { transform: translate(0, -24px) scale(0.55); opacity: 0; }
 }
 
-@keyframes cat-hop {
-  0%, 100% { transform: translateY(0); }
-  40%      { transform: translateY(-5px); }
-  60%      { transform: translateY(-2px); }
+/* 脸颊红晕淡入淡出 */
+@keyframes cat-blush-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+
+/* 颤抖一下（被点击瞬间） */
+@keyframes cat-jiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20%      { transform: rotate(-3deg); }
+  40%      { transform: rotate(3deg); }
+  60%      { transform: rotate(-2deg); }
+  80%      { transform: rotate(1deg); }
 }
 
 @media print {

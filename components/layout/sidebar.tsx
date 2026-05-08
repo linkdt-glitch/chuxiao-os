@@ -3,15 +3,52 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleDefinition } from "@/lib/types/core";
 import { iconMap, type IconName } from "@/components/layout/icons";
 import { NeuralPulse } from "@/components/effects/neural-pulse";
 
+const COLLAPSED_STORAGE_KEY = "sidebar-collapsed-sections";
+const DEFAULT_COLLAPSED = ["系统", "其他"];
+
+function readCollapsed(): string[] {
+  if (typeof window === "undefined") return DEFAULT_COLLAPSED;
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    if (!raw) return DEFAULT_COLLAPSED;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : DEFAULT_COLLAPSED;
+  } catch {
+    return DEFAULT_COLLAPSED;
+  }
+}
+
 export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAccess?: boolean; isEnabled?: boolean }> }) {
   const pathname = usePathname();
   const byKey = new Map(modules.map((m) => [m.key, m]));
+
+  // SSR-safe 默认值；mount 后从 localStorage 同步用户偏好。
+  const [collapsed, setCollapsed] = useState<string[]>(DEFAULT_COLLAPSED);
+  useEffect(() => {
+    setCollapsed(readCollapsed());
+  }, []);
+
+  function toggleSection(title: string) {
+    setCollapsed((prev) => {
+      const next = prev.includes(title)
+        ? prev.filter((t) => t !== title)
+        : [...prev, title];
+      try {
+        window.localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore — storage 不可用时仅本会话生效
+      }
+      return next;
+    });
+  }
 
   const sections = [
     { title: "核心",     keys: ["dashboard"] },
@@ -152,30 +189,25 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex-1 p-3">
         {sections.map((section) =>
           section.modules.length ? (
-            <div key={section.title} className="mb-5">
-              {/* Section label */}
-              <div className="mb-1.5 flex items-center gap-2 px-2">
-                <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40">
-                  {section.title}
-                </span>
-                <div
-                  className="flex-1"
-                  style={{ height: "1px", background: "rgba(249,115,22,0.09)" }}
-                />
-              </div>
+            <CollapsibleSection
+              key={section.title}
+              title={section.title}
+              collapsed={collapsed.includes(section.title)}
+              onToggle={() => toggleSection(section.title)}
+            >
               <NavSection modules={section.modules} pathname={pathname} />
-            </div>
+            </CollapsibleSection>
           ) : null
         )}
 
         {fallback.length ? (
-          <div className="mb-5">
-            <div className="mb-1.5 flex items-center gap-2 px-2">
-              <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40">其他</span>
-              <div className="flex-1" style={{ height: "1px", background: "rgba(249,115,22,0.09)" }} />
-            </div>
+          <CollapsibleSection
+            title="其他"
+            collapsed={collapsed.includes("其他")}
+            onToggle={() => toggleSection("其他")}
+          >
             <NavSection modules={fallback} pathname={pathname} />
-          </div>
+          </CollapsibleSection>
         ) : null}
         </div>
 
@@ -258,6 +290,46 @@ function NavSection({
         if (disabled) return <div key={module.id}>{content}</div>;
         return <Link key={module.id} href={module.route}>{content}</Link>;
       })}
+    </div>
+  );
+}
+
+/**
+ * 可折叠的 sidebar 分组：标题点击切换展开/收起，状态由父组件管理
+ * 并持久化到 localStorage（"系统"/"其他"默认折叠以减少视觉杂乱）。
+ */
+function CollapsibleSection({
+  title,
+  collapsed,
+  onToggle,
+  children
+}: {
+  title: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        className="group mb-1.5 flex w-full items-center gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-orange-500/[0.05]"
+      >
+        <ChevronDown
+          className="h-3 w-3 shrink-0 text-orange-500/50 transition-transform group-hover:text-orange-400"
+          style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+        />
+        <span className="font-mono text-[10px] font-medium tracking-[0.22em] text-orange-500/40 group-hover:text-orange-400/70">
+          {title}
+        </span>
+        <div
+          className="flex-1"
+          style={{ height: "1px", background: "rgba(249,115,22,0.09)" }}
+        />
+      </button>
+      {!collapsed ? children : null}
     </div>
   );
 }

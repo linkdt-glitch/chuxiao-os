@@ -1,5 +1,6 @@
 import { createFinanceRecordAction } from "@/app/(app)/finance/actions";
 import { Button } from "@/components/ui/button";
+import { FormPendingOverlay } from "@/components/ui/form-pending-overlay";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +46,7 @@ export function FinanceRecordForm({
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-4 md:grid-cols-2">
+          <FormPendingOverlay label="正在保存记账..." estimatedSeconds={2} />
           {defaults?.parse_log_id ? <input type="hidden" name="parse_log_id" value={defaults.parse_log_id} /> : null}
           <input type="hidden" name="currency" value={defaults?.currency ?? "CNY"} />
           <input type="hidden" name="quantity" value={defaults?.quantity ?? 1} />

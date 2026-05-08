@@ -747,7 +747,7 @@ main .text-purple-700 { color: #c084fc !important; }
   }
 }
 
-/* ─── Companion cat (晓晓) animations ────────────────── */
+/* ─── Companion cat (咪咪) animations ────────────────── */
 
 @keyframes cat-walk-bob {
   0%, 100% { transform: translateY(0); }

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 晓晓 —— 三花曼基康电子宠物
+ * 咪咪 —— 三花曼基康电子宠物
  *
  * 一只用站点琥珀色线条画的曼基康（短腿）三花猫，跟着每个人在系统里走动、
  * 睡觉、撒娇。不会盖到正文：固定在视窗底部 padding 区（layout 已留 7rem 底
@@ -186,7 +186,7 @@ export function CompanionCat() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="逗弄晓晓（三花曼基康）"
+        aria-label="逗弄咪咪（三花曼基康）"
         onClick={handlePlay}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -228,7 +228,7 @@ export function CompanionCat() {
             backdropFilter: "blur(6px)"
           }}
         >
-          晓晓 · {MOOD_LABEL[state]}
+          咪咪 · {MOOD_LABEL[state]}
         </span>
 
         {/* 猫本体 */}

@@ -98,7 +98,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </EnergyProvider>
         <MobileTabbar modules={modules} />
       </div>
-      {/* 全局电子宠物：三花曼基康晓晓 */}
+      {/* 全局电子宠物：三花曼基康咪咪 */}
       <CompanionCat />
     </div>
   );

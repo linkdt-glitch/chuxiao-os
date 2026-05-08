@@ -117,11 +117,9 @@ export default async function FinancePage() {
   const [summary, executiveDashboard, pendingApprovalRecords] = await Promise.all([
     getFinanceSummary(),
     getFinanceExecutiveDashboard(),
-    // 顶部「财务审批聚光灯」用：拉 5 条优先级最高的待审记录
+    // 顶部「财务审批入口」只用 count + total，不展开列表 —— 详情在工作台
     getFinanceRecords({
-      status: "pending_approval",
-      limit: 5,
-      include_attachments: true
+      status: "pending_approval"
     })
   ]);
   const pendingApprovalAmount = pendingApprovalRecords.reduce(
@@ -171,9 +169,8 @@ export default async function FinancePage() {
         }
       />
 
-      {/* ⭐ 财务审批聚光灯 — owner/admin 进财务中心第一眼看到的最重要任务 */}
+      {/* ⭐ 财务审批入口 — 只显示统计 + 大按钮，详细处理在工作台里做 */}
       <ApprovalSpotlight
-        records={pendingApprovalRecords}
         totalCount={summary.pendingReimbursements}
         totalAmount={pendingApprovalAmount}
       />

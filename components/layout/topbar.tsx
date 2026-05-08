@@ -1,16 +1,20 @@
 import Image from "next/image";
 import { BackButton } from "@/components/layout/back-button";
-import { UserMenu } from "@/components/layout/user-menu";
+import { UserMenu, type ImpersonationCandidate } from "@/components/layout/user-menu";
 import type { Organization, OrganizationMember, UserProfile } from "@/lib/types/core";
 
 export function Topbar({
   organization,
   member,
   user,
+  impersonating = false,
+  impersonationCandidates = []
 }: {
   organization: Organization;
   member: OrganizationMember;
   user: UserProfile;
+  impersonating?: boolean;
+  impersonationCandidates?: ImpersonationCandidate[];
 }) {
   return (
     <header
@@ -50,11 +54,13 @@ export function Topbar({
         </div>
       </div>
 
-      {/* Right: user menu (role chip + name + email + dropdown w/ logout) */}
+      {/* Right: user menu (role chip + name + email + dropdown w/ logout / impersonate) */}
       <UserMenu
         userName={user.full_name ?? user.email ?? "User"}
         userEmail={user.email ?? ""}
         roleKey={member.role?.key ?? "member"}
+        impersonating={impersonating}
+        impersonationCandidates={impersonationCandidates}
       />
     </header>
   );

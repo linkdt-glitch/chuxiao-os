@@ -148,7 +148,7 @@ const rolePermissionMap: Record<string, string[]> = {
   ],
   /**
    * 普通员工（member）只能看到：
-   *   业务模块: 财务能量中心 / 计划任务中心 / AI 创新实验中心
+   *   业务模块: 任务计划中心 / AI 风暴创新实验室 / 财务能量中心
    *   平台:     组织大脑库（knowledge）
    *   其他:     文件中心
    * 不显示：老板驾驶舱 / 组织护航盾 / 进化 / 能量 / 系统设置 / 组织管理
@@ -165,12 +165,12 @@ const rolePermissionMap: Record<string, string[]> = {
     "finance.expense.view",
     "finance.expense.create",
     "finance.expense.update",
-    // 业务模块 - 计划任务中心
+    // 业务模块 - 任务计划中心
     "projects.view",
     "tasks.view",
     "tasks.comment",
     "tasks.files",
-    // 业务模块 - AI 创新实验中心
+    // 业务模块 - AI 风暴创新实验室
     "ai_workforce.view",
     "agent.view",
     "agent.run",

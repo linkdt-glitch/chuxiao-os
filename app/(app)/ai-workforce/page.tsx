@@ -31,7 +31,7 @@ export default async function AIWorkforcePage() {
   return (
     <>
       <PageHeader
-        title="AI 创新实验中心"
+        title="AI 风暴创新实验室"
         description="管理 AI 员工、Prompt、AI 调用、权限等级、运行记录和 AI 审批。让 AI 成为可管理、可评估、可进化、可控风险的数字同事。"
         action={
           <div className="flex flex-wrap gap-2">

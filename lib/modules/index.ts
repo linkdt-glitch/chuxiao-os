@@ -9,8 +9,8 @@ import { getRolePermissionKeys } from "@/lib/permissions";
  */
 const MODULE_NAME_REMAP: Record<string, string> = {
   finance: "财务能量中心",
-  projects: "计划任务中心",
-  ai_workforce: "AI 创新实验中心"
+  projects: "任务计划中心",
+  ai_workforce: "AI 风暴创新实验室"
 };
 
 export async function getEnabledModules() {

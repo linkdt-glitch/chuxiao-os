@@ -115,26 +115,51 @@ export function SciFiEffects() {
 
     if (N > 0) drawParticles();
 
-    // ── 2. Cursor glow orb ──────────────────────────────────────────
-    const ORB = 400;
+    // ── 2. Magnetic cursor — 小圆点跟随 + hover 时变成 outlined ring
+    // 替代原来 400px 橙色 glow orb（太显眼）。Apple Vision / Stripe 风格：
+    //   · 8px 实心小点几乎实时跟手
+    //   · 12px 外圈描线略带迟滞，形成"双层跟随"
+    //   · 鼠标悬停 button/link 时内点缩小淡出，外圈胀到 36px outlined ring
+    //   · 触屏 / pointer:coarse 设备完全不渲染
+    const isCoarsePointer = typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches;
+
+    // 内层实心点（命名沿用 orb 兼容下面 cleanup 逻辑）
     const orb = document.createElement("div");
-    orb.id = "__sci_orb";
+    orb.id = "__sci_cursor_dot";
     orb.style.cssText = `
       position: fixed; top: 0; left: 0; z-index: 9990;
-      width: ${ORB}px; height: ${ORB}px; border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       pointer-events: none; user-select: none;
-      background: radial-gradient(circle,
-        rgba(249,115,22,0.10) 0%,
-        rgba(249,115,22,0.05) 40%,
-        transparent 70%
-      );
+      background: rgba(249, 115, 22, 0.6);
       transform: translate(-9999px, -9999px);
-      will-change: transform;
-      transition: background 0.35s ease;
+      will-change: transform, opacity, width, height;
+      transition: width 220ms ease, height 220ms ease, opacity 220ms ease, background 220ms ease;
+      display: ${isCoarsePointer ? "none" : "block"};
     `;
     document.body.appendChild(orb);
 
-    let ox = -9999, oy = -9999, tx = -9999, ty = -9999;
+    // 外层描线圆环（hover 时显示）
+    const orbRing = document.createElement("div");
+    orbRing.id = "__sci_cursor_ring";
+    orbRing.style.cssText = `
+      position: fixed; top: 0; left: 0; z-index: 9989;
+      width: 12px; height: 12px; border-radius: 50%;
+      pointer-events: none; user-select: none;
+      border: 1.5px solid rgba(249, 115, 22, 0.18);
+      background: transparent;
+      transform: translate(-9999px, -9999px);
+      will-change: transform, width, height, border-color, background;
+      transition: width 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  height 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  border-color 220ms ease, background 220ms ease;
+      display: ${isCoarsePointer ? "none" : "block"};
+    `;
+    document.body.appendChild(orbRing);
+
+    let dotX = -9999, dotY = -9999;
+    let ringX = -9999, ringY = -9999;
+    let tx = -9999, ty = -9999;
     let boosted = false;
     let orbRaf: number;
 
@@ -143,9 +168,23 @@ export function SciFiEffects() {
     const setBoost = (on: boolean) => {
       if (boosted === on) return;
       boosted = on;
-      orb.style.background = on
-        ? `radial-gradient(circle, rgba(249,115,22,0.20) 0%, rgba(249,115,22,0.10) 40%, transparent 70%)`
-        : `radial-gradient(circle, rgba(249,115,22,0.10) 0%, rgba(249,115,22,0.05) 40%, transparent 70%)`;
+      if (on) {
+        orb.style.width = "5px";
+        orb.style.height = "5px";
+        orb.style.background = "rgba(249, 115, 22, 0.9)";
+        orbRing.style.width = "36px";
+        orbRing.style.height = "36px";
+        orbRing.style.borderColor = "rgba(249, 115, 22, 0.55)";
+        orbRing.style.background = "rgba(249, 115, 22, 0.06)";
+      } else {
+        orb.style.width = "8px";
+        orb.style.height = "8px";
+        orb.style.background = "rgba(249, 115, 22, 0.6)";
+        orbRing.style.width = "12px";
+        orbRing.style.height = "12px";
+        orbRing.style.borderColor = "rgba(249, 115, 22, 0.18)";
+        orbRing.style.background = "transparent";
+      }
     };
 
     const onMouseOver = (e: MouseEvent) => {
@@ -155,9 +194,15 @@ export function SciFiEffects() {
     };
 
     const animateOrb = () => {
-      ox += (tx - ox) * 0.07;
-      oy += (ty - oy) * 0.07;
-      orb.style.transform = `translate(${ox - ORB / 2}px, ${oy - ORB / 2}px)`;
+      // 实心点紧贴光标 (0.35)，描线圈略迟滞 (0.18) 形成"双层跟随"
+      dotX += (tx - dotX) * 0.35;
+      dotY += (ty - dotY) * 0.35;
+      ringX += (tx - ringX) * 0.18;
+      ringY += (ty - ringY) * 0.18;
+      const dw = parseFloat(orb.style.width) || 8;
+      orb.style.transform = `translate(${dotX - dw / 2}px, ${dotY - dw / 2}px)`;
+      const rw = parseFloat(orbRing.style.width) || 12;
+      orbRing.style.transform = `translate(${ringX - rw / 2}px, ${ringY - rw / 2}px)`;
       orbRaf = requestAnimationFrame(animateOrb);
     };
 
@@ -241,6 +286,7 @@ export function SciFiEffects() {
       cancelAnimationFrame(orbRaf);
       canvas.remove();
       orb.remove();
+      orbRing.remove();
       style.remove();
     };
   }, []);

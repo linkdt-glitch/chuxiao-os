@@ -224,7 +224,7 @@ function FeatureCard({
         <CardDescription className="mt-3">{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button asChild size="lg" className="w-full justify-between">
+        <Button asChild className="w-full justify-between py-6">
           <Link href={ctaHref}>
             <span>{ctaLabel}</span>
             <ArrowRight className="h-4 w-4" />

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createFinanceCategoryAction } from "@/app/(app)/finance/actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { getFinanceCategories } from "@/lib/finance/categories";
+import { canViewAllFinance } from "@/lib/finance/permissions";
 
 export default async function FinanceCategoriesPage() {
+  // 类目管理仅 owner / admin 可见（普通成员通过下拉框选用即可）
+  if (!(await canViewAllFinance())) {
+    redirect("/finance");
+  }
   const categories = await getFinanceCategories("all");
 
   return (

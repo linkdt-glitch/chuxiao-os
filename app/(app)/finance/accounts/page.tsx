@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createFinanceAccountAction } from "@/app/(app)/finance/actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getFinanceAccounts } from "@/lib/finance/accounts";
+import { canViewAllFinance } from "@/lib/finance/permissions";
 
 export default async function FinanceAccountsPage() {
+  // 公司账户与余额仅 owner / admin 可见
+  if (!(await canViewAllFinance())) {
+    redirect("/finance");
+  }
   const accounts = await getFinanceAccounts();
 
   return (

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getFinanceCategories } from "@/lib/finance/categories";
+import { canApproveFinance } from "@/lib/finance/permissions";
 import { getFinanceRecords } from "@/lib/finance/records";
 import type { FinanceRecordStatus, FinanceRecordType } from "@/lib/finance/types";
 
@@ -21,7 +22,7 @@ function money(value: number) {
 
 export default async function FinanceRecordsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const [records, categories] = await Promise.all([
+  const [records, categories, canApprove] = await Promise.all([
     getFinanceRecords({
       record_type: (params.type ?? "all") as FinanceRecordType | "all",
       status: (params.status ?? "all") as FinanceRecordStatus | "all",
@@ -29,7 +30,8 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
       date_to: params.date_to,
       category_id: params.category_id
     }),
-    getFinanceCategories("all")
+    getFinanceCategories("all"),
+    canApproveFinance()
   ]);
   const booked = records.filter((record) => ["approved", "paid"].includes(record.status));
   const income = booked.filter((record) => record.record_type === "income").reduce((sum, record) => sum + Number(record.amount), 0);
@@ -167,7 +169,7 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
           </form>
         </CardContent>
       </Card>
-      {pendingRecords.length ? (
+      {pendingRecords.length && canApprove ? (
         <Card className="mb-4 border-amber-200/80 bg-amber-50/30">
           <CardHeader>
             <CardTitle>财务审批</CardTitle>

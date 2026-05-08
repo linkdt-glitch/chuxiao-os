@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ChartNoAxesCombined, Download, Landmark, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { canViewAllFinance } from "@/lib/finance/permissions";
 import { getCashflowTrend, getCategoryExpenseBreakdown, getMonthlyIncomeExpense } from "@/lib/finance/reports";
 
 function money(value: number) {
@@ -21,6 +23,10 @@ function Bar({ value, max, tone }: { value: number; max: number; tone: string })
 }
 
 export default async function FinanceReportsPage() {
+  // 公司财务报表只对 owner / admin 开放，普通成员重定向回 /finance
+  if (!(await canViewAllFinance())) {
+    redirect("/finance");
+  }
   const [monthly, breakdown, cashflow] = await Promise.all([
     getMonthlyIncomeExpense(),
     getCategoryExpenseBreakdown(),

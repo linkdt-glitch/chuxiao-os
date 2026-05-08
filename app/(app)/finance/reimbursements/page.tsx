@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Download, Plus, Settings, WalletCards } from "lucide-react";
 import { ExpenseApprovalWorkbench } from "@/components/expenses/expense-approval-workbench";
 import { ExpenseMetricCard } from "@/components/expenses/expense-shared";
@@ -10,12 +11,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getCurrentMember } from "@/lib/auth";
 import { getDepartments, getExpenseDashboard, money } from "@/lib/finance/expenses";
+import { canViewAllFinance } from "@/lib/finance/permissions";
 
 export default async function ReimbursementsPage({
   searchParams
 }: {
   searchParams?: Promise<Record<string, string | undefined>>;
 }) {
+  // 普通成员（非 owner / admin）不应该看到审批工作台 / 公司全量报销列表，
+  // 跳到 /finance 首页看自己的"我的报销"面板
+  if (!(await canViewAllFinance())) {
+    redirect("/finance");
+  }
   const params = (await searchParams) ?? {};
   const [dashboard, departments, member] = await Promise.all([
     getExpenseDashboard(),

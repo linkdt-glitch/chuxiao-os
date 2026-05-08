@@ -2,10 +2,14 @@ import Link from "next/link";
 import { ArrowRight, Download, FileSpreadsheet, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
 import { FinanceExecutiveDashboard } from "@/components/finance/finance-executive-dashboard";
 import { FinanceRecordsTable } from "@/components/finance/finance-records-table";
+import { MySubmissionsPanel } from "@/components/finance/my-submissions-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentMember } from "@/lib/auth";
+import { getExpenseReports } from "@/lib/finance/expenses";
 import { canViewAllFinance } from "@/lib/finance/permissions";
+import { getFinanceRecords } from "@/lib/finance/records";
 import { getFinanceExecutiveDashboard, getFinanceSummary } from "@/lib/finance/reports";
 
 function money(value: number) {
@@ -13,11 +17,65 @@ function money(value: number) {
 }
 
 export default async function FinancePage() {
-  const [summary, showExecutiveDashboard] = await Promise.all([
-    getFinanceSummary(),
-    canViewAllFinance()
+  const [showFullDashboard, member] = await Promise.all([
+    canViewAllFinance(),
+    getCurrentMember()
   ]);
-  const executiveDashboard = showExecutiveDashboard ? await getFinanceExecutiveDashboard() : null;
+
+  // ────────────────────────────────────────────────────────────────────────
+  // 普通成员视图：不展示公司全局数据 / 审批系统，只看自己提交过什么、状态如何、为什么被驳回
+  // ────────────────────────────────────────────────────────────────────────
+  if (!showFullDashboard) {
+    const [myRecords, myReports] = await Promise.all([
+      // getFinanceRecords 内置 finance scope，member 自动只拿到 submitted_by 或 member_id 是自己的记录
+      getFinanceRecords({ limit: 50 }),
+      getExpenseReports({ limit: 50 })
+    ]);
+    // expense reports 没有自动 scope，需要在这里按 member.id 过滤
+    const myOwnReports = myReports.filter((report) => report.submitter_member_id === member.id);
+    // 只保留报销 / 报销相关的记账（过滤掉日常支出，避免噪音）
+    const reimbursementRecords = myRecords.filter(
+      (record) => record.record_type === "reimbursement" || record.reimbursement_required
+    );
+
+    return (
+      <>
+        <PageHeader
+          title="我的报销与记账"
+          description="查看你自己提交的报销 / 支出 / 记账：哪些已通过、哪些还在审批、哪些被驳回（含原因）。"
+          action={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button asChild>
+                <Link href="/finance/ai-bookkeeping">
+                  <Sparkles className="h-4 w-4" />一句话记账
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/finance/records/new">
+                  <Plus className="h-4 w-4" />手动记账
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/finance/reimbursements/new">
+                  <ReceiptText className="h-4 w-4" />新建报销
+                </Link>
+              </Button>
+            </div>
+          }
+        />
+
+        <MySubmissionsPanel records={reimbursementRecords} expenseReports={myOwnReports} />
+      </>
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // 创始人 / 管理员视图：完整仪表盘
+  // ────────────────────────────────────────────────────────────────────────
+  const [summary, executiveDashboard] = await Promise.all([
+    getFinanceSummary(),
+    getFinanceExecutiveDashboard()
+  ]);
   const cards = [
     { label: "本月收入", value: money(summary.monthIncome), tone: "text-emerald-700", hint: "已批准 / 已入账收入" },
     { label: "本月支出", value: money(summary.monthExpense), tone: "text-red-700", hint: "已批准 / 已入账支出" },
@@ -77,12 +135,10 @@ export default async function FinancePage() {
         ))}
       </div>
 
-      {/* 经营洞察（仅高权限） */}
-      {executiveDashboard ? (
-        <div className="mt-6">
-          <FinanceExecutiveDashboard data={executiveDashboard} />
-        </div>
-      ) : null}
+      {/* 经营洞察 */}
+      <div className="mt-6">
+        <FinanceExecutiveDashboard data={executiveDashboard} />
+      </div>
 
       {/* 最近流水 + 待审批 */}
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">

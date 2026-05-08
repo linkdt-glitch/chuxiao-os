@@ -79,13 +79,13 @@ export function WelcomeHero({
       <div className="relative z-10 flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
         <div className="min-w-0">
           <div
-            className="font-mono text-[10px] tracking-[0.26em] text-orange-700/85"
+            className="font-mono text-[11px] font-semibold tracking-[0.24em] text-orange-700"
             style={{ animation: "home-greet-in 500ms cubic-bezier(0.2,0.8,0.2,1) both" }}
           >
             {organizationName.toUpperCase()}
           </div>
           <h1
-            className="mt-1 truncate text-[22px] font-semibold tracking-tight text-slate-900 sm:text-[26px]"
+            className="mt-1.5 truncate text-[26px] font-semibold tracking-tight text-slate-900 sm:text-[32px]"
             style={{ animation: "home-greet-in 600ms cubic-bezier(0.2,0.8,0.2,1) 80ms both" }}
           >
             <span
@@ -94,13 +94,13 @@ export function WelcomeHero({
             >
               {greeting}
             </span>
-            <span className="ml-2 text-slate-800">{userName}</span>
-            <span className="ml-2 text-[18px] text-slate-400 sm:text-[20px]">·</span>
-            <span className="ml-2 text-[15px] font-normal text-slate-600 sm:text-[16px]">欢迎回家</span>
+            <span className="ml-2 text-slate-900">{userName}</span>
+            <span className="ml-2 text-[20px] text-slate-300 sm:text-[24px]">·</span>
+            <span className="ml-2 text-[16px] font-medium text-slate-600 sm:text-[18px]">欢迎回家</span>
           </h1>
         </div>
         <div
-          className="flex shrink-0 items-center gap-2 self-start rounded-full border border-orange-300 bg-white/80 px-3 py-1 font-mono text-[11px] tabular-nums tracking-wider text-orange-700 sm:self-center"
+          className="flex shrink-0 items-center gap-2 self-start rounded-full border border-orange-300 bg-white px-3 py-1.5 font-mono text-[12px] font-medium tabular-nums tracking-wider text-orange-700 sm:self-center"
           style={{ animation: "home-greet-in 700ms cubic-bezier(0.2,0.8,0.2,1) 200ms both" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />

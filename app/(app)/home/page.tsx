@@ -38,17 +38,17 @@ export default async function HomePage({
   return (
     <>
       {showNotice ? (
-        <div className="mb-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.10] px-3 py-1.5 text-[12px] text-emerald-200">
+        <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-800">
           已保存。所有成员的首页会自动同步。
         </div>
       ) : null}
       {showDemoNotice ? (
-        <div className="mb-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.10] px-3 py-1.5 text-[12px] text-amber-200">
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] font-medium text-amber-800">
           演示模式没有连接数据库，更改不会持久化。
         </div>
       ) : null}
       {params.error ? (
-        <div className="mb-2 rounded-xl border border-rose-500/25 bg-rose-500/[0.10] px-3 py-1.5 text-[12px] text-rose-200">
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] font-medium text-rose-800">
           {params.error}
         </div>
       ) : null}
@@ -60,10 +60,10 @@ export default async function HomePage({
         {/* 2) 使命 + 愿景 — 顶部并排 2 列，紧凑短句 */}
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard icon={Compass} label="使命" accent="amber" delayMs={0} compact>
-            <p className="text-[13.5px] leading-relaxed text-slate-900">{content.mission ?? "—"}</p>
+            <p className="text-[15px] leading-relaxed text-slate-800">{content.mission ?? "—"}</p>
           </SectionCard>
           <SectionCard icon={Telescope} label="愿景" accent="orange" delayMs={60} compact>
-            <p className="text-[13.5px] leading-relaxed text-slate-900">{content.vision ?? "—"}</p>
+            <p className="text-[15px] leading-relaxed text-slate-800">{content.vision ?? "—"}</p>
           </SectionCard>
         </div>
 
@@ -76,16 +76,16 @@ export default async function HomePage({
                   key={`${value.title}-${i}`}
                   className="flex items-baseline gap-3 py-1.5 first:pt-0 last:pb-0"
                 >
-                  <span className="w-5 shrink-0 font-mono text-[10px] tabular-nums text-amber-300/80">
+                  <span className="w-5 shrink-0 font-mono text-[11px] font-bold tabular-nums text-amber-600">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="shrink-0 text-[12.5px] font-medium text-slate-900">
+                  <span className="shrink-0 text-[14px] font-semibold text-slate-900">
                     {value.title}
                   </span>
                   {value.description ? (
                     <>
-                      <span className="shrink-0 text-slate-600">·</span>
-                      <span className="text-[12px] leading-relaxed text-slate-400">
+                      <span className="shrink-0 text-slate-300">·</span>
+                      <span className="text-[13px] leading-relaxed text-slate-600">
                         {value.description}
                       </span>
                     </>
@@ -112,19 +112,19 @@ export default async function HomePage({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <span className="truncate text-[12.5px] font-medium text-slate-900">
+                        <span className="truncate text-[14px] font-semibold text-slate-900">
                           {goal.title}
                         </span>
                       </div>
                       {goal.target_date ? (
-                        <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-emerald-200">
+                        <span className="shrink-0 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-emerald-700">
                           {formatDate(goal.target_date)}
                         </span>
                       ) : null}
                     </div>
                     {typeof goal.progress === "number" ? (
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-200">
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -133,7 +133,7 @@ export default async function HomePage({
                             }}
                           />
                         </div>
-                        <span className="font-mono text-[10px] tabular-nums text-emerald-300">
+                        <span className="font-mono text-[12px] font-semibold tabular-nums text-emerald-700">
                           {goal.progress}%
                         </span>
                       </div>
@@ -141,11 +141,11 @@ export default async function HomePage({
                   </li>
                 ))}
                 {content.goals.length > 3 ? (
-                  <li className="text-[10px] text-slate-500">还有 {content.goals.length - 3} 个目标…</li>
+                  <li className="text-[12px] text-slate-500">还有 {content.goals.length - 3} 个目标…</li>
                 ) : null}
               </ul>
             ) : (
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-[13px] text-slate-600">
                 暂未设定近期目标。{isOwner ? "去「编辑首页」设定。" : ""}
               </p>
             )}
@@ -153,21 +153,21 @@ export default async function HomePage({
 
           <SectionCard icon={Megaphone} label="公告栏" accent="rose" delayMs={240} compact>
             {content.announcements.length ? (
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {content.announcements.slice(0, 4).map((line, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-rose-400" />
-                    <span className="text-[12.5px] leading-relaxed text-slate-700">{line}</span>
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
+                    <span className="text-[13.5px] leading-relaxed text-slate-700">{line}</span>
                   </li>
                 ))}
                 {content.announcements.length > 4 ? (
-                  <li className="text-[10px] text-slate-500">
+                  <li className="text-[12px] text-slate-500">
                     还有 {content.announcements.length - 4} 条…
                   </li>
                 ) : null}
               </ul>
             ) : (
-              <p className="text-[12px] text-muted-foreground">没有最新公告。</p>
+              <p className="text-[13px] text-slate-600">没有最新公告。</p>
             )}
           </SectionCard>
         </div>
@@ -212,11 +212,11 @@ function SectionCard({
     rose: { dot: "bg-rose-500", iconBg: "bg-rose-100", iconText: "text-rose-700", border: "border-slate-200" }
   }[accent];
 
-  const padding = compact ? "p-3" : "p-4";
-  const headerMb = compact ? "mb-2" : "mb-3";
+  const padding = compact ? "p-4" : "p-5";
+  const headerMb = compact ? "mb-2.5" : "mb-3";
   const iconSize = compact ? "h-6 w-6" : "h-7 w-7";
   const iconInner = compact ? "h-3 w-3" : "h-3.5 w-3.5";
-  const labelSize = compact ? "text-[10px]" : "text-[11px]";
+  const labelSize = compact ? "text-[11px]" : "text-[12px]";
 
   return (
     <section
@@ -230,7 +230,7 @@ function SectionCard({
         <div className={`grid ${iconSize} place-items-center rounded-lg ${palette.iconBg}`}>
           <Icon className={`${iconInner} ${palette.iconText}`} />
         </div>
-        <span className={`${labelSize} font-medium uppercase tracking-[0.18em] text-slate-500`}>
+        <span className={`${labelSize} font-semibold uppercase tracking-[0.16em] text-slate-700`}>
           {label}
         </span>
         <span className={`ml-auto h-1.5 w-1.5 rounded-full ${palette.dot}`} />

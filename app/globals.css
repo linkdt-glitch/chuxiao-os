@@ -842,3 +842,36 @@ main .text-purple-700 { color: #c084fc !important; }
 @media print {
   .cat-companion-root { display: none !important; }
 }
+
+/* ─── 首页欢迎 hero 动画 ────────────────────────────────── */
+
+@keyframes home-greet-in {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes home-sun-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes home-rays-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes home-particle-drift {
+  0%   { transform: translateY(0) translateX(0); opacity: 0.4; }
+  50%  { transform: translateY(-14px) translateX(6px); opacity: 1; }
+  100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+}
+
+/* ── 首页 section 卡片入场 */
+@keyframes home-card-in {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.home-card-in {
+  animation: home-card-in 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}

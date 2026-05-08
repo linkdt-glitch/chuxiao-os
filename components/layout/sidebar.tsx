@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleDefinition } from "@/lib/types/core";
@@ -146,6 +146,9 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
       {/* Navigation */}
       <nav className="relative flex h-[calc(100vh-5rem)] flex-col overflow-y-auto scrollbar-thin">
         <div className="flex-1 p-3">
+        {/* 首页 — 所有人可见，永远在最顶部 */}
+        <HomeNavLink pathname={pathname} />
+
         {sections.map((section) =>
           section.modules.length ? (
             <CollapsibleSection
@@ -289,6 +292,50 @@ function CollapsibleSection({
         />
       </button>
       {!collapsed ? children : null}
+    </div>
+  );
+}
+
+/**
+ * 首页 nav —— 所有角色可见，固定在 sidebar 最顶部。
+ * 比 NavSection 简单：不读 modules，不需要权限判断。
+ */
+function HomeNavLink({ pathname }: { pathname: string }) {
+  const active = pathname === "/home" || pathname.startsWith("/home/");
+  return (
+    <div className="mb-4">
+      <Link href="/home">
+        <div
+          className={cn(
+            "group relative flex min-h-[2.4rem] items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm transition-all duration-200",
+            active ? "text-orange-400" : "text-slate-300"
+          )}
+          style={
+            active
+              ? {
+                  background: "rgba(249,115,22,0.09)",
+                  borderLeft: "2px solid rgba(249,115,22,0.85)",
+                  boxShadow: "inset 0 0 24px rgba(249,115,22,0.07), 0 0 14px rgba(249,115,22,0.07)"
+                }
+              : { borderLeft: "2px solid transparent" }
+          }
+        >
+          {!active && (
+            <span
+              className="pointer-events-none absolute inset-0 rounded-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              style={{ background: "rgba(249,115,22,0.05)" }}
+            />
+          )}
+          <Home
+            className={cn(
+              "relative z-10 h-4 w-4 shrink-0 transition-colors",
+              active ? "text-orange-400" : "text-slate-400 group-hover:text-slate-200"
+            )}
+            style={active ? { filter: "drop-shadow(0 0 5px rgba(249,115,22,0.7))" } : undefined}
+          />
+          <span className="relative z-10 min-w-0 flex-1 truncate font-medium">首页</span>
+        </div>
+      </Link>
     </div>
   );
 }

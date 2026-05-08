@@ -61,7 +61,7 @@ export function SuccessCelebration({
       className="relative flex flex-col items-center justify-center gap-4 overflow-visible rounded-xl px-6 py-8"
       style={{
         background:
-          "radial-gradient(ellipse at center, rgba(16,185,129,0.10) 0%, rgba(8,13,28,0.65) 70%)",
+          "radial-gradient(ellipse at center, rgba(16,185,129,0.10) 0%, #f8fafc 70%)",
         border: "1px solid rgba(16,185,129,0.34)",
         boxShadow:
           "0 0 36px rgba(16,185,129,0.18), inset 0 0 24px rgba(16,185,129,0.04)"

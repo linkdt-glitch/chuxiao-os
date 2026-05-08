@@ -40,7 +40,7 @@ export function UploadingAnimation({
       className="relative flex flex-col items-center justify-center gap-4 overflow-hidden rounded-xl p-6"
       style={{
         background:
-          "radial-gradient(ellipse at center, rgba(249,115,22,0.08) 0%, rgba(8,13,28,0.65) 70%)",
+          "radial-gradient(ellipse at center, rgba(249,115,22,0.08) 0%, #f8fafc 70%)",
         border: "1px solid rgba(249,115,22,0.28)",
         boxShadow:
           "0 0 30px rgba(249,115,22,0.10), inset 0 0 24px rgba(249,115,22,0.04)"

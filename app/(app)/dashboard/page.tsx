@@ -362,7 +362,7 @@ export default async function CockpitPage() {
                   return (
                     <div
                       key={`${p.projectId ?? "noid"}-${p.projectName}-${i}`}
-                      className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-3 transition-colors hover:border-white/[0.10]"
+                      className="rounded-xl border border-slate-200 bg-white/[0.02] p-3 transition-colors hover:border-slate-300"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
@@ -375,7 +375,7 @@ export default async function CockpitPage() {
                           {p.potentialScore === null ? "—" : p.potentialScore}
                         </span>
                       </div>
-                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-50">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${Math.max(2, score)}%`, background: fill }}
@@ -489,7 +489,7 @@ export default async function CockpitPage() {
                         ? "bg-rose-500/15 text-rose-300"
                         : item.impact_level === "high"
                           ? "bg-amber-500/15 text-amber-300"
-                          : "bg-white/[0.06] text-slate-300")
+                          : "bg-slate-100 text-slate-300")
                     }
                   >
                     {item.impact_level}

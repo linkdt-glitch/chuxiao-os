@@ -266,7 +266,7 @@ export function ImageGenHelp() {
             key={section.id}
             className="overflow-hidden rounded-lg"
             style={{
-              background: "rgba(8,13,28,0.55)",
+              background: "#f8fafc",
               border: isOpen
                 ? "1px solid rgba(249,115,22,0.32)"
                 : "1px solid rgba(249,115,22,0.10)"

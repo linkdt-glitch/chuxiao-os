@@ -30,14 +30,14 @@ export default async function AISettingsPage() {
               <CardTitle>服务商安全配置</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4">
+              <div className="rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4">
                 <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
                   <ServerCog className="h-4 w-4" />
                   API Key 只放在服务端环境变量
                 </div>
                 <p>当前页面只负责选择启用哪个服务商，不在浏览器里保存或展示密钥。</p>
               </div>
-              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[rgba(8,13,28,0.5)] p-4 font-mono text-xs text-slate-300">
+              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4 font-mono text-xs text-slate-300">
                 <div>DEEPSEEK_API_KEY=...</div>
                 <div>SILICONFLOW_API_KEY=...</div>
                 <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
@@ -62,7 +62,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-[12px]"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -121,7 +121,7 @@ export default async function AISettingsPage() {
               <div
                 className="flex items-center justify-between rounded-lg p-3"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -144,7 +144,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-xs"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -189,7 +189,7 @@ export default async function AISettingsPage() {
                       key={model.id}
                       className="flex items-center justify-between gap-3 rounded-md p-2 text-xs"
                       style={{
-                        background: "rgba(8,13,28,0.45)",
+                        background: "#f8fafc",
                         border: "1px solid rgba(249,115,22,0.10)"
                       }}
                     >
@@ -253,7 +253,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-[12px]"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -269,7 +269,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-[12px]"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -284,7 +284,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-[12px]"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
@@ -301,7 +301,7 @@ export default async function AISettingsPage() {
               <div
                 className="rounded-lg p-3 text-[12px]"
                 style={{
-                  background: "rgba(8,13,28,0.55)",
+                  background: "#f8fafc",
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >

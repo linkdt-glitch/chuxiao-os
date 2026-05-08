@@ -403,7 +403,7 @@ export function ExpenseApprovalWorkbench({
       </div>
 
       {/* 搜索 + 视图切换 */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-3">
         <div className="grid gap-3 lg:grid-cols-[1.4fr_160px_160px_auto]">
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -613,14 +613,14 @@ function FilterChip({
   tone?: "neutral" | "amber" | "sky" | "rose";
 }) {
   const palette = {
-    neutral: { activeBg: "bg-white/[0.10]", activeBorder: "border-white/30", activeText: "text-slate-100", inactiveDot: "text-slate-400" },
+    neutral: { activeBg: "bg-slate-200", activeBorder: "border-white/30", activeText: "text-slate-100", inactiveDot: "text-slate-400" },
     amber: { activeBg: "bg-amber-500/15", activeBorder: "border-amber-500/40", activeText: "text-amber-100", inactiveDot: "text-amber-300" },
     sky: { activeBg: "bg-sky-500/15", activeBorder: "border-sky-500/40", activeText: "text-sky-100", inactiveDot: "text-sky-300" },
     rose: { activeBg: "bg-rose-500/15", activeBorder: "border-rose-500/40", activeText: "text-rose-100", inactiveDot: "text-rose-300" }
   }[tone];
   const cls = active
     ? `${palette.activeBg} ${palette.activeBorder} ${palette.activeText}`
-    : "bg-white/[0.03] border-white/[0.06] text-slate-300 hover:border-white/[0.18]";
+    : "bg-white border-slate-200 text-slate-300 hover:border-white/[0.18]";
   return (
     <button
       type="button"
@@ -629,7 +629,7 @@ function FilterChip({
     >
       <Icon className={`h-3.5 w-3.5 ${active ? "" : palette.inactiveDot}`} />
       <span>{label}</span>
-      <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/15" : "bg-white/[0.06]"}`}>
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/15" : "bg-slate-100"}`}>
         {value}
       </span>
     </button>

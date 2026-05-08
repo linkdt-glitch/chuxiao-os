@@ -10,7 +10,7 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.35)]",
         secondary:
-          "border-white/10 bg-white/[0.04] text-slate-300",
+          "border-white/10 bg-slate-50 text-slate-300",
         outline:
           "border-white/15 bg-transparent text-slate-300",
         success:

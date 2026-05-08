@@ -178,7 +178,7 @@ function UploadSlot({
           disabled={loading}
           className="group flex h-32 w-full flex-col items-center justify-center rounded-xl text-center transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           style={{
-            background: `linear-gradient(180deg, rgba(8,13,28,0.55) 0%, rgba(4,8,20,0.65) 100%)`,
+            background: `linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)`,
             border: `1.5px dashed rgba(${accentRgb},0.32)`,
             boxShadow: `inset 0 0 24px rgba(${accentRgb},0.04)`
           }}
@@ -186,7 +186,7 @@ function UploadSlot({
           <div
             className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full transition-transform group-hover:scale-110"
             style={{
-              background: `radial-gradient(circle at 50% 40%, rgba(${accentRgb},0.28), rgba(3,7,18,0.92))`,
+              background: `radial-gradient(circle at 50% 40%, rgba(${accentRgb},0.28), #ffffff)`,
               boxShadow: `0 0 18px rgba(${accentRgb},0.30), 0 0 0 1px rgba(${accentRgb},0.40)`
             }}
           >
@@ -204,7 +204,7 @@ function UploadSlot({
               key={r.id}
               className="group relative aspect-square overflow-hidden rounded-md"
               style={{
-                background: "rgba(8,13,28,0.6)",
+                background: "#f8fafc",
                 border: `1px solid rgba(${accentRgb},0.30)`
               }}
             >
@@ -235,7 +235,7 @@ function UploadSlot({
               disabled={loading}
               className="flex aspect-square flex-col items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               style={{
-                background: "rgba(8,13,28,0.45)",
+                background: "#f8fafc",
                 border: `1.5px dashed rgba(${accentRgb},0.32)`,
                 color: `rgba(${accentRgb},0.85)`
               }}
@@ -288,7 +288,7 @@ function ModelDropdown({
           disabled={loading}
           className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           style={{
-            background: "rgba(8,13,28,0.65)",
+            background: "#f8fafc",
             border: open
               ? "1px solid rgba(249,115,22,0.55)"
               : "1px solid rgba(249,115,22,0.18)",
@@ -335,7 +335,7 @@ function ModelDropdown({
           <div
             className="absolute left-0 right-0 top-full z-20 mt-1 max-h-96 overflow-auto rounded-lg shadow-2xl"
             style={{
-              background: "rgba(4,8,20,0.98)",
+              background: "#ffffff",
               border: "1px solid rgba(249,115,22,0.32)",
               boxShadow:
                 "0 24px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.08) inset"
@@ -649,7 +649,7 @@ export function ImageGenWidget() {
                 disabled={loading}
                 className="rounded-lg p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
-                  background: isActive ? "rgba(249,115,22,0.12)" : "rgba(8,13,28,0.55)",
+                  background: isActive ? "rgba(249,115,22,0.12)" : "#f8fafc",
                   border: isActive
                     ? "1px solid rgba(249,115,22,0.50)"
                     : "1px solid rgba(249,115,22,0.10)",
@@ -694,7 +694,7 @@ export function ImageGenWidget() {
                       <div
                         className="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors"
                         style={{
-                          background: s.done ? "rgba(74,222,128,0.10)" : s.active ? "rgba(249,115,22,0.14)" : "rgba(8,13,28,0.55)",
+                          background: s.done ? "rgba(74,222,128,0.10)" : s.active ? "rgba(249,115,22,0.14)" : "#f8fafc",
                           border: s.done ? "1px solid rgba(74,222,128,0.40)" : s.active ? "1px solid rgba(249,115,22,0.55)" : "1px solid rgba(249,115,22,0.10)",
                           boxShadow: s.active ? "0 0 12px rgba(249,115,22,0.20)" : undefined
                         }}
@@ -795,7 +795,7 @@ export function ImageGenWidget() {
                       disabled={loading}
                       className="rounded-lg p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
-                        background: active ? "rgba(249,115,22,0.10)" : "rgba(8,13,28,0.45)",
+                        background: active ? "rgba(249,115,22,0.10)" : "#f8fafc",
                         border: active ? "1px solid rgba(249,115,22,0.45)" : "1px solid rgba(249,115,22,0.10)"
                       }}
                     >
@@ -880,7 +880,7 @@ export function ImageGenWidget() {
                               disabled={loading}
                               className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                               style={{
-                                background: selected ? "rgba(249,115,22,0.14)" : "rgba(8,13,28,0.55)",
+                                background: selected ? "rgba(249,115,22,0.14)" : "#f8fafc",
                                 border: selected ? "1px solid rgba(249,115,22,0.45)" : "1px solid rgba(249,115,22,0.12)",
                                 color: selected ? "#fbbf24" : "rgb(203,213,225)"
                               }}
@@ -900,7 +900,7 @@ export function ImageGenWidget() {
             {activePreset ? (
               <div
                 className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
-                style={{ background: "rgba(8,13,28,0.45)", border: "1px solid rgba(249,115,22,0.10)" }}
+                style={{ background: "#f8fafc", border: "1px solid rgba(249,115,22,0.10)" }}
               >
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide">
                   <span className="text-orange-300/80">使用模型</span>
@@ -998,7 +998,7 @@ export function ImageGenWidget() {
                       disabled={loading}
                       className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
-                        background: active ? "rgba(249,115,22,0.14)" : "rgba(8,13,28,0.55)",
+                        background: active ? "rgba(249,115,22,0.14)" : "#f8fafc",
                         border: active ? "1px solid rgba(249,115,22,0.45)" : "1px solid rgba(249,115,22,0.12)",
                         color: active ? "#fbbf24" : "rgb(203,213,225)"
                       }}
@@ -1041,7 +1041,7 @@ export function ImageGenWidget() {
         {loading && (
           <div
             className="flex min-h-32 flex-col items-center justify-center rounded-lg p-6"
-            style={{ background: "rgba(8,13,28,0.55)", border: "1px dashed rgba(249,115,22,0.30)" }}
+            style={{ background: "#f8fafc", border: "1px dashed rgba(249,115,22,0.30)" }}
           >
             <Loader2 className="mb-2 h-8 w-8 animate-spin text-orange-400" />
             <p className="text-sm text-orange-300">
@@ -1055,7 +1055,7 @@ export function ImageGenWidget() {
             <div
               className="overflow-hidden rounded-lg"
               style={{
-                background: "rgba(8,13,28,0.55)",
+                background: "#f8fafc",
                 border: "1px solid rgba(249,115,22,0.18)",
                 boxShadow: "0 18px 40px rgba(0,0,0,0.45)"
               }}
@@ -1082,7 +1082,7 @@ export function ImageGenWidget() {
             </div>
             <details
               className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
-              style={{ background: "rgba(8,13,28,0.45)", border: "1px solid rgba(249,115,22,0.10)" }}
+              style={{ background: "#f8fafc", border: "1px solid rgba(249,115,22,0.10)" }}
             >
               <summary className="cursor-pointer text-slate-300 hover:text-orange-300">
                 查看本次完整 prompt（用于复刻）
@@ -1095,7 +1095,7 @@ export function ImageGenWidget() {
         ) : !loading && !error ? (
           <div
             className="flex min-h-32 flex-col items-center justify-center rounded-lg p-6 text-center"
-            style={{ background: "rgba(8,13,28,0.45)", border: "1px dashed rgba(249,115,22,0.18)" }}
+            style={{ background: "#f8fafc", border: "1px dashed rgba(249,115,22,0.18)" }}
           >
             <ImageIcon className="mb-2 h-8 w-8 text-orange-400/40" />
             <p className="text-sm text-slate-400">

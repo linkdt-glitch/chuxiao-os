@@ -200,7 +200,7 @@ function RoleBadge({ roleKey, roleName }: { roleKey?: string; roleName?: string 
     owner: "border-orange-500/40 bg-orange-500/[0.14] text-orange-300",
     admin: "border-red-500/40 bg-red-500/[0.12] text-red-300",
     manager: "border-amber-500/40 bg-amber-500/[0.12] text-amber-300",
-    member: "border-white/10 bg-white/[0.04] text-slate-300",
+    member: "border-white/10 bg-slate-50 text-slate-300",
     agent: "border-purple-500/40 bg-purple-500/[0.12] text-purple-300"
   };
   const cls = colors[roleKey ?? "member"] ?? colors.member;

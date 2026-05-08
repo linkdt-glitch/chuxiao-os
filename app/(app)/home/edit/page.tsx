@@ -99,7 +99,7 @@ export default async function HomeEditPage({
             <CardTitle>价值观</CardTitle>
             <CardDescription>
               一行一条。格式：
-              <code className="mx-1 rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px]">标题 :: 描述</code>
+              <code className="mx-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]">标题 :: 描述</code>
               （描述可省略）
             </CardDescription>
           </CardHeader>
@@ -119,7 +119,7 @@ export default async function HomeEditPage({
             <CardTitle>近期目标</CardTitle>
             <CardDescription>
               一行一条。格式（用 <code className="font-mono text-[11px]">|</code> 分隔）：
-              <code className="mx-1 rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px]">
+              <code className="mx-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]">
                 标题 | 描述 | 目标日期 (YYYY-MM-DD) | 进度 (0-100)
               </code>
               。后三个可省略。

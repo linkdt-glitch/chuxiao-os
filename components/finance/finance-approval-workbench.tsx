@@ -503,7 +503,7 @@ function Stat({
   accent?: "neutral" | "amber" | "rose";
 }) {
   const palette = {
-    neutral: { dot: "bg-slate-400", text: "text-slate-200", border: "border-white/[0.06]", bg: "bg-white/[0.03]" },
+    neutral: { dot: "bg-slate-400", text: "text-slate-200", border: "border-slate-200", bg: "bg-white" },
     amber: { dot: "bg-amber-400", text: "text-amber-200", border: "border-amber-500/30", bg: "bg-amber-500/[0.10]" },
     rose: { dot: "bg-rose-400", text: "text-rose-200", border: "border-rose-500/30", bg: "bg-rose-500/[0.10]" }
   }[accent];

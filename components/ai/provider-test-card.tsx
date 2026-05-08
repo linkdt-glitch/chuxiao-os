@@ -69,7 +69,7 @@ export function ProviderTestCard() {
                     color: "rgb(252,165,165)"
                   }
                 : {
-                    background: "rgba(8,13,28,0.55)",
+                    background: "#f8fafc",
                     border: "1px solid rgba(249,115,22,0.18)",
                     color: "rgb(226,232,240)"
                   }

@@ -33,8 +33,8 @@ export function Topbar({
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg lg:hidden"
           style={{
-            background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.22), rgba(3,7,18,0.96))",
-            boxShadow: "0 0 14px rgba(249,115,22,0.28), 0 0 0 1px rgba(249,115,22,0.18)",
+            background: "radial-gradient(circle at 50% 40%, rgba(249,115,22,0.18), #ffffff)",
+            border: "1px solid rgba(249,115,22,0.20)",
           }}
         >
           <Image

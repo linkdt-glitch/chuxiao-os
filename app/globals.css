@@ -31,12 +31,13 @@
 body {
   @apply bg-background text-foreground antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  /* 暖白底 + 极淡橙色 mesh，跟 Stripe 那种克制浅色背景同款，但用品牌橙做暖调 */
+  /* 暖白底 + Stripe 风 mesh：左上橙、右下淡紫、底部一抹琥珀 */
   background:
     radial-gradient(ellipse 80% 50% at 15% 0%, rgba(249,115,22,0.06) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(251,191,36,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 92% 88%, rgba(139,92,246,0.045) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 88% 8%, rgba(168,85,247,0.025) 0%, transparent 65%),
     linear-gradient(180deg, #fafaf9 0%, #fffaf2 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
   background-attachment: fixed;
   min-height: 100vh;
 }

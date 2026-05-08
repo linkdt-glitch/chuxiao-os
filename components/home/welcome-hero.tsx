@@ -1,7 +1,9 @@
 /**
- * 首页欢迎 hero —— 初晓主题：日出、暖光、欢迎回家。
+ * 首页欢迎 hero —— 紧凑版（一行式横向布局）。
+ * 左边：暖光太阳图标 + 时段问候 + 用户名
+ * 右边：组织名 + 日期 + 在线指示
  *
- * Server component；动画全部 CSS keyframes，无 JS 状态。
+ * 动画全部 CSS keyframes，无 JS 状态。
  */
 
 const HOURLY_GREETING: Array<{ from: number; text: string }> = [
@@ -20,7 +22,9 @@ function dateLabel(d: Date) {
   const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][d.getDay()];
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}.${m}.${day} · ${week}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getFullYear()}.${m}.${day} · ${week} · ${hh}:${mm}`;
 }
 
 export function WelcomeHero({
@@ -35,47 +39,30 @@ export function WelcomeHero({
 
   return (
     <section
-      className="relative isolate mb-8 overflow-hidden rounded-3xl border border-amber-500/15"
+      className="relative overflow-hidden rounded-2xl border border-amber-500/15"
       style={{
         background:
-          "linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(251,191,36,0.06) 30%, rgba(8,12,28,0.92) 70%, rgba(4,8,20,0.95) 100%)",
-        boxShadow:
-          "0 24px 48px -16px rgba(251,146,60,0.15), inset 0 1px 0 rgba(255,255,255,0.04)"
+          "linear-gradient(110deg, rgba(251,146,60,0.10) 0%, rgba(251,191,36,0.06) 25%, rgba(8,12,28,0.92) 65%, rgba(4,8,20,0.95) 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)"
       }}
     >
       {/* 太阳光晕（背景） */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full"
+        className="pointer-events-none absolute -right-12 -top-10 h-40 w-40 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,146,60,0.25) 35%, rgba(251,146,60,0) 70%)",
-          filter: "blur(8px)",
+            "radial-gradient(circle, rgba(251,191,36,0.45) 0%, rgba(251,146,60,0.20) 35%, rgba(251,146,60,0) 70%)",
+          filter: "blur(6px)",
           animation: "home-sun-pulse 6s ease-in-out infinite"
-        }}
-      />
-      {/* 朝霞光线 (subtle rays) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 top-4 h-44 w-44"
-        style={{
-          background:
-            "conic-gradient(from 200deg, rgba(251,191,36,0.20) 0deg, transparent 50deg, rgba(251,146,60,0.18) 110deg, transparent 160deg, rgba(251,191,36,0.15) 220deg, transparent 280deg)",
-          mask: "radial-gradient(circle at 50% 50%, transparent 35%, black 70%, transparent 100%)",
-          WebkitMask:
-            "radial-gradient(circle at 50% 50%, transparent 35%, black 70%, transparent 100%)",
-          animation: "home-rays-spin 28s linear infinite"
         }}
       />
       {/* 漂浮粒子 */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {[
-          { left: "12%", top: "32%", size: 3, delay: "0s", dur: "9s" },
-          { left: "28%", top: "68%", size: 2, delay: "1.4s", dur: "11s" },
-          { left: "44%", top: "22%", size: 2.5, delay: "3.2s", dur: "10s" },
-          { left: "62%", top: "78%", size: 2, delay: "0.7s", dur: "12s" },
-          { left: "78%", top: "52%", size: 3, delay: "2.4s", dur: "8.5s" },
-          { left: "90%", top: "30%", size: 2, delay: "4s", dur: "10.5s" }
+          { left: "18%", top: "28%", size: 2, delay: "0s", dur: "9s" },
+          { left: "46%", top: "62%", size: 2.5, delay: "1.4s", dur: "11s" },
+          { left: "72%", top: "32%", size: 2, delay: "2.8s", dur: "10s" }
         ].map((p, i) => (
           <span
             key={i}
@@ -86,7 +73,7 @@ export function WelcomeHero({
               width: p.size,
               height: p.size,
               background: "rgba(251,191,36,0.85)",
-              boxShadow: "0 0 8px rgba(251,191,36,0.65)",
+              boxShadow: "0 0 6px rgba(251,191,36,0.6)",
               animation: `home-particle-drift ${p.dur} ease-in-out infinite`,
               animationDelay: p.delay
             }}
@@ -94,35 +81,32 @@ export function WelcomeHero({
         ))}
       </div>
 
-      {/* 内容 */}
-      <div className="relative z-10 px-6 py-10 sm:px-10 sm:py-14">
-        <div
-          className="font-mono text-[11px] font-medium tracking-[0.28em] text-amber-300/70"
-          style={{ animation: "home-greet-in 600ms cubic-bezier(0.2,0.8,0.2,1) both" }}
-        >
-          {organizationName.toUpperCase()}
-        </div>
-        <h1
-          className="mt-3 text-3xl font-semibold tracking-tight text-slate-50 sm:text-[44px] sm:leading-[1.15]"
-          style={{ animation: "home-greet-in 700ms cubic-bezier(0.2,0.8,0.2,1) 120ms both" }}
-        >
-          <span
-            className="bg-gradient-to-r from-amber-200 via-orange-300 to-amber-200 bg-clip-text text-transparent"
-            style={{ filter: "drop-shadow(0 0 18px rgba(251,191,36,0.30))" }}
+      <div className="relative z-10 flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
+        <div className="min-w-0">
+          <div
+            className="font-mono text-[10px] tracking-[0.26em] text-amber-300/70"
+            style={{ animation: "home-greet-in 500ms cubic-bezier(0.2,0.8,0.2,1) both" }}
           >
-            欢迎回家
-          </span>
-          <span className="ml-3 text-slate-200">{userName}</span>
-        </h1>
-        <p
-          className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-300"
-          style={{ animation: "home-greet-in 800ms cubic-bezier(0.2,0.8,0.2,1) 240ms both" }}
-        >
-          {greeting}，新的一天又从你这里开始。这里是大家共同的方向：使命、愿景、价值观、近期目标，和最近的公司动态。
-        </p>
+            {organizationName.toUpperCase()}
+          </div>
+          <h1
+            className="mt-1 truncate text-[22px] font-semibold tracking-tight text-slate-50 sm:text-[26px]"
+            style={{ animation: "home-greet-in 600ms cubic-bezier(0.2,0.8,0.2,1) 80ms both" }}
+          >
+            <span
+              className="bg-gradient-to-r from-amber-200 via-orange-300 to-amber-200 bg-clip-text text-transparent"
+              style={{ filter: "drop-shadow(0 0 14px rgba(251,191,36,0.30))" }}
+            >
+              {greeting}
+            </span>
+            <span className="ml-2 text-slate-200">{userName}</span>
+            <span className="ml-2 text-[18px] text-slate-400 sm:text-[20px]">·</span>
+            <span className="ml-2 text-[15px] font-normal text-slate-300 sm:text-[16px]">欢迎回家</span>
+          </h1>
+        </div>
         <div
-          className="mt-5 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 font-mono text-[11px] tabular-nums tracking-wider text-amber-200"
-          style={{ animation: "home-greet-in 900ms cubic-bezier(0.2,0.8,0.2,1) 360ms both" }}
+          className="flex shrink-0 items-center gap-2 self-start rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 font-mono text-[11px] tabular-nums tracking-wider text-amber-200 sm:self-center"
+          style={{ animation: "home-greet-in 700ms cubic-bezier(0.2,0.8,0.2,1) 200ms both" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(251,191,36,0.95)]" />
           {dateLabel(now)}

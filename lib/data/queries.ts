@@ -269,7 +269,7 @@ export async function getAISettingsData() {
   const [{ data: providers }, { data: logs }] = await Promise.all([
     supabase
       .from("ai_providers")
-      .select("id, organization_id, provider_name, label, base_url, model_name, is_active, created_at, updated_at")
+      .select("id, organization_id, provider_name, label, base_url, model_name, is_active, settings, created_at, updated_at")
       .eq("organization_id", organization.id),
     supabase.from("ai_invocation_logs").select("*").eq("organization_id", organization.id).order("created_at", { ascending: false })
   ]);

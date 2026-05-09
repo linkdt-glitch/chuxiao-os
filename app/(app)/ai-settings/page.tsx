@@ -1,15 +1,17 @@
 import { Brain, ExternalLink, ImageIcon, KeyRound, Lock, ServerCog, Shield, Sparkles, Zap } from "lucide-react";
 import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IMAGE_MODELS, formatPriceCny, getDefaultModel } from "@/lib/ai/image-models";
 import { ALL_MODELS, type ModelCatalogEntry } from "@/lib/ai/models-catalog";
+import { readProviderAudience, type ProviderAudience } from "@/lib/ai";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
-import { activateProviderAction, disableProviderAction } from "./actions";
+import { activateProviderAction, disableProviderAction, setProviderAudienceAction } from "./actions";
 
 export default async function AISettingsPage() {
   const { providers, logs } = await getAISettingsData();
@@ -306,41 +308,55 @@ export default async function AISettingsPage() {
             <CardTitle>服务商列表</CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="mb-3 text-[12px] leading-relaxed text-slate-700">
+              支持「<strong>双 provider 同时启用</strong>」。在每行的「服务对象」选 <strong>仅创始人</strong> /
+              <strong> 仅员工</strong> / <strong>全员</strong>，系统会按角色路由 ——
+              比如：DeepSeek 仅创始人 + 硅基流动 仅员工，两个同时跑互不干扰。
+            </p>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>名称</TableHead>
                   <TableHead>模型</TableHead>
-                  <TableHead>API 地址</TableHead>
+                  <TableHead>服务对象</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {providers.map((provider) => (
-                  <TableRow key={provider.id}>
-                    <TableCell>
-                      <div className="font-medium">{provider.label}</div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <KeyRound className="h-3 w-3" /> 密钥已加密
-                      </div>
-                    </TableCell>
-                    <TableCell>{provider.model_name}</TableCell>
-                    <TableCell>{provider.base_url}</TableCell>
-                    <TableCell><StatusBadge value={provider.is_active ? "active" : "disabled"} /></TableCell>
-                    <TableCell className="text-right">
-                      <form action={provider.is_active ? disableProviderAction : activateProviderAction}>
-                        <input type="hidden" name="provider_id" value={provider.id} />
-                        <ConfirmSubmitButton
-                          confirmText="切换 AI 服务商会影响后续 AI 调用，确认继续？"
-                          variant={provider.is_active ? "secondary" : "outline"}
-                        >
-                          {provider.is_active ? "停用" : "启用"}
-                        </ConfirmSubmitButton>
-                      </form>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {providers.map((provider) => {
+                  const audience = readProviderAudience(provider as { settings?: Record<string, unknown> | null });
+                  return (
+                    <TableRow key={provider.id}>
+                      <TableCell>
+                        <div className="font-medium">{provider.label}</div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <KeyRound className="h-3 w-3" /> 密钥已加密
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{provider.model_name}</TableCell>
+                      <TableCell>
+                        <AudienceChips providerId={provider.id} current={audience} />
+                      </TableCell>
+                      <TableCell><StatusBadge value={provider.is_active ? "active" : "disabled"} /></TableCell>
+                      <TableCell className="text-right">
+                        <form action={provider.is_active ? disableProviderAction : activateProviderAction}>
+                          <input type="hidden" name="provider_id" value={provider.id} />
+                          <ConfirmSubmitButton
+                            confirmText={
+                              provider.is_active
+                                ? "停用此 provider 后，对应受众的 AI 调用会停下来。确认？"
+                                : "启用此 provider（同受众组里其他会自动停用）。确认继续？"
+                            }
+                            variant={provider.is_active ? "secondary" : "outline"}
+                          >
+                            {provider.is_active ? "停用" : "启用"}
+                          </ConfirmSubmitButton>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -380,6 +396,58 @@ export default async function AISettingsPage() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+/**
+ * 服务对象选择器 —— 3 个 chip 一字排开。点哪个 → 写 settings.audience
+ * 并自动启用本 provider（同 audience 组内其他停用）。
+ */
+function AudienceChips({
+  providerId,
+  current
+}: {
+  providerId: string;
+  current: ProviderAudience;
+}) {
+  const options: Array<{ value: ProviderAudience; label: string; chipClass: string }> = [
+    { value: "all", label: "全员", chipClass: "border-slate-300 bg-slate-50 text-slate-700" },
+    { value: "founder", label: "仅创始人", chipClass: "border-orange-300 bg-orange-50 text-orange-700" },
+    { value: "staff", label: "仅员工", chipClass: "border-sky-300 bg-sky-50 text-sky-700" }
+  ];
+  const activeClass: Record<ProviderAudience, string> = {
+    all: "ring-2 ring-slate-400",
+    founder: "ring-2 ring-orange-500",
+    staff: "ring-2 ring-sky-500"
+  };
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((opt) => (
+        <form key={opt.value} action={setProviderAudienceAction} className="inline">
+          <input type="hidden" name="provider_id" value={providerId} />
+          <input type="hidden" name="audience" value={opt.value} />
+          <Button
+            type="submit"
+            size="sm"
+            variant="outline"
+            className={
+              "h-7 rounded-full border px-2.5 text-[11px] font-semibold " +
+              opt.chipClass +
+              (current === opt.value ? " " + activeClass[current] : " hover:brightness-95")
+            }
+            title={
+              opt.value === "founder"
+                ? "只对 owner（创始人）生效"
+                : opt.value === "staff"
+                  ? "只对非 owner（员工）生效"
+                  : "全员通用"
+            }
+          >
+            {opt.label}
+          </Button>
+        </form>
+      ))}
+    </div>
   );
 }
 

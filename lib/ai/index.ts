@@ -45,22 +45,61 @@ type AIInvokeOptions = {
   roleKey?: string | null;
 };
 
-export async function getActiveProvider() {
+/** 服务对象 —— 控制这个 provider 给谁用。 */
+export type ProviderAudience = "all" | "founder" | "staff";
+
+/** 从 provider.settings 里读 audience，没设过就当作 "all"（全员）。 */
+export function readProviderAudience(provider: Pick<AIProvider, "settings"> | null | undefined): ProviderAudience {
+  const a = (provider?.settings as { audience?: unknown } | undefined)?.audience;
+  if (a === "founder" || a === "staff") return a;
+  return "all";
+}
+
+/**
+ * 取「当前调用应该用的 provider」。
+ *
+ * 旧的「全公司只有 1 个 active」规则已经放宽：现在允许同时多个 active，
+ * 每个可以打 audience 标签：
+ *   audience = "founder"  →  只服务创始人 / owner
+ *   audience = "staff"    →  只服务员工（非 owner）
+ *   audience = "all"      →  全员通用（默认）
+ *
+ * 优先级：
+ *   1. 有匹配 roleKey 的专属 provider（owner→founder, 其他→staff）
+ *   2. audience = "all" 的通用 provider
+ *   3. 任何 active provider（兜底）
+ */
+export async function getActiveProvider(roleKey?: string | null) {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return demoProviders.find((provider) => provider.is_active) ?? demoProviders[0];
 
   const { data } = await supabase
     .from("ai_providers")
-    .select("id, organization_id, provider_name, label, base_url, model_name, is_active, created_at, updated_at")
+    .select("id, organization_id, provider_name, label, base_url, model_name, is_active, settings, created_at, updated_at")
     .eq("organization_id", organization.id)
-    .eq("is_active", true)
-    .limit(1)
-    .single();
+    .eq("is_active", true);
 
-  return data ?? demoProviders[0];
+  const actives = (data ?? []) as AIProvider[];
+  if (!actives.length) return demoProviders[0];
+
+  const target: ProviderAudience = roleKey === "owner" ? "founder" : "staff";
+  const specific = actives.find((p) => readProviderAudience(p) === target);
+  if (specific) return specific;
+
+  const universal = actives.find((p) => readProviderAudience(p) === "all");
+  if (universal) return universal;
+
+  return actives[0];
 }
 
+/**
+ * 启用 provider —— 只「停用同 audience 组内」其他 provider，
+ * 不影响别的 audience 组的 active 状态。
+ *
+ * 例子：DeepSeek 标 audience=founder 启用，原本 SiliconFlow 标 audience=staff
+ * 启用着 —— 这次操作不会动 SiliconFlow，俩同时 active 互不冲突。
+ */
 export async function activateAIProvider(providerId: string) {
   await requirePermission("ai.manage");
   const supabase = await createSupabaseServerClient();
@@ -69,18 +108,34 @@ export async function activateAIProvider(providerId: string) {
 
   const { data: provider, error: providerError } = await supabase
     .from("ai_providers")
-    .select("id, provider_name, label, is_active")
+    .select("id, provider_name, label, is_active, settings")
     .eq("organization_id", organization.id)
     .eq("id", providerId)
     .single();
 
   if (providerError) throw providerError;
 
-  const { error: disableError } = await supabase
+  const audience = readProviderAudience(provider);
+
+  // 找出同 audience 组内其他 active 的 provider，把它们停掉（每组只允许一个 active）
+  const { data: sameGroup } = await supabase
     .from("ai_providers")
-    .update({ is_active: false })
-    .eq("organization_id", organization.id);
-  if (disableError) throw disableError;
+    .select("id, settings")
+    .eq("organization_id", organization.id)
+    .eq("is_active", true)
+    .neq("id", providerId);
+
+  const sameGroupIds = (sameGroup ?? [])
+    .filter((p) => readProviderAudience(p as { settings: unknown }) === audience)
+    .map((p) => p.id);
+
+  if (sameGroupIds.length) {
+    const { error: disableError } = await supabase
+      .from("ai_providers")
+      .update({ is_active: false })
+      .in("id", sameGroupIds);
+    if (disableError) throw disableError;
+  }
 
   const { data, error } = await supabase
     .from("ai_providers")
@@ -147,6 +202,56 @@ export async function disableAIProvider(providerId: string) {
     event_key: "ai.provider.disabled",
     module: "ai_settings",
     payload: { provider_id: providerId, provider_name: data.provider_name }
+  });
+
+  return data;
+}
+
+/**
+ * 设置 provider 的服务对象（audience）。
+ *   "all"     —— 全员通用（默认）
+ *   "founder" —— 只服务创始人 / owner
+ *   "staff"   —— 只服务员工（非 owner）
+ *
+ * 改完之后建议立刻 activateAIProvider 一次让它生效，
+ * 这个函数只负责更新 settings.audience 字段，不影响 is_active 状态。
+ */
+export async function setProviderAudience(providerId: string, audience: ProviderAudience) {
+  await requirePermission("ai.manage");
+  const supabase = await createSupabaseServerClient();
+  const organization = await getCurrentOrganization();
+  if (!supabase) return { ok: true };
+
+  const { data: provider, error: providerError } = await supabase
+    .from("ai_providers")
+    .select("id, provider_name, label, settings")
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .single();
+  if (providerError) throw providerError;
+
+  const nextSettings = {
+    ...((provider.settings as Record<string, unknown>) ?? {}),
+    audience
+  };
+
+  const { data, error } = await supabase
+    .from("ai_providers")
+    .update({ settings: nextSettings })
+    .eq("organization_id", organization.id)
+    .eq("id", providerId)
+    .select("id, provider_name, label, is_active, settings")
+    .single();
+  if (error) throw error;
+
+  await logAction({
+    event_key: "ai.provider.audience_changed",
+    action: "update",
+    module: "ai_settings",
+    related_record_type: "ai_provider",
+    related_record_id: providerId,
+    before_data: { audience: readProviderAudience(provider) },
+    after_data: { audience }
   });
 
   return data;
@@ -591,9 +696,10 @@ async function resolveCurrentRoleKey(): Promise<string | null> {
 }
 
 export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
-  const provider = await getActiveProvider();
-  // ai_chat 模块自动检测当前角色 → owner 用顶级推理模型
+  // 先拿 roleKey（owner / staff），再用它选 provider
+  // —— 这样可以让 audience=founder 的 provider 只对 owner 生效
   const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+  const provider = await getActiveProvider(roleKey);
 
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
@@ -624,8 +730,8 @@ export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
 }
 
 export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIImageInput[] }) {
-  const provider = await getActiveProvider();
   const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+  const provider = await getActiveProvider(roleKey);
 
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
@@ -658,9 +764,9 @@ export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIIm
 }
 
 export async function streamAI(input: Omit<AIInvokeOptions, "images">) {
-  const provider = await getActiveProvider();
-  // ai_chat 模块自动检测当前角色 → owner 用顶级推理模型
+  // 先拿 roleKey 再选 provider，让 audience=founder 的 provider 只对 owner 生效
   const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+  const provider = await getActiveProvider(roleKey);
 
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return streamOpenAICompatible({

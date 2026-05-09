@@ -164,6 +164,8 @@ export type AIProvider = {
   base_url?: string | null;
   model_name: string;
   is_active: boolean;
+  /** 自定义配置：format、vendor、role_routing、audience 等。 */
+  settings?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };

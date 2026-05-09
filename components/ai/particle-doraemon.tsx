@@ -121,10 +121,12 @@ function sampleImageToParticles(src: string): Promise<Particle[]> {
           const g = data[idx + 1];
           const b = data[idx + 2];
           const a = data[idx + 3];
-          // 跳过透明 / 接近纯白背景（超过 245 视为背景）
+          // 跳过透明像素（透明 PNG）
           if (a < 100) continue;
-          const brightness = (r + g + b) / 3;
-          if (brightness > 248 && a > 200) continue;
+          // 跳过白底背景（webp / jpg 转 png 后可能没 alpha，靠灰度过滤）
+          // 阈值 218：略低于真实白色（255）但比通常 anti-aliased 边缘灰度（200~210）高，
+          // 既能滤掉白底 + 边缘灰区，又保留浅色细节如脸颊高光
+          if (r > 218 && g > 218 && b > 218) continue;
           const cx = x - TARGET_W / 2;
           const cy = y - TARGET_H / 2;
           particles.push({

@@ -9,6 +9,9 @@ import { approveFinanceRecord, createFinanceRecord, rejectFinanceRecord, updateF
 import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { extractErrorMessage, withErrorParam } from "@/lib/server/error";
 import { runAfter } from "@/lib/server/after";
+import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logAction } from "@/lib/audit";
 import type { FinanceAccountType, FinanceCategoryType, FinanceRecordType, ParsedFinanceRecord } from "@/lib/finance/types";
 
 function value(formData: FormData, key: string) {
@@ -293,4 +296,104 @@ export async function confirmParsedFinanceRecordAction(_: AIParseState, formData
 
 export async function parsedToRecordInputAction(parsed: ParsedFinanceRecord) {
   return mapParsedToInput(parsed);
+}
+
+/**
+ * 创始人专用 —— 清理「我之前提交的」记账 + 报销记录。
+ *
+ * 适用场景：创始人在调试系统时跑了一堆测试数据，正式上线前想清掉
+ * 自己产生的所有记账 / 报销，但保留员工真实提交的（比如吴恩典）。
+ *
+ * 范围：
+ *   - finance_records WHERE submitted_by = 当前 member.id OR member_id = 当前 member.id
+ *   - finance_expense_reports WHERE submitter_member_id = 当前 member.id
+ *     （expense_items / approval_steps 由 on delete cascade 自动连带删）
+ *
+ * 安全：
+ *   - 只允许 owner 角色调用
+ *   - 全部包在事务里
+ *   - 写审计日志，可回查
+ */
+export async function cleanupOwnFinanceSubmissionsAction() {
+  const member = await getCurrentMember();
+  if (member.role?.key !== "owner") {
+    redirect(withErrorParam("/finance", "只有创始人 (owner) 可以清理自己的提交记录。"));
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    redirect(withErrorParam("/finance", "数据库未连接，无法清理。"));
+  }
+  const organization = await getCurrentOrganization();
+
+  let deletedRecords = 0;
+  let deletedReports = 0;
+
+  try {
+    // 先查出来要删的数量，用于审计 + 跳转提示
+    const [recordsResult, reportsResult] = await Promise.all([
+      supabase
+        .from("finance_records")
+        .select("id", { count: "exact", head: false })
+        .eq("organization_id", organization.id)
+        .or(`submitted_by.eq.${member.id},member_id.eq.${member.id}`),
+      supabase
+        .from("finance_expense_reports")
+        .select("id", { count: "exact", head: false })
+        .eq("organization_id", organization.id)
+        .eq("submitter_member_id", member.id)
+    ]);
+
+    const recordIds = (recordsResult.data ?? []).map((row) => row.id);
+    const reportIds = (reportsResult.data ?? []).map((row) => row.id);
+
+    // 先删 finance_records（关联 expense_reports.finance_record_id 设为 null）
+    if (recordIds.length) {
+      const { error } = await supabase
+        .from("finance_records")
+        .delete()
+        .eq("organization_id", organization.id)
+        .in("id", recordIds);
+      if (error) throw error;
+    }
+
+    // 再删 finance_expense_reports（items / approval_steps 由 cascade 自动跟着走）
+    if (reportIds.length) {
+      const { error } = await supabase
+        .from("finance_expense_reports")
+        .delete()
+        .eq("organization_id", organization.id)
+        .in("id", reportIds);
+      if (error) throw error;
+    }
+
+    deletedRecords = recordIds.length;
+    deletedReports = reportIds.length;
+
+    await logAction({
+      event_key: "finance.cleanup_owner_submissions",
+      action: "delete",
+      module: "finance",
+      related_record_type: "founder_cleanup",
+      after_data: {
+        deleted_finance_records: deletedRecords,
+        deleted_expense_reports: deletedReports,
+        operator_member_id: member.id
+      }
+    });
+  } catch (error) {
+    redirect(withErrorParam("/finance", extractErrorMessage(error, "清理失败，请重试或检查后台日志。")));
+  }
+
+  revalidatePath("/finance");
+  revalidatePath("/finance/records");
+  revalidatePath("/finance/reimbursements");
+
+  if (!deletedRecords && !deletedReports) {
+    redirect("/finance?notice=" + encodeURIComponent("没有需要清理的记录，你名下暂无提交。"));
+  }
+  redirect(
+    `/finance?notice=${encodeURIComponent(
+      `已清理你名下的 ${deletedRecords} 条记账 + ${deletedReports} 条报销，员工提交的记录保留不变。`
+    )}`
+  );
 }

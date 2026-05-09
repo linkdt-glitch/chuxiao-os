@@ -92,7 +92,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ) : null}
         <AnnouncementBanner announcements={organization.settings?.announcements as string[] | undefined} />
         <EnergyProvider>
-          <main className="mx-auto w-full max-w-7xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 animate-app-page-in lg:px-8 lg:py-7">
+          <main className="mx-auto w-full max-w-[1440px] px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 animate-app-page-in lg:px-6 lg:py-7">
             {children}
           </main>
         </EnergyProvider>

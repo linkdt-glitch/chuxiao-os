@@ -67,29 +67,32 @@ export default async function HomePage({
           </SectionCard>
         </div>
 
-        {/* 3) 价值观 — 不分卡，行内列表；字号比使命/愿景更小 */}
+        {/* 3) 价值观 — 不分卡，行内列表；字号比使命/愿景更小，描述长会自动换行 */}
         <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={120} compact>
           {content.values.length ? (
             <ul className="divide-y divide-slate-200">
               {content.values.map((value, i) => (
                 <li
                   key={`${value.title}-${i}`}
-                  className="flex items-baseline gap-3 py-1.5 first:pt-0 last:pb-0"
+                  className="flex items-baseline gap-2 py-1.5 first:pt-0 last:pb-0"
                 >
-                  <span className="w-5 shrink-0 font-mono text-[11px] font-bold tabular-nums text-amber-600">
+                  <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="shrink-0 text-[14px] font-semibold text-slate-900">
-                    {value.title}
-                  </span>
-                  {value.description ? (
-                    <>
-                      <span className="shrink-0 text-slate-300">·</span>
-                      <span className="text-[13px] leading-relaxed text-slate-600">
-                        {value.description}
-                      </span>
-                    </>
-                  ) : null}
+                  {/* 文字块用 min-w-0 + flex-1 撑满剩余空间并允许换行（避免长描述溢出右侧） */}
+                  <div className="min-w-0 flex-1 leading-relaxed">
+                    <span className="text-[13px] font-semibold text-slate-900">
+                      {value.title}
+                    </span>
+                    {value.description ? (
+                      <>
+                        <span className="mx-1.5 text-slate-300">·</span>
+                        <span className="text-[12px] text-slate-600">
+                          {value.description}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>

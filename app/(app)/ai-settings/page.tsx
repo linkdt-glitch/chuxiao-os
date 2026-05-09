@@ -1,7 +1,6 @@
 import { Brain, ExternalLink, ImageIcon, KeyRound, Lock, ServerCog, Shield, Sparkles, Zap } from "lucide-react";
 import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status";
@@ -400,7 +399,7 @@ export default async function AISettingsPage() {
 }
 
 /**
- * 服务对象选择器 —— 3 个 chip 一字排开。点哪个 → 写 settings.audience
+ * 服务对象选择器 —— 3 个 chip 一字排开。点哪个 → 弹确认 → 写 settings.audience
  * 并自动启用本 provider（同 audience 组内其他停用）。
  */
 function AudienceChips({
@@ -410,10 +409,25 @@ function AudienceChips({
   providerId: string;
   current: ProviderAudience;
 }) {
-  const options: Array<{ value: ProviderAudience; label: string; chipClass: string }> = [
-    { value: "all", label: "全员", chipClass: "border-slate-300 bg-slate-50 text-slate-700" },
-    { value: "founder", label: "仅创始人", chipClass: "border-orange-300 bg-orange-50 text-orange-700" },
-    { value: "staff", label: "仅员工", chipClass: "border-sky-300 bg-sky-50 text-sky-700" }
+  const options: Array<{ value: ProviderAudience; label: string; chipClass: string; confirmHint: string }> = [
+    {
+      value: "all",
+      label: "全员",
+      chipClass: "border-slate-300 bg-slate-50 text-slate-700",
+      confirmHint: "切到「全员」会让所有用户用这个 provider，并启用它（同组内其他停用）。确认？"
+    },
+    {
+      value: "founder",
+      label: "仅创始人",
+      chipClass: "border-orange-300 bg-orange-50 text-orange-700",
+      confirmHint: "切到「仅创始人」后只有 owner 用这个 provider，并启用它。确认？"
+    },
+    {
+      value: "staff",
+      label: "仅员工",
+      chipClass: "border-sky-300 bg-sky-50 text-sky-700",
+      confirmHint: "切到「仅员工」后只有非 owner 用这个 provider，并启用它。确认？"
+    }
   ];
   const activeClass: Record<ProviderAudience, string> = {
     all: "ring-2 ring-slate-400",
@@ -426,25 +440,17 @@ function AudienceChips({
         <form key={opt.value} action={setProviderAudienceAction} className="inline">
           <input type="hidden" name="provider_id" value={providerId} />
           <input type="hidden" name="audience" value={opt.value} />
-          <Button
-            type="submit"
-            size="sm"
+          <ConfirmSubmitButton
+            confirmText={opt.confirmHint}
             variant="outline"
             className={
               "h-7 rounded-full border px-2.5 text-[11px] font-semibold " +
               opt.chipClass +
               (current === opt.value ? " " + activeClass[current] : " hover:brightness-95")
             }
-            title={
-              opt.value === "founder"
-                ? "只对 owner（创始人）生效"
-                : opt.value === "staff"
-                  ? "只对非 owner（员工）生效"
-                  : "全员通用"
-            }
           >
             {opt.label}
-          </Button>
+          </ConfirmSubmitButton>
         </form>
       ))}
     </div>

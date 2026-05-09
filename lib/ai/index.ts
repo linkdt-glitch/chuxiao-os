@@ -729,11 +729,55 @@ export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
   };
 }
 
+/**
+ * 哪些 provider 支持图片识别？
+ *
+ * 截至 2026-05：
+ *   - SiliconFlow ✅（Qwen2.5-VL-7B 等多模态模型）
+ *   - DeepSeek    ❌（V4 系列 API 仍只支持文本，不接受 image_url）
+ *   - OpenAI / Anthropic / Google 都支持但当前是占位
+ */
+function providerSupportsVision(provider: Pick<AIProvider, "provider_name">): boolean {
+  return provider.provider_name === "siliconflow";
+}
+
+/**
+ * 找一个能跑图片识别的 active provider。
+ *
+ * 优先顺序：
+ *   1. 当前 audience 路由命中的 provider，如果它支持 vision
+ *   2. 任意一个 active 且支持 vision 的 provider（不管 audience）
+ *   3. null（让调用方友好降级）
+ *
+ * 这样的好处：用户可以「DeepSeek 给创始人对话 + SiliconFlow 给员工 + 通用 vision」
+ * 三档共存 —— 拍照识别自动找到 SiliconFlow，不会因为 active provider 是 DeepSeek
+ * 就报"当前 provider 不支持图片"这种迷惑性错误。
+ */
+async function getVisionProvider(roleKey?: string | null): Promise<AIProvider | null> {
+  const primary = await getActiveProvider(roleKey);
+  if (providerSupportsVision(primary)) return primary;
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return providerSupportsVision(demoProviders[0]) ? demoProviders[0] : null;
+  }
+  const organization = await getCurrentOrganization();
+  const { data } = await supabase
+    .from("ai_providers")
+    .select("id, organization_id, provider_name, label, base_url, model_name, is_active, settings, created_at, updated_at")
+    .eq("organization_id", organization.id)
+    .eq("is_active", true);
+
+  const fallback = (data ?? []).find((p) => providerSupportsVision(p as AIProvider));
+  return (fallback as AIProvider | undefined) ?? null;
+}
+
 export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIImageInput[] }) {
   const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
-  const provider = await getActiveProvider(roleKey);
+  // 拍照 / 票据识别走专门的 vision provider 选择器
+  const provider = await getVisionProvider(roleKey);
 
-  if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
+  if (provider && (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow")) {
     return invokeOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
       module: input.module,
@@ -747,19 +791,21 @@ export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIIm
     });
   }
 
+  // 没有任何支持图片的 active provider —— 给一条人话错误，让用户知道怎么修
+  const fallbackProvider = provider ?? (await getActiveProvider(roleKey));
   const invocation = await logAIInvocation({
-    provider_id: provider.id,
+    provider_id: fallbackProvider.id,
     module: input.module,
     prompt_preview: `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]`.slice(0, 500),
     status: "failed",
-    error_message: "当前 AI Provider 尚未接入图片识别。"
+    error_message: "没有支持图片识别的 active provider"
   });
   return {
-    provider,
+    provider: fallbackProvider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
-    modelId: provider.model_name,
+    modelId: fallbackProvider.model_name,
     costEstimateCny: 0,
-    text: "当前 AI Provider 尚未接入图片识别。请补充文字描述后再解析。"
+    text: "票据识别失败：当前没有启用支持图片的 AI 服务商。请到 AI 设置启用 SiliconFlow（DeepSeek V4 暂不支持图片）。"
   };
 }
 

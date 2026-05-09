@@ -275,7 +275,8 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>补充票据</Label>
-                <Input name="receipt_files" type="file" accept="image/*,application/pdf" capture="environment" multiple />
+                {/* 不要写 capture —— iOS Safari 会强制只能拍照，无法从相册或文件选 PDF */}
+                <Input name="receipt_files" type="file" accept="image/*,application/pdf" multiple />
               </div>
               <input type="hidden" name="quantity" value={parsed.quantity} />
               <details className="rounded-md border bg-muted/20 p-3 md:col-span-2">

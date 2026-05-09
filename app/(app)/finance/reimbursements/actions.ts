@@ -107,12 +107,31 @@ export async function withdrawExpenseReportAction(formData: FormData) {
 export async function approveExpenseReportAction(formData: FormData) {
   const ids = values(formData, "id");
   if (!ids.length) redirect(withErrorParam("/finance/reimbursements", "请选择至少一条报销单。"));
-  try {
-    await Promise.all(ids.map((id) => decideExpenseReport(id, "approved", value(formData, "comment") ?? "")));
-  } catch (error) {
-    console.error("[approveExpenseReportAction] error:", error);
-    redirect(withErrorParam("/finance/reimbursements", extractErrorMessage(error)));
+
+  // 一条失败不应该让其余 N-1 条回退 —— 用 allSettled 逐个跑，
+  // 最后告诉用户：成功 X / 失败 Y / 第一个失败原因
+  const comment = value(formData, "comment") ?? "";
+  const results = await Promise.allSettled(
+    ids.map((id) => decideExpenseReport(id, "approved", comment))
+  );
+  const failed = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
+  const succeeded = results.length - failed.length;
+
+  if (failed.length) {
+    console.error("[approveExpenseReportAction] partial failure:", failed.map((r) => r.reason));
+    const firstReason = extractErrorMessage(failed[0].reason);
+    revalidatePath("/finance/reimbursements");
+    revalidatePath("/finance/reimbursements/payments");
+    redirect(
+      withErrorParam(
+        "/finance/reimbursements",
+        succeeded > 0
+          ? `成功批准 ${succeeded} 条，${failed.length} 条失败：${firstReason}`
+          : `批准失败：${firstReason}`
+      )
+    );
   }
+
   revalidatePath("/finance/reimbursements");
   revalidatePath("/finance/reimbursements/payments");
   redirect(`/finance/reimbursements?notice=${encodeURIComponent(`已批准 ${ids.length} 条报销单。`)}`);

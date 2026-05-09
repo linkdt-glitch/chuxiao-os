@@ -134,10 +134,25 @@ function extractJsonObject(text: string) {
 
 const VISION_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_VISION_FILE_SIZE = 3 * 1024 * 1024;
-const MAX_VISION_FILES = 1;
+/** 一次最多识别 3 张票据 —— 兼顾「拍正面 + 反面 + 总览」典型场景 */
+const MAX_VISION_FILES = 3;
 
 function isReadableFile(file: File) {
   return file.size > 0 && VISION_MIME_TYPES.has(file.type) && file.size <= MAX_VISION_FILE_SIZE;
+}
+
+/** 把「为什么这张票据没被识别」用人话讲清楚，方便前端 / 日志展示。 */
+function fileSkipReason(file: File): string | null {
+  if (file.size === 0) return "文件为空";
+  if (!VISION_MIME_TYPES.has(file.type)) {
+    if (file.type === "application/pdf") return "PDF 不能直接识别（仅当作附件保留），请改拍照";
+    if (file.type === "image/heic" || file.type === "image/heif") return "iPhone 默认 HEIC 格式不支持，请在相机设置里改成 JPEG";
+    return `不支持的格式：${file.type || "未知"}`;
+  }
+  if (file.size > MAX_VISION_FILE_SIZE) {
+    return `图片超过 ${(MAX_VISION_FILE_SIZE / 1024 / 1024).toFixed(0)}MB（当前 ${(file.size / 1024 / 1024).toFixed(1)}MB），AI 会跳过`;
+  }
+  return null;
 }
 
 async function filesToAIImages(files: File[] = []): Promise<AIImageInput[]> {
@@ -147,6 +162,16 @@ async function filesToAIImages(files: File[] = []): Promise<AIImageInput[]> {
     data_base64: Buffer.from(await file.arrayBuffer()).toString("base64"),
     file_name: file.name
   })));
+}
+
+/** 给前端 / parse log 用：列出每个文件「能识别 / 跳过原因」。 */
+export function summarizeVisionEligibility(files: File[] = []) {
+  const skipped = files
+    .map((file) => ({ name: file.name, reason: fileSkipReason(file) }))
+    .filter((x): x is { name: string; reason: string } => x.reason !== null);
+  const acceptedCount = files.length - skipped.length;
+  const overflow = Math.max(0, acceptedCount - MAX_VISION_FILES);
+  return { acceptedCount: Math.min(acceptedCount, MAX_VISION_FILES), skipped, overflow };
 }
 
 function describeFiles(files: File[] = []) {

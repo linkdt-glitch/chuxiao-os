@@ -187,14 +187,27 @@ export async function approveFinanceRecordAction(formData: FormData) {
   if (!ids.length) {
     redirect(withErrorParam("/finance/records", "请先选择要批准的记录。"));
   }
-  try {
-    await Promise.all(ids.map((id) => approveFinanceRecord(id)));
-  } catch (error) {
-    console.error("[approveFinanceRecordAction] error:", error);
-    redirect(withErrorParam("/finance/records", extractErrorMessage(error)));
-  }
+  // 一条失败不应该让其余 N-1 条回退 —— 用 allSettled
+  const results = await Promise.allSettled(ids.map((id) => approveFinanceRecord(id)));
+  const failed = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
+  const succeeded = results.length - failed.length;
+
   revalidatePath("/finance/records");
   revalidatePath("/finance/reimbursements");
+
+  if (failed.length) {
+    console.error("[approveFinanceRecordAction] partial failure:", failed.map((r) => r.reason));
+    const firstReason = extractErrorMessage(failed[0].reason);
+    redirect(
+      withErrorParam(
+        "/finance/records",
+        succeeded > 0
+          ? `成功批准 ${succeeded} 条，${failed.length} 条失败：${firstReason}`
+          : `批准失败：${firstReason}`
+      )
+    );
+  }
+
   redirect(`/finance/records?notice=${encodeURIComponent(`已批准 ${ids.length} 条记录。`)}`);
 }
 

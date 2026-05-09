@@ -131,17 +131,18 @@ export function ExpenseReportForm({
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="receipt_files">发票 / 票据附件</Label>
+            {/* 注意：不要在多文件 input 上加 capture，iOS Safari 会强制只能拍照而无法选 PDF。
+                想从相册多选 + 拍照 + 选 PDF 三种都能用，最稳的就是不写 capture 属性。 */}
             <Input
               id="receipt_files"
               name="receipt_files"
               type="file"
               multiple
               accept="image/*,.pdf"
-              capture="environment"
               className={fieldClass}
               onChange={(event) => setFileCount(event.target.files?.length ?? 0)}
             />
-            <p className="text-xs text-muted-foreground">支持多张图片或 PDF。缺少票据会自动标记为红色异常，但不阻止保存草稿。</p>
+            <p className="text-xs text-muted-foreground">支持多张图片或 PDF（手机上可点击后选拍照 / 相册 / 文件）。缺少票据会自动标记为红色异常，但不阻止保存草稿。</p>
           </div>
 
           <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4 md:col-span-2">

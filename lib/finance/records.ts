@@ -391,6 +391,11 @@ export async function approveFinanceRecord(id: string) {
 
 export async function rejectFinanceRecord(id: string, reason?: string) {
   if (!(await canApproveFinance())) throw new Error("Missing permission: finance.approve");
+  // 服务端兜底：客户端 required 可被 DevTools 绕过，这里强制非空 + 至少 2 个字
+  const trimmed = (reason ?? "").trim();
+  if (trimmed.length < 2) {
+    throw new Error("驳回必须填写原因，至少 2 个字");
+  }
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return { ok: true };
@@ -399,7 +404,7 @@ export async function rejectFinanceRecord(id: string, reason?: string) {
   if (readError) throw readError;
   if (before.approval_request_id) await rejectApproval(before.approval_request_id);
 
-  const metadata = { ...(before.metadata ?? {}), reject_reason: reason ?? "" };
+  const metadata = { ...(before.metadata ?? {}), reject_reason: trimmed };
   const { data, error } = await supabase.from("finance_records").update({ status: "rejected", metadata }).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
   writeFinanceRecordTrace({
@@ -408,7 +413,7 @@ export async function rejectFinanceRecord(id: string, reason?: string) {
     related_record_id: id,
     before_data: before,
     after_data: data,
-    payload: { id, reason }
+    payload: { id, reason: trimmed }
   });
   revalidateFinanceRecordPaths("/finance/reimbursements");
   return data as FinanceRecord;

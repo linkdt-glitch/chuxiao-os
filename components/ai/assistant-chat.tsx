@@ -146,37 +146,16 @@ export function AssistantChat({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
-      {/* 顶部模型徽章 —— 让用户一眼知道现在用的是哪个 AI、大概多少钱一次 */}
-      {modelLabel ? (
-        <div
-          className={`mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border px-3.5 py-2 text-[12px] ${
-            isFounder
-              ? "border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-white"
-              : "border-slate-200 bg-white"
-          }`}
-        >
-          {isFounder ? (
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-                <Brain className="h-3 w-3" />
-                创始人模式
-              </span>
-              <span className="font-semibold text-slate-900">{modelLabel}</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-700">顶级推理模型，多步骤决策最强</span>
-            </>
-          ) : (
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                <Sparkles className="h-3 w-3 text-orange-500" />
-                AI 对话
-              </span>
-              <span className="font-semibold text-slate-900">{modelLabel}</span>
-              {modelDescription ? (
-                <span className="hidden text-slate-600 sm:inline">· {modelDescription}</span>
-              ) : null}
-            </>
-          )}
+      {/* 顶部模型徽章 —— 只对创始人显示，员工不需要看到模型 / 价格细节 */}
+      {isFounder && modelLabel ? (
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-white px-3.5 py-2 text-[12px]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+            <Brain className="h-3 w-3" />
+            创始人模式
+          </span>
+          <span className="font-semibold text-slate-900">{modelLabel}</span>
+          <span className="text-slate-600">·</span>
+          <span className="text-slate-700">顶级推理模型，多步骤决策最强</span>
           {approxCostPerTurnCny ? (
             <span className="ml-auto font-mono tabular-nums text-slate-600">
               {formatCostLabel(approxCostPerTurnCny)}/次

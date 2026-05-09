@@ -27,11 +27,20 @@ const defaultAIProviders = [
   },
   {
     provider_name: "deepseek",
-    label: "DeepSeek V4 Flash",
+    label: "DeepSeek 直连（V3.2 + R1 思考）",
     base_url: "https://api.deepseek.com",
-    model_name: "deepseek-v4-flash",
+    // 默认 model 用 deepseek-chat（V3.2-Exp，员工日常）；
+    // 创始人对话由代码自动升到 deepseek-reasoner（R1 顶级思考）
+    model_name: "deepseek-chat",
     is_active: false,
-    settings: { format: "openai", thinking_mode: "default" }
+    settings: {
+      format: "openai",
+      vendor: "deepseek",
+      // 实际模型由代码按 module + 角色挑：
+      //   owner + ai_chat       → deepseek-reasoner  (R1 顶级思考)
+      //   非 owner + ai_chat    → deepseek-chat      (V3.2-Exp 平衡)
+      role_routing: "founder→deepseek-reasoner (R1); staff→deepseek-chat (V3.2-Exp)"
+    }
   },
   {
     provider_name: "siliconflow",

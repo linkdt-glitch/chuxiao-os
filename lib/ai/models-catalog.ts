@@ -28,17 +28,21 @@ export type ModelCatalogEntry = {
 };
 
 /**
- * 创始人 / 老板专用 —— 当前 SiliconFlow 上最聪明的中文推理模型。
+ * 创始人 / 老板专用 —— 当前最聪明的中文推理模型。
  *
  *   DeepSeek-R1 是 671B MoE 推理模型，与 OpenAI o1 同档；
- *   多步骤推理、复杂决策、财务分析、商业策略上明显比 V3.1 强。
- *   代价是输出贵 2×（推理 token 也按输出计价），但创始人调一次值。
+ *   多步骤推理、复杂决策、财务分析、商业策略上明显比 V3 系列强。
+ *   代价是输出贵 4×（推理 token 也按输出计价），但创始人调一次值。
+ *
+ *   DeepSeek 官方 API id = "deepseek-reasoner"
+ *   SiliconFlow 转售 id  = "deepseek-ai/DeepSeek-R1"
+ *   两个 id 都被 estimateCostCny() 识别为这一档定价。
  */
 export const FOUNDER_CHAT_MODEL: ModelCatalogEntry = {
-  id: "deepseek-ai/DeepSeek-R1",
+  id: "deepseek-reasoner",
   label: "DeepSeek-R1（深度思考）",
   tier: "founder",
-  vendor: "DeepSeek · 671B MoE",
+  vendor: "DeepSeek · 671B MoE 推理",
   description:
     "顶级推理模型，与 OpenAI o1 同档。会先「想一会儿」再回答，多步骤推理、商业决策、复杂分析最强。",
   inputPriceCnyPerMillion: 4,
@@ -51,20 +55,24 @@ export const FOUNDER_CHAT_MODEL: ModelCatalogEntry = {
 /**
  * 全员日常对话 —— 性价比之王。
  *
- *   DeepSeek-V3.1 自带 hybrid thinking（可开可关），164K 上下文，
- *   与 V3 同价但全方位升级。是目前国产中文模型里最划算的中高端。
+ *   DeepSeek-V3.2-Exp 引入 sparse attention，输出价比 V3.1 又降了一半，
+ *   质量保持顶级，是 2026 年国产中文模型里最划算的「中高端」。
+ *
+ *   DeepSeek 官方 API id = "deepseek-chat"
+ *   SiliconFlow 转售 V3.1 id = "deepseek-ai/DeepSeek-V3.1"
+ *   两个 id 都被 estimateCostCny() 识别为这一档定价。
  */
 export const STANDARD_CHAT_MODEL: ModelCatalogEntry = {
-  id: "deepseek-ai/DeepSeek-V3.1",
-  label: "DeepSeek-V3.1",
+  id: "deepseek-chat",
+  label: "DeepSeek-V3.2",
   tier: "standard",
   vendor: "DeepSeek · 671B MoE",
   description:
-    "Hybrid thinking + 164K 上下文，质量速度平衡，性价比最高。员工日常用足够。",
-  inputPriceCnyPerMillion: 1.94,
-  outputPriceCnyPerMillion: 7.92,
+    "稀疏注意力 + 164K 上下文，质量保持顶级，单价比 V3.1 又降一半。员工日常用绰绰有余。",
+  inputPriceCnyPerMillion: 2,
+  outputPriceCnyPerMillion: 3,
   contextWindowK: 164,
-  approxCostPerTurnCny: 0.025,
+  approxCostPerTurnCny: 0.012,
   recommendedFor: "员工日常对话 —— 写文案、写邮件、答常识、整理思路"
 };
 
@@ -126,6 +134,18 @@ export function pickChatModelForRole(roleKey?: string | null): ModelCatalogEntry
 }
 
 /**
+ * 同一个模型在不同 provider 上的 id 别名。
+ * 用于让 estimateCostCny() 能正确认出 SiliconFlow 转售版 / DeepSeek 官方版
+ * 是同一档定价。
+ */
+const MODEL_ID_ALIASES: Record<string, string> = {
+  "deepseek-ai/DeepSeek-R1": "deepseek-reasoner",
+  "deepseek-ai/DeepSeek-V3.1": "deepseek-chat",
+  "deepseek-ai/DeepSeek-V3.2": "deepseek-chat",
+  "deepseek-ai/DeepSeek-V3.2-Exp": "deepseek-chat"
+};
+
+/**
  * 估算一次调用的实际成本（CNY）—— 在 API 拿到 usage.tokens 后调用。
  * 用于在前端给用户看「这次对话花了 ¥0.06」。
  */
@@ -134,7 +154,8 @@ export function estimateCostCny(
   inputTokens: number,
   outputTokens: number
 ): number {
-  const model = ALL_MODELS.find((m) => m.id === modelId);
+  const canonicalId = MODEL_ID_ALIASES[modelId] ?? modelId;
+  const model = ALL_MODELS.find((m) => m.id === canonicalId);
   if (!model) return 0;
   const inputCost = (inputTokens / 1_000_000) * model.inputPriceCnyPerMillion;
   const outputCost = (outputTokens / 1_000_000) * model.outputPriceCnyPerMillion;

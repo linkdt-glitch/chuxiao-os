@@ -38,15 +38,18 @@ export default async function AISettingsPage() {
                 </div>
                 <p>当前页面只负责选择启用哪个服务商，不在浏览器里保存或展示密钥。</p>
               </div>
-              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4 font-mono text-xs text-slate-700">
-                <div>DEEPSEEK_API_KEY=...</div>
-                <div>SILICONFLOW_API_KEY=...</div>
-                <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
-                <div>SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3</div>
-                <div>SILICONFLOW_FAST_MODEL=Qwen/Qwen2.5-7B-Instruct</div>
-                <div>FINANCE_AI_FAST_LOCAL=true</div>
+              <div className="space-y-1 rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4 font-mono text-xs text-slate-700">
+                <div className="mb-1.5 text-slate-500">⭐ 推荐：DeepSeek 直连（创始人 R1 + 员工 V3.2）</div>
+                <div>DEEPSEEK_API_KEY=sk-...</div>
+                <div className="mt-2 text-slate-500"># 备用：SiliconFlow 转售（同款模型，可选）</div>
+                <div>SILICONFLOW_API_KEY=sk-...</div>
               </div>
-              <p>切换服务商会写入审计日志和系统事件。财务一句话记账会优先走极速草稿，复杂识别和 AI 对话会自动使用当前激活的服务商。</p>
+              <p>
+                建议在 <span className="font-mono">Render → Environment</span> 里配置 <span className="font-mono">DEEPSEEK_API_KEY</span>，
+                然后到本页底部点击 <strong>启用</strong> DeepSeek 即可。代码会自动按角色路由：
+                创始人对话用 <span className="font-mono">deepseek-reasoner</span>（R1 顶级思考），
+                员工对话用 <span className="font-mono">deepseek-chat</span>（V3.2-Exp）。
+              </p>
             </CardContent>
           </Card>
           <ProviderTestCard />

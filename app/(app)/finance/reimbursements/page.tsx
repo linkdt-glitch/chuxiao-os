@@ -49,17 +49,17 @@ export default async function ReimbursementsPage({
         message={params.notice ?? (params.created ? "报销已经提交成功" : undefined)}
       />
       {params.error ? (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border border-rose-200/30 bg-rose-500/[0.08] p-3 text-sm text-rose-200">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
           <div>
             <div className="font-medium">操作失败</div>
-            <div className="mt-0.5 text-rose-200/85">{params.error}</div>
+            <div className="mt-0.5 text-rose-700/90">{params.error}</div>
           </div>
         </div>
       ) : null}
       {params.notice ? (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] p-3 text-sm text-emerald-300">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>{params.notice}</span>
         </div>
       ) : null}
@@ -136,13 +136,13 @@ export default async function ReimbursementsPage({
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-[16px] font-semibold tracking-tight text-slate-900">
-              <Sparkles className="h-4 w-4 text-amber-300" />
+              <Sparkles className="h-4 w-4 text-orange-500" />
               快捷记账审批
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-200">
+              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700">
                 {stats.financeRecordPendingCount} 待审 · {money(stats.financeRecordPendingAmount)}
               </span>
             </h2>
-            <p className="mt-0.5 text-[12px] text-slate-400">
+            <p className="mt-0.5 text-[13px] text-slate-600">
               AI 记账 / 手动记账勾选「提交审批」后，会出现在这里。
             </p>
           </div>
@@ -170,7 +170,7 @@ export default async function ReimbursementsPage({
             <h2 className="text-[16px] font-semibold tracking-tight text-slate-900">
               正式报销单工作台
             </h2>
-            <p className="mt-0.5 text-[12px] text-slate-400">
+            <p className="mt-0.5 text-[13px] text-slate-600">
               员工通过「申请报销」提交的正式单据。按员工 / 日期 / 类目 / 状态分组复核。
             </p>
           </div>
@@ -207,11 +207,11 @@ function CleanMetric({
   href?: string;
 }) {
   const palette = {
-    amber: { dot: "bg-amber-400", iconColor: "text-amber-300", border: "border-amber-500/15", bg: "bg-amber-500/[0.05]" },
-    sky: { dot: "bg-sky-400", iconColor: "text-sky-300", border: "border-sky-500/15", bg: "bg-sky-500/[0.05]" },
-    emerald: { dot: "bg-emerald-400", iconColor: "text-emerald-300", border: "border-emerald-500/15", bg: "bg-emerald-500/[0.05]" },
-    indigo: { dot: "bg-indigo-400", iconColor: "text-indigo-300", border: "border-indigo-500/15", bg: "bg-indigo-500/[0.05]" },
-    rose: { dot: "bg-rose-400", iconColor: "text-rose-300", border: "border-rose-500/15", bg: "bg-rose-500/[0.05]" }
+    amber: { dot: "bg-amber-500", iconColor: "text-amber-600" },
+    sky: { dot: "bg-sky-500", iconColor: "text-sky-600" },
+    emerald: { dot: "bg-emerald-500", iconColor: "text-emerald-600" },
+    indigo: { dot: "bg-indigo-500", iconColor: "text-indigo-600" },
+    rose: { dot: "bg-rose-500", iconColor: "text-rose-600" }
   }[tone];
 
   const Wrapper: React.ElementType = href ? Link : "div";
@@ -226,13 +226,13 @@ function CleanMetric({
       }
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[12px] font-medium uppercase tracking-[0.12em] text-slate-400">
+        <span className="flex items-center gap-2 text-[12px] font-medium uppercase tracking-[0.12em] text-slate-600">
           <span className={`h-1.5 w-1.5 rounded-full ${palette.dot}`} />
           {label}
         </span>
         <Icon className={`h-3.5 w-3.5 ${palette.iconColor}`} />
       </div>
-      <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight tabular-nums text-slate-50">
+      <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight tabular-nums text-slate-900">
         {value}
       </div>
       {hint ? (

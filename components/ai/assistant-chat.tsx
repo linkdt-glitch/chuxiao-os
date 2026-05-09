@@ -14,13 +14,24 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Brain, Sparkles } from "lucide-react";
 import { AIThinking } from "@/components/ui/ai-thinking";
 import { Textarea } from "@/components/ui/textarea";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+};
+
+type AssistantChatProps = {
+  /** 是否创始人 / 老板 —— 用来在头部显示「创始人模式」徽章。 */
+  isFounder?: boolean;
+  /** 当前对话使用的模型显示名（如 "DeepSeek-R1（深度思考）"）。 */
+  modelLabel?: string;
+  /** 模型描述（鼠标悬停或下方一行小字）。 */
+  modelDescription?: string;
+  /** 估一次对话的价格（CNY）—— 给用户「这次大概花多少」的参考。 */
+  approxCostPerTurnCny?: number;
 };
 
 const STARTER_PROMPTS = [
@@ -48,7 +59,18 @@ const INITIAL_MESSAGE: Message = {
     "你好，我是初晓 AI 助手。可以帮你梳理思路、起草文档、做决策、做经营复盘 —— 直接问我吧。"
 };
 
-export function AssistantChat() {
+function formatCostLabel(cost?: number) {
+  if (!cost || cost <= 0) return "";
+  if (cost < 0.01) return "< ¥0.01";
+  return `约 ¥${cost.toFixed(2)}`;
+}
+
+export function AssistantChat({
+  isFounder = false,
+  modelLabel,
+  modelDescription,
+  approxCostPerTurnCny
+}: AssistantChatProps = {}) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
@@ -124,6 +146,45 @@ export function AssistantChat() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col">
+      {/* 顶部模型徽章 —— 让用户一眼知道现在用的是哪个 AI、大概多少钱一次 */}
+      {modelLabel ? (
+        <div
+          className={`mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border px-3.5 py-2 text-[12px] ${
+            isFounder
+              ? "border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-white"
+              : "border-slate-200 bg-white"
+          }`}
+        >
+          {isFounder ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                <Brain className="h-3 w-3" />
+                创始人模式
+              </span>
+              <span className="font-semibold text-slate-900">{modelLabel}</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-700">顶级推理模型，多步骤决策最强</span>
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                <Sparkles className="h-3 w-3 text-orange-500" />
+                AI 对话
+              </span>
+              <span className="font-semibold text-slate-900">{modelLabel}</span>
+              {modelDescription ? (
+                <span className="hidden text-slate-600 sm:inline">· {modelDescription}</span>
+              ) : null}
+            </>
+          )}
+          {approxCostPerTurnCny ? (
+            <span className="ml-auto font-mono tabular-nums text-slate-600">
+              {formatCostLabel(approxCostPerTurnCny)}/次
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* 消息区 */}
       <div className="flex flex-col gap-7 pb-40 pt-2">
         {messages.map((message, index) => {

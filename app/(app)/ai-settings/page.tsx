@@ -1,4 +1,4 @@
-import { ExternalLink, ImageIcon, KeyRound, Lock, ServerCog, Shield } from "lucide-react";
+import { Brain, ExternalLink, ImageIcon, KeyRound, Lock, ServerCog, Shield, Sparkles, Zap } from "lucide-react";
 import { ProviderTestCard } from "@/components/ai/provider-test-card";
 import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { PageHeader } from "@/components/layout/page-header";
@@ -6,6 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IMAGE_MODELS, formatPriceCny, getDefaultModel } from "@/lib/ai/image-models";
+import {
+  ALL_MODELS,
+  FAST_PARSE_MODEL,
+  FOUNDER_CHAT_MODEL,
+  STANDARD_CHAT_MODEL,
+  VISION_MODEL,
+  type ModelCatalogEntry
+} from "@/lib/ai/models-catalog";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
 import { activateProviderAction, disableProviderAction } from "./actions";
@@ -50,61 +58,32 @@ export default async function AISettingsPage() {
           </Card>
           <ProviderTestCard />
 
-          {/* SiliconFlow 推荐模型升级提示 */}
+          {/* AI 模型目录 —— 谁用什么、多少钱 */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ServerCog className="h-4 w-4 text-orange-600" />
-                SiliconFlow 推荐模型组合（2026）
+                <Sparkles className="h-4 w-4 text-orange-600" />
+                AI 模型目录（按角色 / 用途）
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-400">
-              <div
-                className="rounded-lg p-3 text-[12px]"
-                style={{
-                  background: "#f8fafc",
-                  border: "1px solid rgba(249,115,22,0.14)"
-                }}
-              >
-                <div className="mb-2 flex items-center gap-2 font-medium text-slate-900">
-                  <span
-                    className="rounded px-1.5 py-0.5 font-mono text-[10px]"
-                    style={{
-                      background: "rgba(74,222,128,0.10)",
-                      color: "#86efac",
-                      border: "1px solid rgba(74,222,128,0.30)"
-                    }}
-                  >
-                    已升级
-                  </span>
-                  代码默认值
-                </div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
-                  <li>极速短任务 → <span className="font-mono text-orange-700">Qwen/Qwen2.5-7B-Instruct</span> · 首字节 &lt;300ms</li>
-                  <li>AI 对话 → <span className="font-mono text-orange-700">deepseek-ai/DeepSeek-V3.1</span> · hybrid thinking + 164K 上下文</li>
-                  <li>拍照识图 → <span className="font-mono text-orange-700">Qwen/Qwen2.5-VL-7B-Instruct</span> · 比 72B 快 5-10×，识别票据足够</li>
-                  <li>价格档：<span className="text-emerald-700">输入 ¥1.94/M · 输出 ¥7.92/M</span>（V3.1，与 V3 同价但质量更高）</li>
-                </ul>
-              </div>
-
-              <div
-                className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-800"
-                style={{
-                  background: "rgba(251,191,36,0.06)",
-                  border: "1px solid rgba(251,191,36,0.28)"
-                }}
-              >
-                <div className="mb-1 font-medium text-amber-800">如果你之前在 Render 设过环境变量</div>
-                <p>
-                  Render 的 env 会覆盖代码默认值。要享受新组合，请到 Render Dashboard → chuxiao-os → Environment 把这 4 项更新（设过的话）：
-                </p>
-                <ul className="ml-3 mt-1.5 list-disc font-mono text-[10px] marker:text-amber-700">
-                  <li>SILICONFLOW_MODEL = deepseek-ai/DeepSeek-V3.1</li>
-                  <li>SILICONFLOW_CHAT_MODEL = deepseek-ai/DeepSeek-V3.1</li>
-                  <li>SILICONFLOW_VISION_MODEL = Qwen/Qwen2.5-VL-7B-Instruct</li>
-                  <li>SILICONFLOW_FAST_MODEL = Qwen/Qwen2.5-7B-Instruct（保持）</li>
-                </ul>
-                <p className="mt-1.5">如果没设过任何 env，系统会自动用上面的默认值，无需操作。</p>
+            <CardContent className="space-y-3">
+              <p className="text-[12px] leading-relaxed text-slate-700">
+                系统根据「谁在用」+「干什么」自动选最合适的模型。创始人对话默认走顶级推理模型，
+                员工对话走平衡型，记账解析走极速模型 —— 既保证关键决策的质量，也避免高频小任务烧钱。
+              </p>
+              {ALL_MODELS.map((model) => (
+                <ModelCatalogCard key={model.id} model={model} />
+              ))}
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+                价格按 SiliconFlow 2026-05 公开报价估算，按 token 实际计费。
+                如需在 Render 环境变量里覆盖默认模型，可设
+                <span className="mx-1 font-mono">SILICONFLOW_FOUNDER_CHAT_MODEL</span>
+                /
+                <span className="mx-1 font-mono">SILICONFLOW_CHAT_MODEL</span>
+                /
+                <span className="mx-1 font-mono">SILICONFLOW_FAST_MODEL</span>
+                /
+                <span className="mx-1 font-mono">SILICONFLOW_VISION_MODEL</span>。
               </div>
             </CardContent>
           </Card>
@@ -405,5 +384,102 @@ export default async function AISettingsPage() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+/**
+ * 单个模型卡 —— 显示模型名 / 适用场景 / 输入输出价格 / 一次大概多少钱。
+ *
+ * 创始人专属（tier=founder）会用更显眼的橙色高亮 + 「创始人」徽章；
+ * 其他档位用普通 outline 卡。
+ */
+function ModelCatalogCard({ model }: { model: ModelCatalogEntry }) {
+  const isFounder = model.tier === "founder";
+  const isVision = model.tier === "vision";
+  const isFast = model.tier === "fast";
+
+  const Icon = isFounder ? Brain : isVision ? ImageIcon : isFast ? Zap : Sparkles;
+  const iconBg = isFounder
+    ? "bg-orange-500"
+    : isVision
+      ? "bg-violet-500"
+      : isFast
+        ? "bg-sky-500"
+        : "bg-slate-700";
+
+  const tierLabel = {
+    founder: "创始人专属",
+    standard: "员工日常",
+    fast: "极速 / 解析",
+    vision: "图像识别"
+  }[model.tier];
+
+  return (
+    <div
+      className={`rounded-xl border p-3.5 transition-colors ${
+        isFounder
+          ? "border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-white shadow-[0_0_0_1px_rgba(249,115,22,0.10),0_8px_24px_-12px_rgba(249,115,22,0.20)]"
+          : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white ${iconBg}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-[14px] font-semibold text-slate-900">{model.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                isFounder
+                  ? "bg-orange-500 text-white"
+                  : "bg-slate-100 text-slate-700"
+              }`}
+            >
+              {tierLabel}
+            </span>
+            <span className="font-mono text-[10px] text-slate-500">{model.vendor}</span>
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-slate-700">{model.description}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+            <span className="font-semibold text-slate-700">推荐场景：</span>
+            {model.recommendedFor}
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+            <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5">
+              <div className="text-slate-500">输入价</div>
+              <div className="font-mono font-semibold text-slate-900 tabular-nums">
+                ¥{model.inputPriceCnyPerMillion}/M
+              </div>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5">
+              <div className="text-slate-500">输出价</div>
+              <div className="font-mono font-semibold text-slate-900 tabular-nums">
+                ¥{model.outputPriceCnyPerMillion}/M
+              </div>
+            </div>
+            <div
+              className={`rounded-md border px-2 py-1.5 ${
+                isFounder ? "border-orange-300 bg-orange-50" : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="text-slate-500">一次约</div>
+              <div
+                className={`font-mono font-semibold tabular-nums ${
+                  isFounder ? "text-orange-700" : "text-slate-900"
+                }`}
+              >
+                {model.approxCostPerTurnCny < 0.01
+                  ? "< ¥0.01"
+                  : `¥${model.approxCostPerTurnCny.toFixed(2)}`}
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 font-mono text-[10px] text-slate-500">
+            {model.id} · 上下文 {model.contextWindowK}K tokens
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

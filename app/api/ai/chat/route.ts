@@ -84,7 +84,9 @@ export async function POST(request: Request) {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-cache, no-transform",
-          "X-AI-Provider": result.provider.label ?? result.provider.provider_name
+          "X-AI-Provider": result.provider.label ?? result.provider.provider_name,
+          // 把 model id 也透传出去，前端 chat header 用来显示「正在用 DeepSeek-R1 深度思考」
+          "X-AI-Model": result.modelId ?? ""
         }
       });
     }
@@ -99,6 +101,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       provider: { label: result.provider.label },
+      modelId: result.modelId,
+      costEstimateCny: result.costEstimateCny,
       invocationLogId: result.invocationLogId,
       message: {
         role: "assistant",

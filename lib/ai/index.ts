@@ -5,6 +5,13 @@ import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { requirePermission } from "@/lib/permissions";
 import type { AIProvider } from "@/lib/types/core";
+import {
+  FAST_PARSE_MODEL,
+  FOUNDER_CHAT_MODEL,
+  STANDARD_CHAT_MODEL,
+  VISION_MODEL,
+  estimateCostCny
+} from "./models-catalog";
 
 type ChatCompletionResponse = {
   choices?: Array<{ message?: { content?: string | null } }>;
@@ -29,6 +36,13 @@ type AIInvokeOptions = {
   timeoutMs?: number;
   temperature?: number;
   responseFormat?: "json";
+  /**
+   * 用户角色 key（owner/admin/manager/member）。
+   * 当 module === "ai_chat" 且 roleKey === "owner" 时，
+   * 自动升级到 FOUNDER_CHAT_MODEL（DeepSeek-R1 深度思考）。
+   * 其他模块或未传时走 STANDARD_CHAT_MODEL。
+   */
+  roleKey?: string | null;
 };
 
 export async function getActiveProvider() {
@@ -184,36 +198,51 @@ function numberEnv(key: string, fallback: number) {
 }
 
 /**
- * SiliconFlow 推荐模型组合（2026 最新最优，按用途分）
+ * SiliconFlow 推荐模型组合（2026 最新最优，按用途 + 角色分）
  *
- *   FAST  Qwen/Qwen2.5-7B-Instruct          极速短任务（一句话记账解析）首字节 <300ms
- *   CHAT  deepseek-ai/DeepSeek-V3.1         hybrid thinking + 164K context，质量+速度平衡
- *   VISION Qwen/Qwen2.5-VL-7B-Instruct      拍照识别票据，比 72B 快 5-10×，识别足够
- *   DEFAULT deepseek-ai/DeepSeek-V3.1       通用 fallback（V3 已被 V3.1 全方位升级且同价）
+ *   FAST    Qwen/Qwen2.5-7B-Instruct        极速短任务（一句话记账解析）首字节 <300ms
+ *   CHAT    deepseek-ai/DeepSeek-V3.1       员工日常对话，性价比之王
+ *   FOUNDER deepseek-ai/DeepSeek-R1         🧠 创始人专属，671B 顶级推理（对标 o1）
+ *   VISION  Qwen/Qwen2.5-VL-7B-Instruct     拍照识别票据，比 72B 快 5-10×
+ *   DEFAULT deepseek-ai/DeepSeek-V3.1       通用 fallback
  *
- * 用户在 Render 环境变量 / Supabase ai_providers 表里可以覆盖以上任一项。
+ * 模型 id + 价格的单一来源在 lib/ai/models-catalog.ts 里。
+ * 用户可在 Render 环境变量里覆盖：
+ *   SILICONFLOW_FOUNDER_CHAT_MODEL  → 创始人对话用（默认 DeepSeek-R1）
+ *   SILICONFLOW_CHAT_MODEL          → 员工对话用（默认 DeepSeek-V3.1）
+ *   SILICONFLOW_FAST_MODEL          → AI 解析用
+ *   SILICONFLOW_VISION_MODEL        → 拍照识别用
  */
-const SILICONFLOW_DEFAULT_FAST = "Qwen/Qwen2.5-7B-Instruct";
-const SILICONFLOW_DEFAULT_CHAT = "deepseek-ai/DeepSeek-V3.1";
-const SILICONFLOW_DEFAULT_VISION = "Qwen/Qwen2.5-VL-7B-Instruct";
-const SILICONFLOW_DEFAULT_GENERAL = "deepseek-ai/DeepSeek-V3.1";
-
-function modelForModule(provider: AIProvider, module: string, hasImages = false) {
+function modelForModule(
+  provider: AIProvider,
+  module: string,
+  hasImages = false,
+  roleKey?: string | null
+) {
   if (provider.provider_name === "siliconflow") {
     if (hasImages) {
-      return process.env.SILICONFLOW_VISION_MODEL || SILICONFLOW_DEFAULT_VISION;
+      return process.env.SILICONFLOW_VISION_MODEL || VISION_MODEL.id;
     }
     if (module.startsWith("finance.ai_parse")) {
-      return process.env.SILICONFLOW_FAST_MODEL || SILICONFLOW_DEFAULT_FAST;
+      return process.env.SILICONFLOW_FAST_MODEL || FAST_PARSE_MODEL.id;
     }
     if (module === "ai_chat") {
-      return process.env.SILICONFLOW_CHAT_MODEL || SILICONFLOW_DEFAULT_CHAT;
+      // 创始人 / 老板 → 顶级推理模型；其他人 → 平衡型
+      if (roleKey === "owner") {
+        return process.env.SILICONFLOW_FOUNDER_CHAT_MODEL || FOUNDER_CHAT_MODEL.id;
+      }
+      return process.env.SILICONFLOW_CHAT_MODEL || STANDARD_CHAT_MODEL.id;
     }
-    return provider.model_name || process.env.SILICONFLOW_MODEL || SILICONFLOW_DEFAULT_GENERAL;
+    return provider.model_name || process.env.SILICONFLOW_MODEL || STANDARD_CHAT_MODEL.id;
   }
 
   if (module.startsWith("finance.ai_parse")) return process.env.DEEPSEEK_FAST_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
-  if (module === "ai_chat") return process.env.DEEPSEEK_CHAT_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  if (module === "ai_chat") {
+    if (roleKey === "owner") {
+      return process.env.DEEPSEEK_FOUNDER_CHAT_MODEL || "deepseek-reasoner";
+    }
+    return process.env.DEEPSEEK_CHAT_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  }
   return provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
 }
 
@@ -232,13 +261,18 @@ function maxTokensForModule(module: string, hasImages = false) {
   return 900;
 }
 
-function getProviderConfig(provider: AIProvider, module: string, hasImages = false) {
+function getProviderConfig(
+  provider: AIProvider,
+  module: string,
+  hasImages = false,
+  roleKey?: string | null
+) {
   if (provider.provider_name === "siliconflow") {
     return {
       displayName: "SiliconFlow",
       apiKey: process.env.SILICONFLOW_API_KEY ?? "",
       baseUrl: provider.base_url ?? process.env.SILICONFLOW_BASE_URL ?? "https://api.siliconflow.cn/v1",
-      model: modelForModule(provider, module, hasImages),
+      model: modelForModule(provider, module, hasImages, roleKey),
       missingKeyMessage: "Missing SILICONFLOW_API_KEY"
     };
   }
@@ -247,7 +281,7 @@ function getProviderConfig(provider: AIProvider, module: string, hasImages = fal
     displayName: "DeepSeek",
     apiKey: process.env.DEEPSEEK_API_KEY ?? process.env.SPEEK_V4_API_KEY ?? "",
     baseUrl: provider.base_url ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
-    model: modelForModule(provider, module, hasImages),
+    model: modelForModule(provider, module, hasImages, roleKey),
     missingKeyMessage: "Missing DEEPSEEK_API_KEY"
   };
 }
@@ -296,7 +330,7 @@ async function invokeOpenAICompatible(input: AIInvokeOptions & {
   provider: AIProvider & { provider_name: OpenAICompatibleProviderName };
 }) {
   const hasImages = Boolean(input.images?.length);
-  const config = getProviderConfig(input.provider, input.module, hasImages);
+  const config = getProviderConfig(input.provider, input.module, hasImages, input.roleKey);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");
   const promptPreview = input.images?.length ? `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]` : input.prompt;
 
@@ -311,6 +345,8 @@ async function invokeOpenAICompatible(input: AIInvokeOptions & {
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
+      modelId: config.model,
+      costEstimateCny: 0,
       text: `${config.displayName} API Key 未配置。请在服务端环境变量中设置对应 API Key。`
     };
   }
@@ -345,23 +381,31 @@ async function invokeOpenAICompatible(input: AIInvokeOptions & {
       return {
         provider: input.provider,
         invocationLogId: "id" in invocation ? invocation.id : undefined,
+        modelId: config.model,
+        costEstimateCny: 0,
         text: `${config.displayName} 调用失败：${message}`
       };
     }
 
     const text = payload.choices?.[0]?.message?.content?.trim() ?? "";
+    const inputTokens = payload.usage?.prompt_tokens ?? 0;
+    const outputTokens = payload.usage?.completion_tokens ?? 0;
+    const costEstimateCny = estimateCostCny(config.model, inputTokens, outputTokens);
     const invocation = await logAIInvocation({
       provider_id: input.provider.id,
       module: input.module,
       prompt_preview: promptPreview.slice(0, 500),
-      input_tokens: payload.usage?.prompt_tokens ?? 0,
-      output_tokens: payload.usage?.completion_tokens ?? 0,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_estimate: costEstimateCny,
       status: "success"
     });
 
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
+      modelId: config.model,
+      costEstimateCny,
       text
     };
   } catch (error) {
@@ -378,6 +422,8 @@ async function invokeOpenAICompatible(input: AIInvokeOptions & {
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
+      modelId: config.model,
+      costEstimateCny: 0,
       text: `${config.displayName} 调用失败：${message}`
     };
   } finally {
@@ -389,7 +435,7 @@ async function streamOpenAICompatible(input: AIInvokeOptions & {
   provider: AIProvider & { provider_name: OpenAICompatibleProviderName };
 }) {
   const hasImages = Boolean(input.images?.length);
-  const config = getProviderConfig(input.provider, input.module, hasImages);
+  const config = getProviderConfig(input.provider, input.module, hasImages, input.roleKey);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");
   const promptPreview = input.images?.length ? `${input.prompt}\n[images:${input.images.map((image) => image.file_name ?? image.mime_type).join(", ")}]` : input.prompt;
 
@@ -404,6 +450,7 @@ async function streamOpenAICompatible(input: AIInvokeOptions & {
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
+      modelId: config.model,
       stream: makeTextStream(`${config.displayName} API Key 未配置。请在服务端环境变量中设置对应 API Key。`)
     };
   }
@@ -435,6 +482,7 @@ async function streamOpenAICompatible(input: AIInvokeOptions & {
       return {
         provider: input.provider,
         invocationLogId: "id" in invocation ? invocation.id : undefined,
+        modelId: config.model,
         stream: makeTextStream(`${config.displayName} 调用失败：${message}`)
       };
     }
@@ -502,7 +550,7 @@ async function streamOpenAICompatible(input: AIInvokeOptions & {
       }
     })();
 
-    return { provider: input.provider, stream: readable };
+    return { provider: input.provider, modelId: config.model, stream: readable };
   } catch (error) {
     clearTimeout(timeout);
     const message = error instanceof Error && error.name === "AbortError"
@@ -518,13 +566,33 @@ async function streamOpenAICompatible(input: AIInvokeOptions & {
     return {
       provider: input.provider,
       invocationLogId: "id" in invocation ? invocation.id : undefined,
+      modelId: config.model,
       stream: makeTextStream(`${config.displayName} 调用失败：${message}`)
     };
   }
 }
 
+/**
+ * 自动取当前用户角色 key —— invokeAI / streamAI 在 ai_chat 模块下
+ * 用它来判断走「创始人顶级模型」还是「员工平衡模型」。
+ *
+ * 任何登录失败 / Supabase 不可用 / 系统调用都返回 null，
+ * 这种情况下走标准模型即可，不会抛错。
+ */
+async function resolveCurrentRoleKey(): Promise<string | null> {
+  try {
+    const member = await getCurrentMember();
+    return member?.role?.key ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
   const provider = await getActiveProvider();
+  // ai_chat 模块自动检测当前角色 → owner 用顶级推理模型
+  const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
@@ -533,7 +601,8 @@ export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
       maxTokens: input.maxTokens,
       timeoutMs: input.timeoutMs,
       temperature: input.temperature,
-      responseFormat: input.responseFormat
+      responseFormat: input.responseFormat,
+      roleKey
     });
   }
 
@@ -546,12 +615,16 @@ export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
   return {
     provider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
+    modelId: provider.model_name,
+    costEstimateCny: 0,
     text: "AI Provider interface reserved. Real model execution can be plugged in here."
   };
 }
 
 export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIImageInput[] }) {
   const provider = await getActiveProvider();
+  const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return invokeOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
@@ -561,7 +634,8 @@ export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIIm
       maxTokens: input.maxTokens,
       timeoutMs: input.timeoutMs,
       temperature: input.temperature,
-      responseFormat: input.responseFormat
+      responseFormat: input.responseFormat,
+      roleKey
     });
   }
 
@@ -575,16 +649,22 @@ export async function invokeAIWithImages(input: AIInvokeOptions & { images: AIIm
   return {
     provider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
+    modelId: provider.model_name,
+    costEstimateCny: 0,
     text: "当前 AI Provider 尚未接入图片识别。请补充文字描述后再解析。"
   };
 }
 
 export async function streamAI(input: Omit<AIInvokeOptions, "images">) {
   const provider = await getActiveProvider();
+  // ai_chat 模块自动检测当前角色 → owner 用顶级推理模型
+  const roleKey = input.roleKey ?? (input.module === "ai_chat" ? await resolveCurrentRoleKey() : null);
+
   if (provider.provider_name === "deepseek" || provider.provider_name === "siliconflow") {
     return streamOpenAICompatible({
       provider: provider as AIProvider & { provider_name: OpenAICompatibleProviderName },
-      ...input
+      ...input,
+      roleKey
     });
   }
 
@@ -597,6 +677,7 @@ export async function streamAI(input: Omit<AIInvokeOptions, "images">) {
   return {
     provider,
     invocationLogId: "id" in invocation ? invocation.id : undefined,
+    modelId: provider.model_name,
     stream: makeTextStream("AI Provider interface reserved. Real model execution can be plugged in here.")
   };
 }

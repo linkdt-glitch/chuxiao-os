@@ -35,11 +35,20 @@ const defaultAIProviders = [
   },
   {
     provider_name: "siliconflow",
-    label: "SiliconFlow DeepSeek V3",
+    label: "SiliconFlow（按角色路由）",
     base_url: "https://api.siliconflow.cn/v1",
-    model_name: "deepseek-ai/DeepSeek-V3",
+    model_name: "deepseek-ai/DeepSeek-V3.1",
     is_active: false,
-    settings: { format: "openai", vendor: "siliconflow" }
+    settings: {
+      format: "openai",
+      vendor: "siliconflow",
+      // 实际模型由代码按 module + 角色挑：
+      //   owner + ai_chat       → deepseek-ai/DeepSeek-R1     (顶级推理)
+      //   非 owner + ai_chat    → deepseek-ai/DeepSeek-V3.1   (平衡)
+      //   finance.ai_parse.*    → Qwen/Qwen2.5-7B-Instruct    (极速)
+      //   带图片                → Qwen/Qwen2.5-VL-7B-Instruct (视觉)
+      role_routing: "founder→deepseek-r1; staff→deepseek-v3.1"
+    }
   }
 ];
 

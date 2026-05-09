@@ -28,51 +28,53 @@ export type ModelCatalogEntry = {
 };
 
 /**
- * 创始人 / 老板专用 —— 当前最聪明的中文推理模型。
+ * 创始人 / 老板专用 —— 当前 DeepSeek 最强的推理 / 决策模型。
  *
- *   DeepSeek-R1 是 671B MoE 推理模型，与 OpenAI o1 同档；
- *   多步骤推理、复杂决策、财务分析、商业策略上明显比 V3 系列强。
- *   代价是输出贵 4×（推理 token 也按输出计价），但创始人调一次值。
+ *   DeepSeek-V4 Pro 是 V4 系列的顶级版本，1M 上下文，深度思考，
+ *   多步骤推理、财务分析、商业决策、合同审查碾压 flash 版。
+ *   官方挂牌价 ¥12 / ¥24 per M，但 2026 年 5 月 31 日前 75% off
+ *   → 实际成本 ¥3 / ¥6 per M（创始人单次大约 ¥0.012-0.024）。
  *
- *   DeepSeek 官方 API id = "deepseek-reasoner"
- *   SiliconFlow 转售 id  = "deepseek-ai/DeepSeek-R1"
- *   两个 id 都被 estimateCostCny() 识别为这一档定价。
+ *   DeepSeek 官方 API id = "deepseek-v4-pro"
+ *   旧 id "deepseek-reasoner" / SiliconFlow 转售 R1 都被
+ *   estimateCostCny() 视为同档（兼容老调用）。
  */
 export const FOUNDER_CHAT_MODEL: ModelCatalogEntry = {
-  id: "deepseek-reasoner",
-  label: "DeepSeek-R1（深度思考）",
+  id: "deepseek-v4-pro",
+  label: "DeepSeek-V4 Pro（顶级思考）",
   tier: "founder",
-  vendor: "DeepSeek · 671B MoE 推理",
+  vendor: "DeepSeek · V4 旗舰",
   description:
-    "顶级推理模型，与 OpenAI o1 同档。会先「想一会儿」再回答，多步骤推理、商业决策、复杂分析最强。",
-  inputPriceCnyPerMillion: 4,
-  outputPriceCnyPerMillion: 16,
-  contextWindowK: 64,
-  approxCostPerTurnCny: 0.06,
+    "DeepSeek 当前最强模型，1M 上下文 + 深度思考。多步骤推理、商业决策、财报解读、合同审查最强。当前 75% 折扣（截至 2026-05-31）。",
+  // 挂牌价（折扣前）—— estimateCostCny 用这个
+  inputPriceCnyPerMillion: 12,
+  outputPriceCnyPerMillion: 24,
+  contextWindowK: 1024,
+  // 75% off 后单次实际花费约 ¥0.02；折扣结束按挂牌价约 ¥0.05/次
+  approxCostPerTurnCny: 0.02,
   recommendedFor: "创始人 / 老板 —— 战略决策、复杂问题分析、财报解读、合同审查"
 };
 
 /**
  * 全员日常对话 —— 性价比之王。
  *
- *   DeepSeek-V3.2-Exp 引入 sparse attention，输出价比 V3.1 又降了一半，
- *   质量保持顶级，是 2026 年国产中文模型里最划算的「中高端」。
+ *   DeepSeek-V4 Flash 上下文一下到 1M，价格降到 ¥1 / ¥2 per M
+ *   （比 V3.2 又便宜一半），员工日常用绰绰有余。
  *
- *   DeepSeek 官方 API id = "deepseek-chat"
- *   SiliconFlow 转售 V3.1 id = "deepseek-ai/DeepSeek-V3.1"
- *   两个 id 都被 estimateCostCny() 识别为这一档定价。
+ *   DeepSeek 官方 API id = "deepseek-v4-flash"
+ *   旧 id "deepseek-chat" 仍可用但官方说后续会废弃。
  */
 export const STANDARD_CHAT_MODEL: ModelCatalogEntry = {
-  id: "deepseek-chat",
-  label: "DeepSeek-V3.2",
+  id: "deepseek-v4-flash",
+  label: "DeepSeek-V4 Flash",
   tier: "standard",
-  vendor: "DeepSeek · 671B MoE",
+  vendor: "DeepSeek · V4",
   description:
-    "稀疏注意力 + 164K 上下文，质量保持顶级，单价比 V3.1 又降一半。员工日常用绰绰有余。",
-  inputPriceCnyPerMillion: 2,
-  outputPriceCnyPerMillion: 3,
-  contextWindowK: 164,
-  approxCostPerTurnCny: 0.012,
+    "1M 上下文，输出价 ¥2/M，单次约 1 分钱。员工日常对话足够。",
+  inputPriceCnyPerMillion: 1,
+  outputPriceCnyPerMillion: 2,
+  contextWindowK: 1024,
+  approxCostPerTurnCny: 0.005,
   recommendedFor: "员工日常对话 —— 写文案、写邮件、答常识、整理思路"
 };
 
@@ -134,15 +136,24 @@ export function pickChatModelForRole(roleKey?: string | null): ModelCatalogEntry
 }
 
 /**
- * 同一个模型在不同 provider 上的 id 别名。
- * 用于让 estimateCostCny() 能正确认出 SiliconFlow 转售版 / DeepSeek 官方版
- * 是同一档定价。
+ * 同一个模型在不同 provider / 不同 API 版本上的 id 别名。
+ * 用于让 estimateCostCny() 能正确识别 SiliconFlow 转售版 / DeepSeek 官方版
+ * / 已废弃的旧 id 都按当前对应的定价档计费。
+ *
+ * V4 上线后，旧的 deepseek-reasoner / deepseek-chat 被官方标记为「将废弃」，
+ * 但保留兼容；这里把它们直接映到 V4 对应档（按官方说明，
+ * deepseek-reasoner = v4-flash thinking 模式，deepseek-chat = v4-flash 非思考）。
+ * 推理任务真正想要顶级质量请显式用 deepseek-v4-pro。
  */
 const MODEL_ID_ALIASES: Record<string, string> = {
-  "deepseek-ai/DeepSeek-R1": "deepseek-reasoner",
-  "deepseek-ai/DeepSeek-V3.1": "deepseek-chat",
-  "deepseek-ai/DeepSeek-V3.2": "deepseek-chat",
-  "deepseek-ai/DeepSeek-V3.2-Exp": "deepseek-chat"
+  // SiliconFlow 转售老型号 → 当前对应的 DeepSeek V4 档
+  "deepseek-ai/DeepSeek-R1": "deepseek-v4-pro",
+  "deepseek-ai/DeepSeek-V3.1": "deepseek-v4-flash",
+  "deepseek-ai/DeepSeek-V3.2": "deepseek-v4-flash",
+  "deepseek-ai/DeepSeek-V3.2-Exp": "deepseek-v4-flash",
+  // DeepSeek 官方旧 id → V4
+  "deepseek-reasoner": "deepseek-v4-flash",
+  "deepseek-chat": "deepseek-v4-flash"
 };
 
 /**

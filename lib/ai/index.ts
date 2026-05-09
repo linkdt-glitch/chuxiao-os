@@ -236,14 +236,16 @@ function modelForModule(
     return provider.model_name || process.env.SILICONFLOW_MODEL || STANDARD_CHAT_MODEL.id;
   }
 
-  if (module.startsWith("finance.ai_parse")) return process.env.DEEPSEEK_FAST_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  if (module.startsWith("finance.ai_parse")) return process.env.DEEPSEEK_FAST_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
   if (module === "ai_chat") {
     if (roleKey === "owner") {
-      return process.env.DEEPSEEK_FOUNDER_CHAT_MODEL || "deepseek-reasoner";
+      // 创始人 → V4 Pro（当前最强；75% off 期间单次约 ¥0.02）
+      return process.env.DEEPSEEK_FOUNDER_CHAT_MODEL || "deepseek-v4-pro";
     }
-    return process.env.DEEPSEEK_CHAT_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+    // 员工 → V4 Flash（1M 上下文 / ¥1 ¥2 / 单次约 ¥0.005）
+    return process.env.DEEPSEEK_CHAT_MODEL || provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
   }
-  return provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  return provider.model_name || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
 }
 
 function timeoutForModule(module: string, hasImages = false) {

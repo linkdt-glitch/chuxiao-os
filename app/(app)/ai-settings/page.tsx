@@ -47,8 +47,8 @@ export default async function AISettingsPage() {
               <p>
                 建议在 <span className="font-mono">Render → Environment</span> 里配置 <span className="font-mono">DEEPSEEK_API_KEY</span>，
                 然后到本页底部点击 <strong>启用</strong> DeepSeek 即可。代码会自动按角色路由：
-                创始人对话用 <span className="font-mono">deepseek-reasoner</span>（R1 顶级思考），
-                员工对话用 <span className="font-mono">deepseek-chat</span>（V3.2-Exp）。
+                创始人对话用 <span className="font-mono">deepseek-v4-pro</span>（顶级思考，目前 75% 折扣至 2026/05/31），
+                员工对话用 <span className="font-mono">deepseek-v4-flash</span>（1M 上下文，单次约 ¥0.005）。
               </p>
             </CardContent>
           </Card>

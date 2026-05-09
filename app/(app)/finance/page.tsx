@@ -23,28 +23,38 @@ function money(value: number) {
 /**
  * 创始人「我提交了多少」的计数 —— 用来在 /finance 显示清理按钮里的预览数字。
  * 只统计「我作为提交人」的记账 + 报销，不动其他人的数据。
+ *
+ * 包了 try/catch：这个数字纯属辅助 UI，绝不能因为它失败就把整个
+ * 财务中心页崩成 (app)/error.tsx。返回 0 等于「没东西要清理」，
+ * 用户至少能继续记账 / 看仪表盘。
  */
-async function getOwnSubmissionCounts(memberId: string) {
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return { records: 0, reports: 0 };
-  const organization = await getCurrentOrganization();
+async function getOwnSubmissionCounts(memberId?: string | null) {
+  if (!memberId) return { records: 0, reports: 0 };
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return { records: 0, reports: 0 };
+    const organization = await getCurrentOrganization();
 
-  const [recordsResult, reportsResult] = await Promise.all([
-    supabase
-      .from("finance_records")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organization.id)
-      .or(`submitted_by.eq.${memberId},member_id.eq.${memberId}`),
-    supabase
-      .from("finance_expense_reports")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organization.id)
-      .eq("submitter_member_id", memberId)
-  ]);
-  return {
-    records: recordsResult.count ?? 0,
-    reports: reportsResult.count ?? 0
-  };
+    const [recordsResult, reportsResult] = await Promise.all([
+      supabase
+        .from("finance_records")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organization.id)
+        .or(`submitted_by.eq.${memberId},member_id.eq.${memberId}`),
+      supabase
+        .from("finance_expense_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organization.id)
+        .eq("submitter_member_id", memberId)
+    ]);
+    return {
+      records: recordsResult.count ?? 0,
+      reports: reportsResult.count ?? 0
+    };
+  } catch (error) {
+    console.error("[getOwnSubmissionCounts] error:", error);
+    return { records: 0, reports: 0 };
+  }
 }
 
 export default async function FinancePage({

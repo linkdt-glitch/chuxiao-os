@@ -737,8 +737,10 @@ export async function invokeAI(input: Omit<AIInvokeOptions, "images">) {
  *   - DeepSeek    ❌（V4 系列 API 仍只支持文本，不接受 image_url）
  *   - OpenAI / Anthropic / Google 都支持但当前是占位
  */
-function providerSupportsVision(provider: Pick<AIProvider, "provider_name">): boolean {
-  return provider.provider_name === "siliconflow";
+function providerSupportsVision(
+  provider: Pick<AIProvider, "provider_name"> | null | undefined
+): boolean {
+  return provider?.provider_name === "siliconflow";
 }
 
 /**
@@ -755,11 +757,12 @@ function providerSupportsVision(provider: Pick<AIProvider, "provider_name">): bo
  */
 async function getVisionProvider(roleKey?: string | null): Promise<AIProvider | null> {
   const primary = await getActiveProvider(roleKey);
-  if (providerSupportsVision(primary)) return primary;
+  if (primary && providerSupportsVision(primary)) return primary;
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    return providerSupportsVision(demoProviders[0]) ? demoProviders[0] : null;
+    const demo = demoProviders[0];
+    return demo && providerSupportsVision(demo) ? demo : null;
   }
   const organization = await getCurrentOrganization();
   const { data } = await supabase

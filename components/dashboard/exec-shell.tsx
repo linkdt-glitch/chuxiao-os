@@ -74,7 +74,7 @@ export function CardHead({
         {cta ? (
           <Link
             href={cta.href}
-            className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-300/85 transition-colors hover:bg-amber-500/10 hover:text-amber-200"
+            className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-700/85 transition-colors hover:bg-amber-500/10 hover:text-amber-800"
           >
             {cta.label}
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -140,7 +140,7 @@ export function TodayBrief({
           {cta ? (
             <Link
               href={cta.href}
-              className="group inline-flex shrink-0 items-center gap-1 self-start rounded-full bg-amber-500/15 px-3 py-1.5 text-[12px] font-medium text-amber-200 transition-colors hover:bg-amber-500/25"
+              className="group inline-flex shrink-0 items-center gap-1 self-start rounded-full bg-amber-500/15 px-3 py-1.5 text-[12px] font-medium text-amber-800 transition-colors hover:bg-amber-500/25"
             >
               {cta.label}
               <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -182,9 +182,9 @@ export function HeroMetric({
 }) {
   const valueColor = {
     default: "text-slate-900",
-    good: "text-emerald-300",
-    bad: "text-rose-300",
-    warn: "text-amber-300"
+    good: "text-emerald-700",
+    bad: "text-rose-700",
+    warn: "text-amber-700"
   }[tone];
 
   const Wrapper: React.ElementType = href ? Link : "div";
@@ -232,8 +232,8 @@ export function DeltaChip({
   tone?: "good" | "bad" | "neutral";
 }) {
   const palette = {
-    good: "text-emerald-300 bg-emerald-500/10",
-    bad: "text-rose-300 bg-rose-500/10",
+    good: "text-emerald-700 bg-emerald-500/10",
+    bad: "text-rose-700 bg-rose-500/10",
     neutral: "text-slate-600 bg-slate-100"
   }[tone];
   const arrow = direction === "up" ? "↑" : direction === "down" ? "↓" : "·";
@@ -458,10 +458,10 @@ export function DecisionCard({
   metric?: string;
 }) {
   const palette = {
-    success: { dot: "bg-emerald-400", label: "稳健", labelStyle: "text-emerald-300 bg-emerald-500/10" },
-    info: { dot: "bg-sky-400", label: "提醒", labelStyle: "text-sky-300 bg-sky-500/10" },
-    warning: { dot: "bg-amber-400", label: "关注", labelStyle: "text-amber-300 bg-amber-500/10" },
-    danger: { dot: "bg-rose-400", label: "警示", labelStyle: "text-rose-300 bg-rose-500/10" }
+    success: { dot: "bg-emerald-400", label: "稳健", labelStyle: "text-emerald-700 bg-emerald-500/10" },
+    info: { dot: "bg-sky-400", label: "提醒", labelStyle: "text-sky-700 bg-sky-500/10" },
+    warning: { dot: "bg-amber-400", label: "关注", labelStyle: "text-amber-700 bg-amber-500/10" },
+    danger: { dot: "bg-rose-400", label: "警示", labelStyle: "text-rose-700 bg-rose-500/10" }
   }[severity];
 
   return (
@@ -482,7 +482,7 @@ export function DecisionCard({
         <p className="mt-1.5 flex-1 text-[12px] leading-relaxed text-slate-400">
           {judgment}
         </p>
-        <div className="mt-3 border-t border-slate-200 pt-3 text-[12px] font-medium text-amber-300/90">
+        <div className="mt-3 border-t border-slate-200 pt-3 text-[12px] font-medium text-amber-700/90">
           → {action}
         </div>
       </div>
@@ -508,7 +508,7 @@ export function AlertPill({
   const numericValue = typeof value === "number" ? value : 0;
   const isHot = tone === "alert" || numericValue > 0;
   const tonePalette = isHot
-    ? { dot: "bg-amber-400", text: "text-amber-200", value: "text-amber-200" }
+    ? { dot: "bg-amber-400", text: "text-amber-800", value: "text-amber-800" }
     : { dot: "bg-slate-600", text: "text-slate-600", value: "text-slate-400" };
 
   return (
@@ -544,11 +544,11 @@ export function InlineStat({
 }) {
   const color =
     tone === "good"
-      ? "text-emerald-300"
+      ? "text-emerald-700"
       : tone === "bad"
-        ? "text-rose-300"
+        ? "text-rose-700"
         : tone === "warn"
-          ? "text-amber-300"
+          ? "text-amber-700"
           : "text-slate-900";
   return (
     <div>

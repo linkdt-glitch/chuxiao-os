@@ -23,18 +23,11 @@ export default async function NewExpenseReportPage({
         description="上传票据、填写用途和金额；系统会自动标记缺票据、超标准、疑似重复等异常。"
       />
       {errorMessage ? (
-        <div
-          className="mb-4 flex items-start gap-2 rounded-lg p-3 text-sm text-red-200"
-          style={{
-            background: "rgba(239,68,68,0.10)",
-            border: "1px solid rgba(239,68,68,0.32)",
-            boxShadow: "0 0 14px rgba(239,68,68,0.10)"
-          }}
-        >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
           <div>
-            <div className="font-medium text-red-200">报销创建失败</div>
-            <div className="mt-0.5 text-red-200/85">{errorMessage}</div>
+            <div className="font-medium">报销创建失败</div>
+            <div className="mt-0.5 text-rose-700/90">{errorMessage}</div>
           </div>
         </div>
       ) : null}

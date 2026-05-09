@@ -192,7 +192,7 @@ export function Telemetry({
         <div
           className={cn(
             "mt-1 inline-flex items-center gap-1 font-mono text-[11px] tabular-nums",
-            delta.value >= 0 ? "text-emerald-300" : "text-red-300"
+            delta.value >= 0 ? "text-emerald-700" : "text-red-700"
           )}
         >
           <span>{delta.value >= 0 ? "▲" : "▼"}</span>
@@ -207,7 +207,7 @@ export function Telemetry({
 
   if (href) {
     return (
-      <a href={href} className="block transition-colors hover:text-orange-200">
+      <a href={href} className="block transition-colors hover:text-orange-700">
         {content}
       </a>
     );
@@ -317,7 +317,7 @@ export function HBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2 text-xs">
-        <div className="min-w-0 truncate text-slate-300">{label}</div>
+        <div className="min-w-0 truncate text-slate-700">{label}</div>
         {rightLabel ? (
           <div className="shrink-0 font-mono tabular-nums text-slate-400">{rightLabel}</div>
         ) : null}

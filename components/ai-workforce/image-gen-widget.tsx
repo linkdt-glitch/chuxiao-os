@@ -163,7 +163,7 @@ function UploadSlot({
         <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em]" style={{ color: `rgba(${accentRgb},0.85)` }}>
           <Icon className="h-3 w-3" />
           {title}
-          {required ? <span className="text-orange-400">*</span> : <span className="text-slate-500">（可选）</span>}
+          {required ? <span className="text-orange-600">*</span> : <span className="text-slate-500">（可选）</span>}
         </span>
         <span className="font-mono text-[10px] text-slate-500">
           {refs.length}/{max}
@@ -221,7 +221,7 @@ function UploadSlot({
                 <Trash2 className="h-2.5 w-2.5" />
               </button>
               <span
-                className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 font-mono text-[8px] tracking-wide text-slate-300"
+                className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 font-mono text-[8px] tracking-wide text-slate-700"
                 style={{ background: "rgba(0,0,0,0.55)" }}
               >
                 {formatBytes(r.bytes)}
@@ -278,7 +278,7 @@ function ModelDropdown({
 
   return (
     <div className="space-y-2">
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-400/70">
+      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-orange-700">
         {label}
       </div>
       <div className="relative">
@@ -288,24 +288,24 @@ function ModelDropdown({
           disabled={loading}
           className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           style={{
-            background: "#f8fafc",
+            background: "#ffffff",
             border: open
-              ? "1px solid rgba(249,115,22,0.55)"
-              : "1px solid rgba(249,115,22,0.18)",
+              ? "1.5px solid #fb923c"
+              : "1px solid #e2e8f0",
             boxShadow: open
-              ? "0 0 14px rgba(249,115,22,0.18), inset 0 0 16px rgba(249,115,22,0.04)"
+              ? "0 0 0 3px rgba(249,115,22,0.12)"
               : undefined
           }}
         >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-orange-200">{selected.label}</span>
+              <span className="text-[15px] font-semibold text-slate-900">{selected.label}</span>
               {selected.tag ? (
                 <span
                   className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide"
                   style={{
                     background: "rgba(249,115,22,0.10)",
-                    color: "rgba(251,146,60,0.85)",
+                    color: "rgb(194,65,12)",
                     border: "1px solid rgba(249,115,22,0.25)"
                   }}
                 >
@@ -313,19 +313,19 @@ function ModelDropdown({
                 </span>
               ) : null}
             </div>
-            <div className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">
+            <div className="mt-0.5 line-clamp-1 text-[11px] text-slate-600">
               {selected.description}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-right">
-              <div className="font-mono text-xs font-bold tabular-nums text-emerald-300">
+              <div className="font-mono text-xs font-bold tabular-nums text-emerald-700">
                 {formatPriceCny(selected.pricePerImageCny)}
               </div>
               <div className="font-mono text-[9px] text-slate-500">~{selected.approxSeconds}s</div>
             </span>
             <ChevronDown
-              className="h-4 w-4 text-slate-400 transition-transform"
+              className="h-4 w-4 text-slate-600 transition-transform"
               style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
             />
           </div>
@@ -361,8 +361,8 @@ function ModelDropdown({
                       <span
                         className={
                           active
-                            ? "text-sm font-semibold text-orange-200"
-                            : "text-sm font-medium text-slate-200"
+                            ? "text-sm font-semibold text-orange-700"
+                            : "text-sm font-medium text-slate-800"
                         }
                       >
                         {m.label}
@@ -372,7 +372,7 @@ function ModelDropdown({
                           className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide"
                           style={{
                             background: "rgba(249,115,22,0.10)",
-                            color: "rgba(251,146,60,0.85)",
+                            color: "rgb(194,65,12)",
                             border: "1px solid rgba(249,115,22,0.25)"
                           }}
                         >
@@ -380,12 +380,12 @@ function ModelDropdown({
                         </span>
                       ) : null}
                     </div>
-                    <div className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                    <div className="mt-0.5 text-[11px] leading-relaxed text-slate-600">
                       {m.description}
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="font-mono text-sm font-bold tabular-nums text-emerald-300">
+                    <div className="font-mono text-sm font-bold tabular-nums text-emerald-700">
                       {formatPriceCny(m.pricePerImageCny)}
                     </div>
                     <div className="flex items-center justify-end gap-1 font-mono text-[9px] text-slate-500">
@@ -624,9 +624,9 @@ export function ImageGenWidget() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-orange-400" />
+          <Sparkles className="h-4 w-4 text-orange-600" />
           AI 图片生成 · 亚马逊卖家直出
-          <span className="ml-auto font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+          <span className="ml-auto font-mono text-[10px] tracking-[0.18em] text-orange-700">
             fal.ai · 7 个旗舰模型
           </span>
         </CardTitle>
@@ -649,25 +649,25 @@ export function ImageGenWidget() {
                 disabled={loading}
                 className="rounded-lg p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
-                  background: isActive ? "rgba(249,115,22,0.12)" : "#f8fafc",
+                  background: isActive ? "#fff7ed" : "#ffffff",
                   border: isActive
-                    ? "1px solid rgba(249,115,22,0.50)"
-                    : "1px solid rgba(249,115,22,0.10)",
+                    ? "1.5px solid #fb923c"
+                    : "1px solid #e2e8f0",
                   boxShadow: isActive
-                    ? "0 0 14px rgba(249,115,22,0.10), inset 0 0 16px rgba(249,115,22,0.06)"
+                    ? "0 0 0 3px rgba(249,115,22,0.10)"
                     : undefined
                 }}
               >
                 <div
                   className={
                     isActive
-                      ? "text-sm font-semibold text-orange-200"
-                      : "text-sm font-medium text-slate-200"
+                      ? "text-[14px] font-semibold text-orange-700"
+                      : "text-[14px] font-semibold text-slate-900"
                   }
                 >
                   {tab.label}
                 </div>
-                <div className="mt-0.5 text-[11px] text-slate-500">{tab.sub}</div>
+                <div className="mt-0.5 text-[12px] text-slate-600">{tab.sub}</div>
               </button>
             );
           })}
@@ -694,29 +694,29 @@ export function ImageGenWidget() {
                       <div
                         className="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors"
                         style={{
-                          background: s.done ? "rgba(74,222,128,0.10)" : s.active ? "rgba(249,115,22,0.14)" : "#f8fafc",
-                          border: s.done ? "1px solid rgba(74,222,128,0.40)" : s.active ? "1px solid rgba(249,115,22,0.55)" : "1px solid rgba(249,115,22,0.10)",
-                          boxShadow: s.active ? "0 0 12px rgba(249,115,22,0.20)" : undefined
+                          background: s.done ? "#dcfce7" : s.active ? "#ffedd5" : "#f1f5f9",
+                          border: s.done ? "1px solid #86efac" : s.active ? "1px solid #fb923c" : "1px solid #e2e8f0",
+                          boxShadow: s.active ? "0 0 0 3px rgba(249,115,22,0.12)" : undefined
                         }}
                       >
                         <span
                           className="grid h-5 w-5 place-items-center rounded-full font-mono text-[10px] font-bold"
                           style={{
-                            background: s.done ? "rgba(74,222,128,0.30)" : s.active ? "rgba(249,115,22,0.30)" : "rgba(15,23,42,0.85)",
-                            color: s.done ? "#86efac" : s.active ? "#fbbf24" : "rgb(100,116,139)"
+                            background: s.done ? "#22c55e" : s.active ? "#f97316" : "#cbd5e1",
+                            color: "#ffffff"
                           }}
                         >
                           {s.done ? "✓" : s.n}
                         </span>
                         <span
-                          className="text-[11px] font-medium"
-                          style={{ color: s.done ? "#86efac" : s.active ? "#fbbf24" : "rgb(148,163,184)" }}
+                          className="text-[12px] font-semibold"
+                          style={{ color: s.done ? "#15803d" : s.active ? "#c2410c" : "#475569" }}
                         >
                           {s.label}
                         </span>
                       </div>
                       {i < steps.length - 1 ? (
-                        <span className="h-px w-3 shrink-0" style={{ background: "rgba(249,115,22,0.20)" }} />
+                        <span className="h-px w-3 shrink-0 bg-slate-300" />
                       ) : null}
                     </div>
                   ))}
@@ -755,11 +755,11 @@ export function ImageGenWidget() {
                 </div>
                 {uploadError ? <div className="text-[11px] text-red-300">{uploadError}</div> : null}
                 <div
-                  className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
+                  className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-600"
                   style={{ background: "rgba(74,222,128,0.04)", border: "1px solid rgba(74,222,128,0.18)" }}
                 >
-                  🔒 <span className="text-emerald-300">隐私保护</span>：浏览器本地压缩到 1280px 后才发送，
-                  <strong className="text-emerald-200">原图不会上传到我们的服务器</strong>。
+                  🔒 <span className="text-emerald-700">隐私保护</span>：浏览器本地压缩到 1280px 后才发送，
+                  <strong className="text-emerald-700">原图不会上传到我们的服务器</strong>。
                   传"产品照 + 风格参考图"两张时，AI 会保留你的产品形状/颜色不变，只借鉴风格图的视觉效果。
                 </div>
               </>
@@ -777,7 +777,7 @@ export function ImageGenWidget() {
             {/* ── Preset cards ───────────────────────────────────── */}
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                <span className="font-mono text-[10px] tracking-[0.18em] text-orange-700">
                   选择场景
                 </span>
                 <span className="font-mono text-[10px] tracking-wide text-slate-500">
@@ -799,14 +799,14 @@ export function ImageGenWidget() {
                         border: active ? "1px solid rgba(249,115,22,0.45)" : "1px solid rgba(249,115,22,0.10)"
                       }}
                     >
-                      <div className={active ? "text-sm font-semibold text-orange-200" : "text-sm font-medium text-slate-200"}>
+                      <div className={active ? "text-sm font-semibold text-orange-700" : "text-sm font-medium text-slate-800"}>
                         {preset.title}
                       </div>
-                      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-600">
                         {preset.blurb}
                       </p>
                       <div className="mt-1.5 flex items-center justify-between gap-2 font-mono text-[10px] tracking-wide">
-                        <span className="text-orange-300/80">{preset.spec}</span>
+                        <span className="text-orange-600">{preset.spec}</span>
                         <span
                           className="rounded px-1.5 py-0.5 text-[9px] uppercase"
                           style={{
@@ -827,12 +827,12 @@ export function ImageGenWidget() {
             {/* Compliance hint */}
             {activePreset?.category === "main" ? (
               <div
-                className="flex items-start gap-2 rounded-lg p-3 text-[11px] leading-relaxed text-amber-200/85"
+                className="flex items-start gap-2 rounded-lg p-3 text-[11px] leading-relaxed text-amber-800"
                 style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.28)" }}
               >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-300" />
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
                 <div>
-                  <span className="font-medium text-amber-200">亚马逊主图官方规格</span>
+                  <span className="font-medium text-amber-800">亚马逊主图官方规格</span>
                   ：最低 1000×1000，推荐 2000×2000+，纯白底 RGB(255,255,255)，文件 ≤10MB，最多 9 张/ASIN。
                   AI 生成后请用 Topaz / fal upscaler / Photoshop 把 1024 放大到 2000+ 再上传。
                 </div>
@@ -842,7 +842,7 @@ export function ImageGenWidget() {
             {/* Field form */}
             {activePreset && activePreset.fields.length > 0 ? (
               <div className="space-y-3">
-                <div className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+                <div className="font-mono text-[10px] tracking-[0.18em] text-orange-700">
                   填写参数
                 </div>
                 {activePreset.fields.map((field) => {
@@ -850,9 +850,9 @@ export function ImageGenWidget() {
                   if (field.kind === "text") {
                     return (
                       <div key={field.key} className="space-y-1">
-                        <label className="text-xs font-medium text-slate-300">
+                        <label className="text-xs font-medium text-slate-700">
                           {field.label}
-                          {field.required ? <span className="ml-1 text-orange-400">*</span> : null}
+                          {field.required ? <span className="ml-1 text-orange-600">*</span> : null}
                         </label>
                         <Textarea
                           value={value}
@@ -868,7 +868,7 @@ export function ImageGenWidget() {
                   }
                   return (
                     <div key={field.key} className="space-y-1">
-                      <label className="text-xs font-medium text-slate-300">{field.label}</label>
+                      <label className="text-xs font-medium text-slate-700">{field.label}</label>
                       <div className="flex flex-wrap gap-2">
                         {field.options?.map((opt) => {
                           const selected = value === opt.value;
@@ -899,16 +899,16 @@ export function ImageGenWidget() {
             {/* Spec recap */}
             {activePreset ? (
               <div
-                className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
+                className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-600"
                 style={{ background: "#f8fafc", border: "1px solid rgba(249,115,22,0.10)" }}
               >
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide">
-                  <span className="text-orange-300/80">使用模型</span>
-                  <span className="text-slate-200">{usedModel.label}</span>
-                  <span className="text-orange-300/80">单张约</span>
-                  <span className="tabular-nums text-emerald-300">{formatPriceCny(usedModel.pricePerImageCny)}</span>
-                  <span className="text-orange-300/80">输出</span>
-                  <span className="text-slate-200">{activePreset.dimensionsHint}</span>
+                  <span className="text-orange-600">使用模型</span>
+                  <span className="text-slate-800">{usedModel.label}</span>
+                  <span className="text-orange-600">单张约</span>
+                  <span className="tabular-nums text-emerald-700">{formatPriceCny(usedModel.pricePerImageCny)}</span>
+                  <span className="text-orange-600">输出</span>
+                  <span className="text-slate-800">{activePreset.dimensionsHint}</span>
                 </div>
               </div>
             ) : null}
@@ -959,7 +959,7 @@ export function ImageGenWidget() {
             ) : null}
 
             <div className="space-y-2">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-700">
                 描述提示词（英文效果更佳）
               </label>
               <Textarea
@@ -981,7 +981,7 @@ export function ImageGenWidget() {
             </div>
 
             <div className="space-y-2">
-              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-400/70">
+              <label className="font-mono text-[10px] tracking-[0.18em] text-orange-700">
                 {freeIsImg2Img ? "图片比例" : "图片尺寸"}
               </label>
               <div className="flex flex-wrap gap-2">
@@ -1043,8 +1043,8 @@ export function ImageGenWidget() {
             className="flex min-h-32 flex-col items-center justify-center rounded-lg p-6"
             style={{ background: "#f8fafc", border: "1px dashed rgba(249,115,22,0.30)" }}
           >
-            <Loader2 className="mb-2 h-8 w-8 animate-spin text-orange-400" />
-            <p className="text-sm text-orange-300">
+            <Loader2 className="mb-2 h-8 w-8 animate-spin text-orange-600" />
+            <p className="text-sm text-orange-700">
               {usedModel.label} 正在绘制，约 {usedModel.approxSeconds} 秒...
             </p>
           </div>
@@ -1065,29 +1065,29 @@ export function ImageGenWidget() {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-mono tracking-wide text-slate-500">
-                <span className="text-orange-300">{result.modelLabel}</span>
+                <span className="text-orange-700">{result.modelLabel}</span>
                 {" · 本次约 "}
-                <span className="tabular-nums text-emerald-300">{formatPriceCny(result.costEstimateCny)}</span>
+                <span className="tabular-nums text-emerald-700">{formatPriceCny(result.costEstimateCny)}</span>
               </span>
               <a
                 href={result.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 download
-                className="inline-flex items-center gap-1.5 text-orange-300 hover:text-orange-200 hover:underline"
+                className="inline-flex items-center gap-1.5 text-orange-700 hover:text-orange-700 hover:underline"
               >
                 <Download className="h-3.5 w-3.5" />
                 下载图片
               </a>
             </div>
             <details
-              className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-400"
+              className="rounded-md p-2.5 text-[11px] leading-relaxed text-slate-600"
               style={{ background: "#f8fafc", border: "1px solid rgba(249,115,22,0.10)" }}
             >
-              <summary className="cursor-pointer text-slate-300 hover:text-orange-300">
+              <summary className="cursor-pointer text-slate-700 hover:text-orange-700">
                 查看本次完整 prompt（用于复刻）
               </summary>
-              <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[10px] text-slate-400">
+              <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[10px] text-slate-600">
                 {result.prompt}
               </pre>
             </details>
@@ -1097,8 +1097,8 @@ export function ImageGenWidget() {
             className="flex min-h-32 flex-col items-center justify-center rounded-lg p-6 text-center"
             style={{ background: "#f8fafc", border: "1px dashed rgba(249,115,22,0.18)" }}
           >
-            <ImageIcon className="mb-2 h-8 w-8 text-orange-400/40" />
-            <p className="text-sm text-slate-400">
+            <ImageIcon className="mb-2 h-8 w-8 text-orange-700" />
+            <p className="text-sm text-slate-600">
               {activeTab.kind === "amazon"
                 ? presetNeedsUpload
                   ? "上传产品照（必）+ 想要的效果（可选） + 点生成"

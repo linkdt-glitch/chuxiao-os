@@ -35,18 +35,8 @@ export default async function LoginPage({
 
       <div className="relative w-full max-w-lg space-y-4">
         {noticeMessage ? (
-          <div
-            className="flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
-            style={{
-              background: "rgba(16,185,129,0.08)",
-              border: "1px solid rgba(16,185,129,0.32)",
-              boxShadow: "0 0 16px rgba(16,185,129,0.10)"
-            }}
-          >
-            <span
-              className="inline-block h-2 w-2 rounded-full bg-emerald-400"
-              style={{ boxShadow: "0 0 8px rgba(74,222,128,0.85)" }}
-            />
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
             {noticeMessage}
           </div>
         ) : null}

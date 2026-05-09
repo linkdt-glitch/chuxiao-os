@@ -54,7 +54,7 @@ export default async function HomeEditPage({
       />
 
       {params.error ? (
-        <div className="mb-4 rounded-xl border border-rose-500/25 bg-rose-500/[0.10] p-3 text-[13px] text-rose-200">
+        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[13px] text-rose-800">
           {params.error}
         </div>
       ) : null}

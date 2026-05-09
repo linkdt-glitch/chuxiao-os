@@ -65,11 +65,11 @@ export function UserMenu({
             {role}
           </span>
           <span className="hidden text-right sm:block">
-            <span className="block text-sm font-medium text-slate-200">{userName}</span>
+            <span className="block text-sm font-semibold text-slate-900">{userName}</span>
             <span className="block font-mono text-[10px] text-slate-500">{userEmail}</span>
           </span>
           <ChevronDown
-            className="hidden h-4 w-4 text-slate-400 transition-transform sm:block"
+            className="hidden h-4 w-4 text-slate-500 transition-transform sm:block"
             style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
           />
 

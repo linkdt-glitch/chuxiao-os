@@ -37,7 +37,7 @@ export default async function AISettingsPage() {
                 </div>
                 <p>当前页面只负责选择启用哪个服务商，不在浏览器里保存或展示密钥。</p>
               </div>
-              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4 font-mono text-xs text-slate-300">
+              <div className="space-y-2 rounded-lg border border-orange-500/15 bg-[#f8fafc] p-4 font-mono text-xs text-slate-700">
                 <div>DEEPSEEK_API_KEY=...</div>
                 <div>SILICONFLOW_API_KEY=...</div>
                 <div>DEEPSEEK_MODEL=deepseek-v4-flash</div>
@@ -54,7 +54,7 @@ export default async function AISettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ServerCog className="h-4 w-4 text-orange-400" />
+                <ServerCog className="h-4 w-4 text-orange-600" />
                 SiliconFlow 推荐模型组合（2026）
               </CardTitle>
             </CardHeader>
@@ -66,7 +66,7 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-2 flex items-center gap-2 font-medium text-slate-200">
+                <div className="mb-2 flex items-center gap-2 font-medium text-slate-900">
                   <span
                     className="rounded px-1.5 py-0.5 font-mono text-[10px]"
                     style={{
@@ -79,26 +79,26 @@ export default async function AISettingsPage() {
                   </span>
                   代码默认值
                 </div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
-                  <li>极速短任务 → <span className="font-mono text-orange-200">Qwen/Qwen2.5-7B-Instruct</span> · 首字节 &lt;300ms</li>
-                  <li>AI 对话 → <span className="font-mono text-orange-200">deepseek-ai/DeepSeek-V3.1</span> · hybrid thinking + 164K 上下文</li>
-                  <li>拍照识图 → <span className="font-mono text-orange-200">Qwen/Qwen2.5-VL-7B-Instruct</span> · 比 72B 快 5-10×，识别票据足够</li>
-                  <li>价格档：<span className="text-emerald-300">输入 ¥1.94/M · 输出 ¥7.92/M</span>（V3.1，与 V3 同价但质量更高）</li>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
+                  <li>极速短任务 → <span className="font-mono text-orange-700">Qwen/Qwen2.5-7B-Instruct</span> · 首字节 &lt;300ms</li>
+                  <li>AI 对话 → <span className="font-mono text-orange-700">deepseek-ai/DeepSeek-V3.1</span> · hybrid thinking + 164K 上下文</li>
+                  <li>拍照识图 → <span className="font-mono text-orange-700">Qwen/Qwen2.5-VL-7B-Instruct</span> · 比 72B 快 5-10×，识别票据足够</li>
+                  <li>价格档：<span className="text-emerald-700">输入 ¥1.94/M · 输出 ¥7.92/M</span>（V3.1，与 V3 同价但质量更高）</li>
                 </ul>
               </div>
 
               <div
-                className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-200/85"
+                className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-800"
                 style={{
                   background: "rgba(251,191,36,0.06)",
                   border: "1px solid rgba(251,191,36,0.28)"
                 }}
               >
-                <div className="mb-1 font-medium text-amber-200">如果你之前在 Render 设过环境变量</div>
+                <div className="mb-1 font-medium text-amber-800">如果你之前在 Render 设过环境变量</div>
                 <p>
                   Render 的 env 会覆盖代码默认值。要享受新组合，请到 Render Dashboard → chuxiao-os → Environment 把这 4 项更新（设过的话）：
                 </p>
-                <ul className="ml-3 mt-1.5 list-disc font-mono text-[10px] marker:text-amber-300/60">
+                <ul className="ml-3 mt-1.5 list-disc font-mono text-[10px] marker:text-amber-700">
                   <li>SILICONFLOW_MODEL = deepseek-ai/DeepSeek-V3.1</li>
                   <li>SILICONFLOW_CHAT_MODEL = deepseek-ai/DeepSeek-V3.1</li>
                   <li>SILICONFLOW_VISION_MODEL = Qwen/Qwen2.5-VL-7B-Instruct</li>
@@ -112,7 +112,7 @@ export default async function AISettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-orange-400" />
+                <ImageIcon className="h-4 w-4 text-orange-600" />
                 图片生成配置
               </CardTitle>
             </CardHeader>
@@ -125,15 +125,15 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <span className="flex items-center gap-2 font-medium text-slate-200">
-                  <Shield className="h-4 w-4 text-orange-400" />
+                <span className="flex items-center gap-2 font-medium text-slate-900">
+                  <Shield className="h-4 w-4 text-orange-600" />
                   fal.ai API Key
                 </span>
                 <span
                   className={
                     falConfigured
-                      ? "font-mono text-xs font-medium text-emerald-300"
-                      : "font-mono text-xs font-medium text-amber-300"
+                      ? "font-mono text-xs font-medium text-emerald-700"
+                      : "font-mono text-xs font-medium text-amber-700"
                   }
                 >
                   {falConfigured ? "✓ 已配置" : "✗ 未配置"}
@@ -148,8 +148,8 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-1.5 flex items-center gap-2 font-medium text-slate-200">
-                  <Lock className="h-3.5 w-3.5 text-orange-400" />
+                <div className="mb-1.5 flex items-center gap-2 font-medium text-slate-900">
+                  <Lock className="h-3.5 w-3.5 text-orange-600" />
                   密钥保护策略
                 </div>
                 <ul className="ml-1 space-y-1 text-[11px] leading-relaxed">
@@ -170,11 +170,11 @@ export default async function AISettingsPage() {
                     border: "1px solid rgba(16,185,129,0.28)"
                   }}
                 >
-                  <div className="font-medium text-emerald-300">当前默认模型</div>
-                  <div className="mt-1 font-mono text-[11px] text-emerald-200/85">
+                  <div className="font-medium text-emerald-700">当前默认模型</div>
+                  <div className="mt-1 font-mono text-[11px] text-emerald-700">
                     {configuredModel.label} · {configuredModel.id}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-emerald-200/70">
+                  <div className="mt-0.5 text-[11px] text-emerald-600">
                     单张约 {formatPriceCny(configuredModel.pricePerImageCny)} · {configuredModel.approxSeconds}s · 用户在生成界面可临时切换其它模型
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default async function AISettingsPage() {
 
               {/* available models */}
               <div>
-                <div className="mb-1.5 font-medium text-slate-200">可选模型清单</div>
+                <div className="mb-1.5 font-medium text-slate-900">可选模型清单</div>
                 <div className="space-y-1.5">
                   {IMAGE_MODELS.map((model) => (
                     <div
@@ -194,11 +194,11 @@ export default async function AISettingsPage() {
                       }}
                     >
                       <div className="min-w-0">
-                        <div className="font-medium text-slate-200">{model.label}</div>
+                        <div className="font-medium text-slate-900">{model.label}</div>
                         <div className="truncate font-mono text-[10px] text-slate-500">{model.id}</div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <div className="font-mono tabular-nums text-orange-300">
+                        <div className="font-mono tabular-nums text-orange-700">
                           {formatPriceCny(model.pricePerImageCny)}
                         </div>
                         <div className="font-mono text-[10px] text-slate-500">
@@ -213,7 +213,7 @@ export default async function AISettingsPage() {
               {/* setup hint */}
               {!falConfigured && (
                 <div
-                  className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-300/85"
+                  className="rounded-lg p-3 text-[11px] leading-relaxed text-amber-700/85"
                   style={{
                     background: "rgba(251,191,36,0.06)",
                     border: "1px solid rgba(251,191,36,0.28)"
@@ -233,7 +233,7 @@ export default async function AISettingsPage() {
                 href="https://fal.ai/dashboard/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 hover:underline"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 前往 fal.ai 获取 / 管理 API Key
@@ -245,7 +245,7 @@ export default async function AISettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-orange-400" />
+                <ImageIcon className="h-4 w-4 text-orange-600" />
                 亚马逊图片官方规格速查 (2026)
               </CardTitle>
             </CardHeader>
@@ -257,11 +257,11 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-2 font-medium text-slate-200">主图（Main Image）</div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
-                  <li>纯白底 <span className="font-mono text-orange-200">RGB 255,255,255</span></li>
-                  <li>最低 <span className="font-mono text-orange-200">1000×1000</span>（启用放大功能必须）</li>
-                  <li>推荐 <span className="font-mono text-emerald-300">2000×2000+</span> · 甜区 2000-3000</li>
+                <div className="mb-2 font-medium text-slate-900">主图（Main Image）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
+                  <li>纯白底 <span className="font-mono text-orange-700">RGB 255,255,255</span></li>
+                  <li>最低 <span className="font-mono text-orange-700">1000×1000</span>（启用放大功能必须）</li>
+                  <li>推荐 <span className="font-mono text-emerald-700">2000×2000+</span> · 甜区 2000-3000</li>
                   <li>仅产品本体 · 占图 ≥85% · 无人物/文字/水印/logo</li>
                 </ul>
               </div>
@@ -273,8 +273,8 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-2 font-medium text-slate-200">附图（Additional Images）</div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                <div className="mb-2 font-medium text-slate-900">附图（Additional Images）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
                   <li>背景颜色不限 · 可加文字/人物/场景</li>
                   <li>同样建议 ≥1000×1000，推荐 2000+</li>
                   <li>每个 ASIN 最多 9 张图</li>
@@ -288,10 +288,10 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-2 font-medium text-slate-200">通用技术规格</div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                <div className="mb-2 font-medium text-slate-900">通用技术规格</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
                   <li>格式：<span className="font-mono">JPEG / PNG / TIFF / GIF</span>（无动画）</li>
-                  <li>体积：<span className="font-mono text-orange-200">≤10MB / 张</span></li>
+                  <li>体积：<span className="font-mono text-orange-700">≤10MB / 张</span></li>
                   <li>最大单边：<span className="font-mono">10000px</span></li>
                   <li>最大宽高比：<span className="font-mono">5:1</span></li>
                   <li>色彩空间：<span className="font-mono">sRGB</span> 或 <span className="font-mono">CMYK</span></li>
@@ -305,8 +305,8 @@ export default async function AISettingsPage() {
                   border: "1px solid rgba(249,115,22,0.14)"
                 }}
               >
-                <div className="mb-2 font-medium text-slate-200">A+ Content（品牌内容）</div>
-                <ul className="ml-3 space-y-1 list-disc marker:text-orange-400/60 text-[11px]">
+                <div className="mb-2 font-medium text-slate-900">A+ Content（品牌内容）</div>
+                <ul className="ml-3 space-y-1 list-disc marker:text-orange-600/60 text-[11px]">
                   <li>Hero Banner: 970×600 或 1464×600</li>
                   <li>Standard image: 300×300 / 600×180 / 970×300</li>
                   <li>对比卡缩略图: 100×100</li>
@@ -318,7 +318,7 @@ export default async function AISettingsPage() {
                 href="https://sellercentral.amazon.com/help/hub/reference/external/G1881"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 hover:underline"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Amazon Seller Central 官方规格文档

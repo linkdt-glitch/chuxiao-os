@@ -599,8 +599,8 @@ export function FinanceApprovalWorkbench({
                             </div>
                           </button>
 
-                          {/* 票据缩略 + 金额 + 操作 */}
-                          <div className="flex shrink-0 flex-row items-center gap-3 lg:flex-row-reverse lg:items-start">
+                          {/* 票据缩略 + 金额 + 操作（移动端可换行避免溢出） */}
+                          <div className="flex w-full flex-row items-center gap-3 lg:w-auto lg:shrink-0 lg:flex-row-reverse lg:items-start">
                             <div className="flex flex-col items-end gap-2 lg:min-w-[180px]">
                               <div className="text-[20px] font-semibold tabular-nums text-slate-900">
                                 {money(record.amount, record.currency)}
@@ -641,16 +641,16 @@ export function FinanceApprovalWorkbench({
         </div>
       )}
 
-      {/* 详情抽屉 */}
+      {/* 详情抽屉 —— 移动端走全屏 modal，平板/桌面右侧 560px 抽屉 */}
       {drawerRecord ? (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50">
           <div
             role="presentation"
             aria-hidden
-            className="flex-1 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             onClick={() => setDrawerRecord(null)}
           />
-          <div className="h-full w-full overflow-hidden bg-white shadow-2xl sm:max-w-[560px]">
+          <div className="absolute inset-y-0 right-0 w-full overflow-hidden bg-white shadow-2xl sm:max-w-[560px]">
             <RecordDetailPanel record={drawerRecord} onClose={() => setDrawerRecord(null)} />
           </div>
         </div>

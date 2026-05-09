@@ -397,7 +397,7 @@ export function ExpenseApprovalWorkbench({
           value={statusSummary.risky}
           tone="rose"
         />
-        <span className="ml-auto rounded-full border border-cyan-200/30 bg-cyan-500/[0.10] px-3 py-1 text-[11px] tabular-nums text-cyan-200">
+        <span className="ml-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold tabular-nums text-amber-800">
           待审金额 {money(statusSummary.pendingAmount)}
         </span>
       </div>
@@ -613,23 +613,23 @@ function FilterChip({
   tone?: "neutral" | "amber" | "sky" | "rose";
 }) {
   const palette = {
-    neutral: { activeBg: "bg-slate-200", activeBorder: "border-white/30", activeText: "text-slate-100", inactiveDot: "text-slate-400" },
-    amber: { activeBg: "bg-amber-500/15", activeBorder: "border-amber-500/40", activeText: "text-amber-100", inactiveDot: "text-amber-300" },
-    sky: { activeBg: "bg-sky-500/15", activeBorder: "border-sky-500/40", activeText: "text-sky-100", inactiveDot: "text-sky-300" },
-    rose: { activeBg: "bg-rose-500/15", activeBorder: "border-rose-500/40", activeText: "text-rose-100", inactiveDot: "text-rose-300" }
+    neutral: { activeBg: "bg-slate-100", activeBorder: "border-slate-300", activeText: "text-slate-900", inactiveDot: "text-slate-500" },
+    amber: { activeBg: "bg-amber-50", activeBorder: "border-amber-300", activeText: "text-amber-800", inactiveDot: "text-amber-600" },
+    sky: { activeBg: "bg-sky-50", activeBorder: "border-sky-300", activeText: "text-sky-800", inactiveDot: "text-sky-600" },
+    rose: { activeBg: "bg-rose-50", activeBorder: "border-rose-300", activeText: "text-rose-800", inactiveDot: "text-rose-600" }
   }[tone];
   const cls = active
     ? `${palette.activeBg} ${palette.activeBorder} ${palette.activeText}`
-    : "bg-white border-slate-200 text-slate-300 hover:border-white/[0.18]";
+    : "bg-white border-slate-200 text-slate-700 hover:border-orange-300 hover:bg-orange-50/40";
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${cls}`}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${cls}`}
     >
       <Icon className={`h-3.5 w-3.5 ${active ? "" : palette.inactiveDot}`} />
       <span>{label}</span>
-      <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/15" : "bg-slate-100"}`}>
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/70" : "bg-slate-100"}`}>
         {value}
       </span>
     </button>

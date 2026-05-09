@@ -210,7 +210,7 @@ export default async function CockpitPage() {
           helper={
             <span>
               收入 {money(cockpit.monthMetrics.income, { compact: true })} · 支出 {money(cockpit.monthMetrics.expense, { compact: true })}
-              <span className="text-slate-500"> · 利润率 {cockpit.monthMetrics.profitMargin}%</span>
+              <span className="text-slate-9000"> · 利润率 {cockpit.monthMetrics.profitMargin}%</span>
             </span>
           }
           visual={
@@ -321,13 +321,13 @@ export default async function CockpitPage() {
                       <span>
                         {p.taskProgress === null ? "—" : `进度 ${p.taskProgress}%`}
                         {" · 净利 "}
-                        <span className={p.profit >= 0 ? "text-emerald-300" : "text-rose-300"}>
+                        <span className={p.profit >= 0 ? "text-emerald-700" : "text-rose-700"}>
                           {money(p.profit, { compact: true })}
                         </span>
                       </span>
                     }
                     secondary={
-                      <span className="text-emerald-300">{money(p.income, { compact: true })}</span>
+                      <span className="text-emerald-700">{money(p.income, { compact: true })}</span>
                     }
                     bar={{ value: p.income, max: projectMaxIncome, tone: "emerald" }}
                     href={p.projectId ? `/projects/${p.projectId}` : undefined}
@@ -362,20 +362,20 @@ export default async function CockpitPage() {
                   return (
                     <div
                       key={`${p.projectId ?? "noid"}-${p.projectName}-${i}`}
-                      className="rounded-xl border border-slate-200 bg-white/[0.02] p-3 transition-colors hover:border-slate-300"
+                      className="rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:border-orange-300 hover:shadow-sm"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
-                          <Radar className="h-3.5 w-3.5 shrink-0 text-amber-400/70" />
-                          <span className="truncate text-[13px] font-medium text-slate-100">
+                          <Radar className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                          <span className="truncate text-[13px] font-medium text-slate-900">
                             {p.projectName}
                           </span>
                         </div>
-                        <span className="shrink-0 text-[20px] font-semibold tabular-nums text-slate-50">
+                        <span className="shrink-0 text-[20px] font-semibold tabular-nums text-slate-900">
                           {p.potentialScore === null ? "—" : p.potentialScore}
                         </span>
                       </div>
-                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-50">
+                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${Math.max(2, score)}%`, background: fill }}
@@ -411,10 +411,10 @@ export default async function CockpitPage() {
       {cockpit.decisions.length ? (
         <div className="mt-6">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[15px] font-semibold tracking-tight text-slate-200">
+            <h2 className="text-[15px] font-semibold tracking-tight text-slate-800">
               AI 给老板的建议
             </h2>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-slate-9000">
               {cockpit.decisions.length} 条 · 由真实流水派生
             </span>
           </div>
@@ -429,10 +429,10 @@ export default async function CockpitPage() {
       {/* ── 6. Pending strip ────────────────────────────────────── */}
       <div className="mt-6">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-[15px] font-semibold tracking-tight text-slate-200">
+          <h2 className="text-[15px] font-semibold tracking-tight text-slate-800">
             待我处理
           </h2>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] text-slate-9000">
             {pendingAlertsTotal === 0 ? "全部清空" : `合计 ${pendingAlertsTotal} 项`}
           </span>
         </div>
@@ -469,27 +469,27 @@ export default async function CockpitPage() {
       {basics.improvements.length ? (
         <div className="mt-6">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[15px] font-semibold tracking-tight text-slate-200">
+            <h2 className="text-[15px] font-semibold tracking-tight text-slate-800">
               组织优化建议
             </h2>
-            <span className="text-[11px] text-slate-500">{basics.improvements.length} 条</span>
+            <span className="text-[11px] text-slate-9000">{basics.improvements.length} 条</span>
           </div>
           <ExecCard>
             <ul className="divide-y divide-white/[0.05]">
               {basics.improvements.slice(0, 4).map((item) => (
                 <li key={item.id} className="flex items-start justify-between gap-4 px-5 py-3">
                   <div className="min-w-0">
-                    <div className="truncate text-[14px] font-medium text-slate-100">{item.title}</div>
+                    <div className="truncate text-[14px] font-medium text-slate-900">{item.title}</div>
                     <p className="mt-1 line-clamp-2 text-[12px] text-slate-400">{item.description}</p>
                   </div>
                   <span
                     className={
                       "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium " +
                       (item.impact_level === "critical"
-                        ? "bg-rose-500/15 text-rose-300"
+                        ? "bg-rose-500/15 text-rose-700"
                         : item.impact_level === "high"
-                          ? "bg-amber-500/15 text-amber-300"
-                          : "bg-slate-100 text-slate-300")
+                          ? "bg-amber-500/15 text-amber-700"
+                          : "bg-slate-100 text-slate-700")
                     }
                   >
                     {item.impact_level}
@@ -502,16 +502,16 @@ export default async function CockpitPage() {
       ) : null}
 
       {/* footer signal strip */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 px-1 font-mono text-[11px] text-slate-500">
-        <span>启用模块 <span className="tabular-nums text-slate-300">{basics.stats.enabledModules}</span></span>
-        <span>组织成员 <span className="tabular-nums text-slate-300">{basics.stats.members}</span></span>
-        <span>AI 员工 <span className="tabular-nums text-slate-300">{basics.stats.agents}</span></span>
-        <span>AI 服务商 <span className="tabular-nums text-slate-300">{basics.stats.providers}</span></span>
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 px-1 font-mono text-[11px] text-slate-9000">
+        <span>启用模块 <span className="tabular-nums text-slate-700">{basics.stats.enabledModules}</span></span>
+        <span>组织成员 <span className="tabular-nums text-slate-700">{basics.stats.members}</span></span>
+        <span>AI 员工 <span className="tabular-nums text-slate-700">{basics.stats.agents}</span></span>
+        <span>AI 服务商 <span className="tabular-nums text-slate-700">{basics.stats.providers}</span></span>
         <span className="ml-auto flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           系统在线
         </span>
-        <Link href="/logs" className="text-amber-300/70 hover:text-amber-200">
+        <Link href="/logs" className="text-amber-700 hover:text-amber-200">
           查看完整日志 →
         </Link>
       </div>

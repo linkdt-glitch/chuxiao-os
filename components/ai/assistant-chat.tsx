@@ -192,8 +192,8 @@ export function AssistantChat() {
         <div ref={scrollAnchorRef} aria-hidden />
       </div>
 
-      {/* 底部 floating composer */}
-      <div className="sticky bottom-0 -mx-4 px-4 pb-4 sm:-mx-6 sm:px-6">
+      {/* 底部 floating composer —— 移动端给 MobileTabbar 留位 */}
+      <div className="sticky bottom-[calc(5.25rem+env(safe-area-inset-bottom))] -mx-4 px-4 pb-2 sm:-mx-6 sm:px-6 lg:bottom-0 lg:pb-4">
         <div
           className="pointer-events-none absolute inset-x-0 -top-12 h-12"
           style={{

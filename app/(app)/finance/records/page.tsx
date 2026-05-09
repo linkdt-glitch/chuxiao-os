@@ -59,44 +59,23 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
         message={params.notice ?? (params.created ? "财务记录已经保存成功" : undefined)}
       />
       {params.error ? (
-        <div
-          className="mb-4 flex items-start gap-2 rounded-lg p-3 text-sm text-red-200"
-          style={{
-            background: "rgba(239,68,68,0.10)",
-            border: "1px solid rgba(239,68,68,0.32)",
-            boxShadow: "0 0 14px rgba(239,68,68,0.10)"
-          }}
-        >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
           <div>
-            <div className="font-medium text-red-200">操作失败</div>
-            <div className="mt-0.5 text-red-200/85">{params.error}</div>
+            <div className="font-medium">操作失败</div>
+            <div className="mt-0.5 text-rose-700/90">{params.error}</div>
           </div>
         </div>
       ) : null}
       {params.notice ? (
-        <div
-          className="mb-4 flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
-          style={{
-            background: "rgba(16,185,129,0.10)",
-            border: "1px solid rgba(16,185,129,0.32)",
-            boxShadow: "0 0 14px rgba(16,185,129,0.10)"
-          }}
-        >
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>{params.notice}</span>
         </div>
       ) : null}
       {params.created ? (
-        <div
-          className="mb-4 flex items-center gap-2 rounded-lg p-3 text-sm text-emerald-300"
-          style={{
-            background: "rgba(16,185,129,0.10)",
-            border: "1px solid rgba(16,185,129,0.32)",
-            boxShadow: "0 0 14px rgba(16,185,129,0.10)"
-          }}
-        >
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>财务记录已保存，最新流水已同步。</span>
         </div>
       ) : null}

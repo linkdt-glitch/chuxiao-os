@@ -4,7 +4,6 @@ import {
   Bot,
   CheckSquare,
   FileText,
-  ImageIcon,
   MessageSquareText,
   Sparkles
 } from "lucide-react";
@@ -39,29 +38,19 @@ export default async function AIWorkforcePage() {
     <>
       <PageHeader
         title="AI 风暴创新实验室"
-        description="目前主推「AI 对话」与「亚马逊图片生成」两大功能，其它 AI 能力（Agent 管理 / Prompt / 运行记录 / 审批）放在下方，按需深度开发。"
+        description="主推「AI 对话」与「亚马逊图片生成」两大功能；其它 AI 能力（Agent / Prompt / 运行记录 / 审批）放在下方，按需深度开发。"
       />
 
-      {/* ── 主功能 1 / 2 — 两张大入口卡 ────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <FeatureCard
-          icon={MessageSquareText}
-          title="AI 对话助手"
-          description="直接和 AI 聊：问问题、写文案、做创意、找方案、整理思路。支持多种模型，可以创建并切换定制 Prompt。"
-          ctaLabel="立即开始对话"
-          ctaHref="/ai-workforce/chat"
-        />
-        <FeatureCard
-          icon={ImageIcon}
-          title="亚马逊图片生成"
-          description="一键生成主图、附图、生活方式图、特写。专为亚马逊卖家调优；可上传产品照作参考，AI 会按需求出多张候选。"
-          ctaLabel="下方立即使用"
-          ctaHref="#image-gen-widget"
-          accent="amber"
-        />
-      </div>
+      {/* ── 主功能 1 — AI 对话助手入口 ──────────────────────── */}
+      <FeatureCard
+        icon={MessageSquareText}
+        title="AI 对话助手"
+        description="直接和 AI 聊：问问题、写文案、做创意、找方案、整理思路。支持多种模型，可以创建并切换定制 Prompt。"
+        ctaLabel="立即开始对话"
+        ctaHref="/ai-workforce/chat"
+      />
 
-      {/* ── 亚马逊图片生成 — 在 hero 下方直接嵌入完整工具 ──── */}
+      {/* ── 主功能 2 — 亚马逊图片生成（直接嵌入完整工具，不另立入口卡） ── */}
       <div id="image-gen-widget" className="mt-6 scroll-mt-24">
         <ImageGenWidget />
       </div>
@@ -179,49 +168,34 @@ function FeatureCard({
   title,
   description,
   ctaLabel,
-  ctaHref,
-  accent = "orange"
+  ctaHref
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
   ctaLabel: string;
   ctaHref: string;
-  accent?: "orange" | "amber";
 }) {
-  const accentStyle =
-    accent === "amber"
-      ? {
-          background: "rgba(251,191,36,0.12)",
-          borderColor: "rgba(251,191,36,0.40)",
-          iconColor: "text-amber-300"
-        }
-      : {
-          background: "rgba(249,115,22,0.12)",
-          borderColor: "rgba(249,115,22,0.40)",
-          iconColor: "text-orange-300"
-        };
-
   return (
     <Card
       style={{
         boxShadow:
-          "0 0 0 1px rgba(249,115,22,0.18), 0 16px 36px rgba(249,115,22,0.08), inset 0 1px 0 rgba(255,255,255,0.05)"
+          "0 0 0 1px rgba(249,115,22,0.20), 0 16px 36px -12px rgba(249,115,22,0.16)"
       }}
     >
       <CardHeader>
         <div className="flex items-center gap-3">
           <div
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border"
-            style={{ background: accentStyle.background, borderColor: accentStyle.borderColor }}
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-orange-200"
+            style={{ background: "rgba(249,115,22,0.12)" }}
           >
-            <Icon className={`h-6 w-6 ${accentStyle.iconColor}`} />
+            <Icon className="h-6 w-6 text-orange-600" />
           </div>
           <div className="min-w-0">
-            <CardTitle className="text-[18px]">{title}</CardTitle>
+            <CardTitle className="text-[18px] text-slate-900">{title}</CardTitle>
           </div>
         </div>
-        <CardDescription className="mt-3">{description}</CardDescription>
+        <CardDescription className="mt-3 text-slate-700">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <Button asChild className="w-full justify-between py-6">
@@ -279,13 +253,13 @@ function SecondaryLink({
       className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-orange-300 hover:bg-orange-50/50"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <Icon className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-orange-300" />
+        <Icon className="h-4 w-4 shrink-0 text-slate-500 group-hover:text-orange-600" />
         <div className="min-w-0">
           <div className="truncate text-[13px] font-medium text-slate-900">{label}</div>
           {hint ? <div className="truncate text-[11px] text-slate-500">{hint}</div> : null}
         </div>
       </div>
-      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-orange-300" />
+      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-orange-600" />
     </Link>
   );
 }

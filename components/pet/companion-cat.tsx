@@ -22,6 +22,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type CatState = "sit" | "walking" | "sleeping" | "playing" | "yawning";
 type Direction = "left" | "right";
@@ -67,6 +68,7 @@ const MOOD_LABEL: Record<CatState, string> = {
 };
 
 export function CompanionCat() {
+  const router = useRouter();
   const [state, setState] = useState<CatState>("sit");
   const [direction, setDirection] = useState<Direction>("right");
   const [showHearts, setShowHearts] = useState(false);
@@ -226,6 +228,18 @@ export function CompanionCat() {
     setState("playing");
   }, []);
 
+  /**
+   * 双击咪咪 → 进入 AI 对话页面。
+   *
+   * 等于把猫咪本身变成「召唤 AI 助手」的快捷入口。先跑一次 playing
+   * 状态（撒娇 + 爱心特效）让用户看到反馈，再 router.push 跳转。
+   */
+  const handleDoubleClick = useCallback(() => {
+    handlePlay();
+    // 延 ~200ms 跳转，让爱心动画先 commit 一帧
+    setTimeout(() => router.push("/ai-workforce/chat"), 200);
+  }, [handlePlay, router]);
+
   if (!mounted || hidden) return null;
 
   const showCute = hovering || state === "playing" || state === "yawning";
@@ -251,8 +265,10 @@ export function CompanionCat() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="逗弄咪咪（三花曼基康）"
+        aria-label="逗弄咪咪 · 双击进入 AI 对话"
+        title="单击：逗弄 / 双击：进入 AI 对话"
         onClick={handlePlay}
+        onDoubleClick={handleDoubleClick}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();

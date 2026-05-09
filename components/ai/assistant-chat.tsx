@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Brain, Sparkles } from "lucide-react";
 import { AIThinking } from "@/components/ui/ai-thinking";
+import { ParticleDoraemon } from "@/components/ai/particle-doraemon";
 import { Textarea } from "@/components/ui/textarea";
 
 type Message = {
@@ -163,7 +164,24 @@ export function AssistantChat({
 
       {/* 消息区 */}
       <div className="flex flex-col gap-7 pb-40 pt-2">
-        {messages.map((message, index) => {
+        {/* 空状态：粒子多啦A梦 hero —— 用户没说话之前用粒子云替代纯文字欢迎 */}
+        {showStarter ? (
+          <div className="flex flex-col items-center pt-2 pb-2">
+            <ParticleDoraemon size={360} className="mx-auto" />
+            <h2 className="mt-2 text-center text-[20px] font-semibold tracking-tight text-slate-900">
+              你好，我是初晓 AI
+            </h2>
+            <p className="mt-1.5 max-w-md text-center text-[14px] leading-relaxed text-slate-600">
+              {INITIAL_MESSAGE.content}
+            </p>
+            <p className="mt-1 text-center font-mono text-[11px] tracking-[0.2em] text-orange-600/80">
+              试试右下角的快捷起手 · 或直接打字
+            </p>
+          </div>
+        ) : null}
+
+        {/* 正常消息列表（空状态下不渲染初始 assistant 问候，那由上方 hero 接管） */}
+        {!showStarter && messages.map((message, index) => {
           // pending 中且最后一条 assistant 还没拿到第一个 chunk → 用 thinking 卡片代替
           const isStreamingPlaceholder =
             pending && index === messages.length - 1 && message.role === "assistant" && !message.content.trim();

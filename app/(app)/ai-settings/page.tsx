@@ -324,7 +324,7 @@ export default async function AISettingsPage() {
               </TableHeader>
               <TableBody>
                 {providers.map((provider) => {
-                  const audience = readProviderAudience(provider as { settings?: Record<string, unknown> | null });
+                  const audience = readProviderAudience(provider);
                   return (
                     <TableRow key={provider.id}>
                       <TableCell>

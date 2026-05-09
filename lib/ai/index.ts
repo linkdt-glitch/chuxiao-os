@@ -48,9 +48,21 @@ type AIInvokeOptions = {
 /** 服务对象 —— 控制这个 provider 给谁用。 */
 export type ProviderAudience = "all" | "founder" | "staff";
 
-/** 从 provider.settings 里读 audience，没设过就当作 "all"（全员）。 */
-export function readProviderAudience(provider: Pick<AIProvider, "settings"> | null | undefined): ProviderAudience {
-  const a = (provider?.settings as { audience?: unknown } | undefined)?.audience;
+/**
+ * 从 provider.settings（任意类型 jsonb）里读 audience，
+ * 没设过 / 不合法都当作 "all"（全员）。
+ *
+ * 接受任何带 settings 字段的对象（包括 Supabase 查回来的 row），
+ * 用 typeof + in 操作符做安全 narrow，避免 strict TS 因 jsonb 类型
+ * 不兼容报错。
+ */
+export function readProviderAudience(
+  provider: { settings?: unknown } | null | undefined
+): ProviderAudience {
+  const settings = provider?.settings;
+  if (!settings || typeof settings !== "object") return "all";
+  if (!("audience" in settings)) return "all";
+  const a = (settings as Record<string, unknown>).audience;
   if (a === "founder" || a === "staff") return a;
   return "all";
 }
@@ -126,7 +138,7 @@ export async function activateAIProvider(providerId: string) {
     .neq("id", providerId);
 
   const sameGroupIds = (sameGroup ?? [])
-    .filter((p) => readProviderAudience(p as { settings: unknown }) === audience)
+    .filter((p) => readProviderAudience(p) === audience)
     .map((p) => p.id);
 
   if (sameGroupIds.length) {
@@ -230,10 +242,12 @@ export async function setProviderAudience(providerId: string, audience: Provider
     .single();
   if (providerError) throw providerError;
 
-  const nextSettings = {
-    ...((provider.settings as Record<string, unknown>) ?? {}),
-    audience
-  };
+  // settings 字段是 jsonb，可能为 null/undefined/任意对象 —— 用安全 spread
+  const prevSettings: Record<string, unknown> =
+    provider.settings && typeof provider.settings === "object"
+      ? (provider.settings as Record<string, unknown>)
+      : {};
+  const nextSettings = { ...prevSettings, audience };
 
   const { data, error } = await supabase
     .from("ai_providers")

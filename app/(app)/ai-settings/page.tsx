@@ -6,14 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IMAGE_MODELS, formatPriceCny, getDefaultModel } from "@/lib/ai/image-models";
-import {
-  ALL_MODELS,
-  FAST_PARSE_MODEL,
-  FOUNDER_CHAT_MODEL,
-  STANDARD_CHAT_MODEL,
-  VISION_MODEL,
-  type ModelCatalogEntry
-} from "@/lib/ai/models-catalog";
+import { ALL_MODELS, type ModelCatalogEntry } from "@/lib/ai/models-catalog";
 import { getAISettingsData } from "@/lib/data/queries";
 import { formatDate } from "@/lib/utils";
 import { activateProviderAction, disableProviderAction } from "./actions";

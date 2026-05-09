@@ -28,8 +28,6 @@ type AssistantChatProps = {
   isFounder?: boolean;
   /** 当前对话使用的模型显示名（如 "DeepSeek-R1（深度思考）"）。 */
   modelLabel?: string;
-  /** 模型描述（鼠标悬停或下方一行小字）。 */
-  modelDescription?: string;
   /** 估一次对话的价格（CNY）—— 给用户「这次大概花多少」的参考。 */
   approxCostPerTurnCny?: number;
 };
@@ -68,7 +66,6 @@ function formatCostLabel(cost?: number) {
 export function AssistantChat({
   isFounder = false,
   modelLabel,
-  modelDescription,
   approxCostPerTurnCny
 }: AssistantChatProps = {}) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);

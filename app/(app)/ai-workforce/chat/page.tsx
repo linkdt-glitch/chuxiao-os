@@ -13,7 +13,6 @@ export default async function AIChatPage() {
       <AssistantChat
         isFounder={isFounder}
         modelLabel={model.label}
-        modelDescription={model.description}
         approxCostPerTurnCny={model.approxCostPerTurnCny}
       />
     </div>

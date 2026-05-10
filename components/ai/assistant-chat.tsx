@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Brain, Sparkles } from "lucide-react";
 import { AIThinking } from "@/components/ui/ai-thinking";
-import { ParticleDoraemon } from "@/components/ai/particle-doraemon";
+import { AIMark } from "@/components/ai/ai-mark";
 import { Textarea } from "@/components/ui/textarea";
 
 type Message = {
@@ -167,7 +167,7 @@ export function AssistantChat({
         {/* 空状态：粒子多啦A梦 hero —— 用户没说话之前用粒子云替代纯文字欢迎 */}
         {showStarter ? (
           <div className="flex flex-col items-center pt-2 pb-2">
-            <ParticleDoraemon size={320} className="mx-auto" />
+            <AIMark size={200} />
             <h2 className="mt-2 text-center text-[20px] font-semibold tracking-tight text-slate-900">
               你好，我是初晓 AI
             </h2>

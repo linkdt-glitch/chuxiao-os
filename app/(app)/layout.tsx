@@ -1,22 +1,14 @@
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
 import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
 import { AnnouncementBanner } from "@/components/dashboard/announcement-banner";
-// 装饰性组件（鼠标轨迹 + 电子宠物猫）—— 不在关键渲染路径，
-// 用 next/dynamic ssr: false 让 SSR 不输出它们，减少首屏 HTML 体积
-// 和 hydration 工作量。客户端水合完成后再异步加载。
-const SciFiEffects = dynamic(
-  () => import("@/components/effects/sci-fi-effects").then((m) => ({ default: m.SciFiEffects })),
-  { ssr: false }
-);
-const CompanionCat = dynamic(
-  () => import("@/components/pet/companion-cat").then((m) => ({ default: m.CompanionCat })),
-  { ssr: false }
-);
+// 装饰组件（粒子鼠标 + 电子宠物猫）走 client-only 懒加载 ——
+// 包在 DecorativeEffects 里，因为 next/dynamic({ ssr:false }) 不能直接
+// 用在 server component 里（Next.js 15 限制）。
+import { DecorativeEffects } from "@/components/effects/decorative-effects";
 import {
   getCurrentMember,
   getCurrentOrganization,
@@ -82,7 +74,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
-      <SciFiEffects />
       <Sidebar modules={modules} />
       <div className="lg:pl-72">
         <Topbar
@@ -108,8 +99,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </EnergyProvider>
         <MobileTabbar modules={modules} />
       </div>
-      {/* 全局电子宠物：三花曼基康咪咪 */}
-      <CompanionCat />
+      {/* 装饰组件（鼠标光剑残影 + 三花曼基康咪咪）—— client-only 懒加载，
+          不阻塞 SSR / 不增加首屏 HTML 体积 */}
+      <DecorativeEffects />
     </div>
   );
 }

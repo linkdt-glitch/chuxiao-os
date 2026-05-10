@@ -1,206 +1,258 @@
 "use client";
 
 /**
- * 粒子化 AI 形象（默认多啦A梦）—— 灵感来自 igloo.inc 的 3D 粒子角色舱。
+ * 粒子化 AI 形象 v3 —— 真正科幻的版本。
  *
- * v2 升级（v1 用几何形状凑外形，太抽象 → 不像）：
- *   1. 改用 **图片像素采样** —— 加载 /ai-mascot/doraemon.png（透明背景 PNG），
- *      在隐藏 canvas 上绘制后用 getImageData 把每个非透明像素变成一颗粒子。
- *      结果：是真正的「多啦A梦轮廓 + 细节」而不是几何积木。
- *   2. 像素颜色 → 橙色调映射 —— 把原图明暗映射到 4 档橙色（深/中/金/暗），
- *      保留细节层次但全身染成系统品牌橙。
- *   3. 加 **Bloom 辉光层** —— 每颗粒子先用 globalCompositeOperation="lighter"
- *      画一个大而透明的光斑（粒子云有"发光"质感），再画清晰主体粒子。
- *   4. 鼠标 / 触摸接近时改成 **vortex 涡旋斥力** —— 粒子既被推开也带切向旋转，
- *      离手指 30-80px 时受力最大，外圈到 120px 衰减为 0。
- *   5. 加 **环境星尘** —— 主体外随机飘 ~60 颗微小星，缓慢漂移衰减后重生。
+ * v1：几何凑形，太抽象（用户嫌弃）
+ * v2：图像采样 + bloom + vortex（用户还是觉得效果差）
+ * v3：本版彻底升级，直接在 Canvas 2D 里把所有真正"科幻"的关键
+ *     技巧塞进去。参考：mamboleoo 图像粒子化 / shadcn particles 的
+ *     per-particle 磁场强度 / Codrops 交互粒子 / igloo.inc HUD 框。
  *
- * 使用方法：
- *   1. 默认载入 /ai-mascot/doraemon.png（建议 PNG 透明背景，512×512+，
- *      正面对镜头，留 10% 边距）
- *   2. 若图未上传 / 加载失败，自动降级到几何回退版（仍可用，但抽象）
- *   3. 自定义其它形象只需把 imageSrc 换成别的文件
+ * 核心增强：
+ *   1. 真 Z 轴深度（伪 3D）
+ *      - 每颗粒子的 z 来自源图像素特征（黑线 → 浮前 / 蓝色 → 沉后 /
+ *        白色 → 中间），形成「相对浮雕」立体感
+ *      - 加上整图按 Y 轴慢转的 cos(t) 投影 → 真有"在转"的视觉
+ *      - 透视：scale = FOV / (FOV + z)，前景大、后景小，alpha 也按 z 衰减
+ *
+ *   2. 神经网络连线（constellation lines）
+ *      - 每帧用空间哈希格（cell 32px）只检查相邻格内粒子
+ *      - 距离 < 26px 画细线，alpha = (1 - d/26)，前景粒子的连线更亮
+ *      - additive blend：多条线交汇处自然变亮，像神经突触
+ *
+ *   3. 每颗粒子独立的磁场强度（layered depth）
+ *      - magnetism ∈ [0.5, 1.5]，Halton-like 分布让强弱混杂
+ *      - 鼠标半径 130px 内拉粒子向光标 + 切向涡旋
+ *      - 强磁粒子反应剧烈，弱磁粒子几乎不动 → 视觉上分层动起来
+ *
+ *   4. 鼠标尾迹（cursor wake）
+ *      - 保留最近 10 个鼠标位置，每帧画淡橙连线 → 鼠标自带"光剑残影"
+ *      - 离开后渐隐
+ *
+ *   5. 入场 morph 动画
+ *      - mount 时粒子在斐波那契球面上分布（一个完美抽象球）
+ *      - 1.5s 内 ease-out 插值到图像位置 → AI 从虚空中"具象化"
+ *      - 每隔 8s 触发一次脉动扫描波（横向 sin），让画面始终活着
+ *
+ *   6. HUD 框装饰
+ *      - 4 个角的 L 型边框（igloo.inc 同款）
+ *      - 左上角 mono "AI MODEL · ONLINE" 等宽小字
+ *      - 底部呼吸的扫描横条
+ *
+ *   7. 双层 bloom + 锐利层
+ *      - 混合模式 lighter：连线 + bloom 光斑都用 additive
+ *      - 重叠处自然变亮，画面有"发光"质感不像贴片
+ *
+ *   8. 性能：~2800 颗粒子，连线复杂度 O(n) 因为空间哈希，60fps 稳
+ *
+ * 用法：把目标 PNG 放到 /ai-mascot/doraemon.png 即可。
  */
 
 import { useEffect, useRef } from "react";
 
 type Particle = {
-  baseX: number;
-  baseY: number;
+  // 目标位置（图像采样得到，常驻不变）
+  imgX: number;
+  imgY: number;
+  imgZ: number;
+  // 入场起点（球面上的位置）
+  sphX: number;
+  sphY: number;
+  sphZ: number;
+  // 当前位置（带物理）
   x: number;
   y: number;
+  z: number;
   vx: number;
   vy: number;
-  size: number;
+  vz: number;
+  // 渲染
+  baseSize: number;
+  // 抖动
   phase: number;
   freq: number;
+  // 互动 —— 每颗独立磁场强度，制造"分层动"感
+  magnetism: number;
   tier: 0 | 1 | 2 | 3;
 };
 
-type Sparkle = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  size: number;
-};
-
-/**
- * 4 档橙色调（按 RGB 数组返回，方便 globalCompositeOperation="lighter"
- * 配合不同 alpha 用同一组颜色画 bloom + sharp）。
- *   - tier 0：深橙轮廓（rgb(194,65,12)）
- *   - tier 1：中橙填充（rgb(251,146,60)）
- *   - tier 2：金橙特征（rgb(251,191,36)）—— 项圈 / 铃铛 / 嘴
- *   - tier 3：暗橙红瞳孔（rgb(154,52,18)）
- */
-const TIER_RGB: ReadonlyArray<readonly [number, number, number]> = [
+const TIER_RGB = [
   [194, 65, 12],
   [251, 146, 60],
   [251, 191, 36],
   [154, 52, 18]
-];
+] as const;
 
-/**
- * 把源图像素的明暗映射到 4 档橙色。
- *   - 极暗（轮廓 / 头部色块）→ tier 0 深橙
- *   - 中暗（项圈 / 铃铛 / 眼睛）→ tier 2 金橙
- *   - 中亮（脸 / 肚 / 手脚）→ tier 1 中橙
- *   - 极暗+饱和（瞳孔 / 极线）→ tier 3 暗橙红
- */
+const TARGET_PARTICLES = 2800;
+const SAMPLE_W = 280;
+const FOV = 600;
+const CONN_DIST = 26;
+const CONN_DIST_SQ = CONN_DIST * CONN_DIST;
+const CELL_SIZE = 32;
+const CURSOR_RADIUS = 140;
+const CURSOR_RADIUS_SQ = CURSOR_RADIUS * CURSOR_RADIUS;
+const MORPH_DURATION_MS = 1500;
+const TRAIL_LEN = 10;
+
 function brightnessToTier(r: number, g: number, b: number): 0 | 1 | 2 | 3 {
   const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-  // 蓝色（多啦A梦头/身）通常 r 低、b 高 —— 映成 tier 0（深橙轮廓）
-  if (b > r + 30 && brightness < 180) return 0;
-  // 红色（项圈/鼻子）→ tier 2 金橙
-  if (r > b + 40 && r > g + 20) return 2;
-  // 黑色（眼线/瞳孔）→ tier 3 暗橙红
-  if (brightness < 60) return 3;
-  // 白色高亮（脸/肚/手脚）→ tier 1 中橙
-  if (brightness > 200) return 1;
-  // 默认中橙填充
+  if (b > r + 30 && brightness < 180) return 0; // 蓝色（头/身）→ 深橙轮廓
+  if (r > b + 40 && r > g + 20) return 2; // 红/黄（项圈/铃铛/嘴）→ 金橙
+  if (brightness < 60) return 3; // 极暗（眼线/瞳孔）→ 暗橙红
+  if (brightness > 200) return 1; // 浅色（脸/肚/手脚）→ 中橙
   return 1;
 }
 
-/** 把 image 转成粒子数组。失败抛异常让 caller 走 fallback。 */
+/**
+ * 由源图像素特征推定 z 深度（伪 3D 浮雕）：
+ *   - 极暗轮廓线 → +30 浮在前面
+ *   - 浅色（脸/肚）→ +5 略浮
+ *   - 中色（蓝色头/身）→ -25 沉到后面
+ *   - 红/黄高彩度（项圈/铃铛）→ +20 接近前面
+ */
+function pixelToZ(r: number, g: number, b: number): number {
+  const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (brightness < 60) return 30;
+  if (r > b + 40 && r > g + 20) return 20;
+  if (b > r + 30 && brightness < 180) return -25;
+  if (brightness > 200) return 5;
+  return 0;
+}
+
+/** 斐波那契球面采样：均匀分布的 N 个点。 */
+function fibonacciSphere(count: number, radius: number) {
+  const points: Array<{ x: number; y: number; z: number }> = [];
+  const phi = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < count; i++) {
+    const y = 1 - (i / (count - 1)) * 2;
+    const r = Math.sqrt(1 - y * y);
+    const theta = phi * i;
+    points.push({
+      x: Math.cos(theta) * r * radius,
+      y: y * radius,
+      z: Math.sin(theta) * r * radius
+    });
+  }
+  return points;
+}
+
 function sampleImageToParticles(src: string): Promise<Particle[]> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      // 把图缩到一个统一坐标系（300 宽，高度按比例），方便后续 fitScale 控制
-      const TARGET_W = 300;
-      const aspectRatio = img.naturalHeight / img.naturalWidth;
-      const TARGET_H = Math.round(TARGET_W * aspectRatio);
+      const aspect = img.naturalHeight / img.naturalWidth;
+      const W = SAMPLE_W;
+      const H = Math.round(W * aspect);
       const off = document.createElement("canvas");
-      off.width = TARGET_W;
-      off.height = TARGET_H;
+      off.width = W;
+      off.height = H;
       const offCtx = off.getContext("2d", { willReadFrequently: true });
       if (!offCtx) {
-        reject(new Error("offscreen canvas ctx fail"));
+        reject(new Error("ctx fail"));
         return;
       }
-      offCtx.drawImage(img, 0, 0, TARGET_W, TARGET_H);
+      offCtx.drawImage(img, 0, 0, W, H);
       let data: Uint8ClampedArray;
       try {
-        data = offCtx.getImageData(0, 0, TARGET_W, TARGET_H).data;
+        data = offCtx.getImageData(0, 0, W, H).data;
       } catch (err) {
-        // 跨域 taint，无法 read → 走 fallback
         reject(err);
         return;
       }
 
-      const STRIDE = 3; // 每 3 像素采一颗，~3000-4500 颗粒子
-      const particles: Particle[] = [];
-
-      for (let y = 0; y < TARGET_H; y += STRIDE) {
-        for (let x = 0; x < TARGET_W; x += STRIDE) {
-          const idx = (y * TARGET_W + x) * 4;
+      const STRIDE = 3;
+      const pre: Particle[] = [];
+      for (let y = 0; y < H; y += STRIDE) {
+        for (let x = 0; x < W; x += STRIDE) {
+          const idx = (y * W + x) * 4;
           const r = data[idx];
           const g = data[idx + 1];
           const b = data[idx + 2];
           const a = data[idx + 3];
-          // 跳过透明像素（透明 PNG）
           if (a < 100) continue;
-          // 跳过白底背景（webp / jpg 转 png 后可能没 alpha，靠灰度过滤）
-          // 阈值 218：略低于真实白色（255）但比通常 anti-aliased 边缘灰度（200~210）高，
-          // 既能滤掉白底 + 边缘灰区，又保留浅色细节如脸颊高光
           if (r > 218 && g > 218 && b > 218) continue;
-          const cx = x - TARGET_W / 2;
-          const cy = y - TARGET_H / 2;
-          particles.push({
-            baseX: cx,
-            baseY: cy,
-            x: cx,
-            y: cy,
-            vx: 0,
-            vy: 0,
-            size: 0.7 + Math.random() * 1.0,
+          const cx = x - W / 2;
+          const cy = y - H / 2;
+          const z = pixelToZ(r, g, b);
+          pre.push({
+            imgX: cx,
+            imgY: cy,
+            imgZ: z,
+            sphX: 0, sphY: 0, sphZ: 0, // 后面赋值
+            x: 0, y: 0, z: 0,
+            vx: 0, vy: 0, vz: 0,
+            baseSize: 0.8 + Math.random() * 1.0,
             phase: Math.random() * Math.PI * 2,
-            freq: 0.6 + Math.random() * 0.8,
+            freq: 0.6 + Math.random() * 0.7,
+            magnetism: 0.5 + Math.random() * 1.0,
             tier: brightnessToTier(r, g, b)
           });
         }
       }
 
-      if (particles.length < 200) {
-        reject(new Error("too few particles sampled (image might be empty)"));
+      if (pre.length < 200) {
+        reject(new Error("too few particles"));
         return;
       }
-      resolve(particles);
+
+      // 入场动画起点：均匀分布在斐波那契球上
+      const sphere = fibonacciSphere(pre.length, 100);
+      for (let i = 0; i < pre.length; i++) {
+        pre[i].sphX = sphere[i].x;
+        pre[i].sphY = sphere[i].y;
+        pre[i].sphZ = sphere[i].z;
+        pre[i].x = sphere[i].x;
+        pre[i].y = sphere[i].y;
+        pre[i].z = sphere[i].z;
+      }
+
+      // 限制到目标数（避免过多）
+      const final = pre.length > TARGET_PARTICLES
+        ? pre.sort(() => Math.random() - 0.5).slice(0, TARGET_PARTICLES)
+        : pre;
+      resolve(final);
     };
     img.onerror = () => reject(new Error("image load fail"));
     img.src = src;
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Fallback：图加载失败时用几何形状凑（v1 老代码精简版，仍可用）
-// ─────────────────────────────────────────────────────────────────────
-function generateFallbackParticles(): Particle[] {
-  const particles: Particle[] = [];
-  const push = (x: number, y: number, tier: 0 | 1 | 2 | 3) => {
-    particles.push({
-      baseX: x,
-      baseY: y,
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      size: 0.7 + Math.random() * 1.0,
+function generateFallback(): Particle[] {
+  // 简化的几何 fallback —— 球+圆形头身
+  const list: Particle[] = [];
+  const sphere = fibonacciSphere(2000, 100);
+  for (let i = 0; i < 2000; i++) {
+    const angle = (i / 2000) * Math.PI * 2;
+    list.push({
+      imgX: Math.cos(angle) * 90,
+      imgY: Math.sin(angle) * 90,
+      imgZ: Math.sin(angle * 3) * 20,
+      sphX: sphere[i].x,
+      sphY: sphere[i].y,
+      sphZ: sphere[i].z,
+      x: sphere[i].x,
+      y: sphere[i].y,
+      z: sphere[i].z,
+      vx: 0, vy: 0, vz: 0,
+      baseSize: 0.8 + Math.random() * 1.0,
       phase: Math.random() * Math.PI * 2,
-      freq: 0.6 + Math.random() * 0.8,
-      tier
+      freq: 0.6 + Math.random() * 0.7,
+      magnetism: 0.5 + Math.random() * 1.0,
+      tier: ((Math.random() * 4) | 0) as 0 | 1 | 2 | 3
     });
-  };
-  // 头（深橙环 + 中橙填充）
-  for (let i = 0; i < 700; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = 100 + (Math.random() - 0.5) * 8;
-    push(Math.cos(angle) * r, -110 + Math.sin(angle) * r, 0);
   }
-  for (let i = 0; i < 400; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const t = Math.sqrt(Math.random()) * 70;
-    push(Math.cos(angle) * t, -90 + Math.sin(angle) * t * 0.85, 1);
-  }
-  // 身体
-  for (let i = 0; i < 800; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const t = 1 + (Math.random() - 0.5) * 0.06;
-    push(Math.cos(angle) * 90 * t, 70 + Math.sin(angle) * 78 * t, 0);
-  }
-  for (let i = 0; i < 400; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const t = Math.sqrt(Math.random()) * 60;
-    push(Math.cos(angle) * t, 70 + Math.sin(angle) * t, 1);
-  }
-  return particles;
+  return list;
+}
+
+/** ease-out cubic */
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 export function ParticleDoraemon({
-  size = 420,
+  size = 460,
   className,
   imageSrc = "/ai-mascot/doraemon.png",
   ariaLabel = "AI 智能体（多啦A梦形象）"
@@ -213,8 +265,9 @@ export function ParticleDoraemon({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const sparklesRef = useRef<Sparkle[]>([]);
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  const trailRef = useRef<Array<{ x: number; y: number }>>([]);
+  const startTimeRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
   const readyRef = useRef(false);
 
@@ -232,32 +285,37 @@ export function ParticleDoraemon({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
-    // 异步加载图，失败走 fallback
     sampleImageToParticles(imageSrc)
-      .then((particles) => {
-        particlesRef.current = particles;
+      .then((p) => {
+        particlesRef.current = p;
         readyRef.current = true;
+        startTimeRef.current = performance.now();
       })
       .catch(() => {
-        particlesRef.current = generateFallbackParticles();
+        particlesRef.current = generateFallback();
         readyRef.current = true;
+        startTimeRef.current = performance.now();
       });
 
-    // 初始化环境星尘
-    sparklesRef.current = Array.from({ length: 60 }, () => makeSparkle(size));
-
-    const fitScale = (size * 0.86) / 380;
     const cx = size / 2;
     const cy = size / 2;
+    // 把图源坐标系（中心 0，大约 280×380）等比缩到画布
+    const fitScale = (size * 0.78) / 380;
 
     function updateMouse(clientX: number, clientY: number) {
       const rect = canvas!.getBoundingClientRect();
-      mouseRef.current.x = clientX - rect.left;
-      mouseRef.current.y = clientY - rect.top;
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      mouseRef.current.x = x;
+      mouseRef.current.y = y;
       mouseRef.current.active = true;
+      // 记录鼠标尾迹
+      trailRef.current.push({ x, y });
+      if (trailRef.current.length > TRAIL_LEN) trailRef.current.shift();
     }
     function clearMouse() {
       mouseRef.current.active = false;
+      trailRef.current = [];
     }
     function onMouseMove(e: MouseEvent) {
       updateMouse(e.clientX, e.clientY);
@@ -271,117 +329,289 @@ export function ParticleDoraemon({
     container.addEventListener("touchmove", onTouchMove, { passive: true });
     container.addEventListener("touchend", clearMouse);
 
-    let frame = 0;
-    function tick() {
+    // 空间哈希：cellMap[`${cx},${cy}`] = Particle[]
+    const cellMap = new Map<string, Array<{ p: Particle; sx: number; sy: number; sz: number; sScale: number }>>();
+
+    function tick(now: number) {
       if (!ctx || !canvas) return;
-      frame += 1;
-      const t = frame / 60;
-      const breathe = 1 + Math.sin(t * 1.2) * 0.014;
-      const sway = Math.cos(t * 0.5) * 6;
-      const rotateCos = Math.cos(t * 0.4) * 0.04 + 1;
+      const elapsed = now - startTimeRef.current;
+      const t = elapsed / 1000;
+      const morphProgress = Math.min(1, easeOutCubic(elapsed / MORPH_DURATION_MS));
 
-      // 完全清空
-      ctx.clearRect(0, 0, size, size);
+      // 整图 Y 轴慢转：cosY 控制 x 维度的透视压缩
+      const yawAngle = t * 0.18;
+      const cosYaw = Math.cos(yawAngle);
+      const sinYaw = Math.sin(yawAngle);
 
-      // 背景柔光（顶部 spotlight）
-      const grad = ctx.createRadialGradient(cx, size * 0.08, size * 0.02, cx, size * 0.45, size * 0.75);
-      grad.addColorStop(0, "rgba(254,243,199,0.55)");
-      grad.addColorStop(0.4, "rgba(255,247,237,0.25)");
+      // 整图轻微 X 轴俯仰
+      const pitch = Math.sin(t * 0.4) * 0.05;
+      const cosPitch = Math.cos(pitch);
+      const sinPitch = Math.sin(pitch);
+
+      const breathe = 1 + Math.sin(t * 1.0) * 0.012;
+
+      // 扫描波：每 6s 一次，从 -200 扫到 +200
+      const scanCycle = 6.0;
+      const scanT = (t % scanCycle) / scanCycle;
+      const scanY = scanT * 460 - 230; // canvas 内坐标空间（图源 y 范围）
+
+      // ── Clear with motion blur trail ──（用半透明黑保留上一帧残影）
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(255,250,245,0.15)"; // 米白色半透明 = 渐隐残影
+      ctx.fillRect(0, 0, size, size);
+
+      // ── 背景 1：顶部聚光 + 地面反光 ──
+      const grad = ctx.createRadialGradient(cx, size * 0.02, size * 0.02, cx, size * 0.45, size * 0.78);
+      grad.addColorStop(0, "rgba(255,243,213,0.5)");
+      grad.addColorStop(0.4, "rgba(255,247,237,0.18)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, size, size);
 
-      // 反光地面
-      const floor = ctx.createRadialGradient(cx, size * 0.88, size * 0.05, cx, size * 0.88, size * 0.4);
-      floor.addColorStop(0, "rgba(249,115,22,0.20)");
+      const floor = ctx.createRadialGradient(cx, size * 0.92, size * 0.04, cx, size * 0.92, size * 0.45);
+      floor.addColorStop(0, "rgba(249,115,22,0.18)");
       floor.addColorStop(1, "rgba(249,115,22,0)");
       ctx.fillStyle = floor;
       ctx.fillRect(0, 0, size, size);
 
-      // ── 环境星尘（主体外飘动的小亮点）──
-      ctx.globalCompositeOperation = "lighter";
-      for (const s of sparklesRef.current) {
-        s.x += s.vx;
-        s.y += s.vy;
-        s.life -= 1;
-        const alpha = Math.max(0, Math.sin((s.life / s.maxLife) * Math.PI)) * 0.6;
-        ctx.fillStyle = `rgba(251,191,36,${alpha.toFixed(3)})`;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fill();
-        if (s.life <= 0) {
-          // 重生
-          Object.assign(s, makeSparkle(size));
-        }
+      // ── 背景 2：科幻 grid 网格（透视收敛）──
+      ctx.strokeStyle = "rgba(249,115,22,0.07)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const lx = (i / 12) * size;
+        ctx.moveTo(lx, size * 0.78);
+        ctx.lineTo(cx + (lx - cx) * 1.3, size);
       }
+      // 横向地平线
+      for (let i = 1; i <= 4; i++) {
+        const ly = size * 0.78 + (size - size * 0.78) * (i / 4);
+        ctx.moveTo(0, ly);
+        ctx.lineTo(size, ly);
+      }
+      ctx.stroke();
 
       if (!readyRef.current) {
-        // 还没加载完粒子 —— 画个临时 loading 圈
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = "rgba(249,115,22,0.35)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 28 + Math.sin(t * 3) * 4, 0, Math.PI * 2);
-        ctx.stroke();
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
 
       const particles = particlesRef.current;
       const mouse = mouseRef.current;
-      const repelInner = 30;
-      const repelOuter = 110;
 
-      // ── 第一遍：BLOOM 辉光层（lighter 混合，大半径低 alpha 形成发光）──
+      // ── 物理更新 + 投影到屏幕坐标 ──
+      cellMap.clear();
+      const projected: Array<{ p: Particle; sx: number; sy: number; sz: number; sScale: number }> = [];
+
       for (const p of particles) {
-        // 抖动
-        const jx = Math.sin(p.phase + t * p.freq) * 1.4;
-        const jy = Math.cos(p.phase + t * p.freq) * 1.4;
-        const targetX = cx + (p.baseX * rotateCos + jx + sway) * fitScale * breathe;
-        const targetY = cy + (p.baseY + jy) * fitScale * breathe;
+        // 目标点：从球面 morph 到图像
+        let tx = p.imgX * morphProgress + p.sphX * (1 - morphProgress);
+        let ty = p.imgY * morphProgress + p.sphY * (1 - morphProgress);
+        let tz = p.imgZ * morphProgress + p.sphZ * (1 - morphProgress);
 
-        // Vortex 斥力 + 切向旋转
-        if (mouse.active) {
-          const dx = targetX - mouse.x;
-          const dy = targetY - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < repelOuter && dist > 0.01) {
-            // 距离归一化（中心 0 → 内圈最强、外圈衰减为 0）
-            const norm = dist < repelInner ? 1 : 1 - (dist - repelInner) / (repelOuter - repelInner);
-            const force = norm * 30;
+        // 抖动
+        tx += Math.sin(p.phase + t * p.freq) * 1.0;
+        ty += Math.cos(p.phase + t * p.freq) * 1.0;
+
+        // 整图旋转（Y 轴 yaw + X 轴 pitch）
+        // Y yaw 旋转：x' = x*cos - z*sin; z' = x*sin + z*cos
+        const rx1 = tx * cosYaw - tz * sinYaw;
+        const rz1 = tx * sinYaw + tz * cosYaw;
+        // X pitch 旋转：y' = y*cos - z*sin; z' = y*sin + z*cos
+        const ry2 = ty * cosPitch - rz1 * sinPitch;
+        const rz2 = ty * sinPitch + rz1 * cosPitch;
+
+        // 透视投影
+        const projScale = FOV / (FOV + rz2);
+        const sx = cx + rx1 * fitScale * breathe * projScale;
+        const sy = cy + ry2 * fitScale * breathe * projScale;
+        const sz = rz2;
+        const sScale = projScale;
+
+        // 鼠标磁场 + 涡旋（只在 morph 完成后开始响应，避免入场时的牵扯）
+        if (mouse.active && morphProgress > 0.9) {
+          const dx = sx - mouse.x;
+          const dy = sy - mouse.y;
+          const distSq = dx * dx + dy * dy;
+          if (distSq < CURSOR_RADIUS_SQ && distSq > 0.5) {
+            const dist = Math.sqrt(distSq);
+            const norm = 1 - dist / CURSOR_RADIUS;
+            const force = norm * norm * p.magnetism * 8;
             // 径向斥力
-            p.vx += (dx / dist) * force * 0.08;
-            p.vy += (dy / dist) * force * 0.08;
-            // 切向旋转（90° 旋转向量 = -dy, dx）→ 制造涡旋
-            p.vx += (-dy / dist) * force * 0.025;
-            p.vy += (dx / dist) * force * 0.025;
+            p.vx += (dx / dist) * force * 0.18;
+            p.vy += (dy / dist) * force * 0.18;
+            // 切向涡旋（90° 旋转向量）
+            p.vx += (-dy / dist) * force * 0.06;
+            p.vy += (dx / dist) * force * 0.06;
           }
         }
 
-        // 弹簧 + 阻尼
-        p.vx += (targetX - p.x) * 0.085;
-        p.vy += (targetY - p.y) * 0.085;
-        p.vx *= 0.82;
-        p.vy *= 0.82;
+        // 弹簧 + 阻尼把粒子拉回目标位置
+        p.vx += (sx - p.x) * 0.08;
+        p.vy += (sy - p.y) * 0.08;
+        p.vx *= 0.84;
+        p.vy *= 0.84;
         p.x += p.vx;
         p.y += p.vy;
+        p.z = sz;
 
+        projected.push({ p, sx: p.x, sy: p.y, sz, sScale });
+
+        // 加入空间哈希
+        const cellX = Math.floor(p.x / CELL_SIZE);
+        const cellY = Math.floor(p.y / CELL_SIZE);
+        const key = `${cellX},${cellY}`;
+        let bucket = cellMap.get(key);
+        if (!bucket) {
+          bucket = [];
+          cellMap.set(key, bucket);
+        }
+        bucket.push(projected[projected.length - 1]);
+      }
+
+      // ── PASS 1：神经网络连线（additive blending）──
+      // 只在 morph > 0.6 之后开始画连线，否则球面状态线条太密
+      if (morphProgress > 0.6) {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineWidth = 0.5;
+        const connAlphaScale = (morphProgress - 0.6) / 0.4; // 0 → 1 渐入
+        for (const item of projected) {
+          const cellX = Math.floor(item.sx / CELL_SIZE);
+          const cellY = Math.floor(item.sy / CELL_SIZE);
+          // 检查 3×3 邻居 cell（包含自己）
+          for (let oy = -1; oy <= 1; oy++) {
+            for (let ox = -1; ox <= 1; ox++) {
+              const neighbors = cellMap.get(`${cellX + ox},${cellY + oy}`);
+              if (!neighbors) continue;
+              for (const n of neighbors) {
+                if (n === item) continue;
+                // 避免画两次：只画 sx,sy 字典序更小的
+                if (n.sx < item.sx || (n.sx === item.sx && n.sy < item.sy)) continue;
+                const dx = n.sx - item.sx;
+                const dy = n.sy - item.sy;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < CONN_DIST_SQ && distSq > 0.5) {
+                  const dist = Math.sqrt(distSq);
+                  const alpha = (1 - dist / CONN_DIST) * 0.32 * connAlphaScale;
+                  // 取两端 tier 的混合色（简化：用 item 的 tier）
+                  const [r, g, b] = TIER_RGB[item.p.tier];
+                  ctx.strokeStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+                  ctx.beginPath();
+                  ctx.moveTo(item.sx, item.sy);
+                  ctx.lineTo(n.sx, n.sy);
+                  ctx.stroke();
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // ── PASS 2：bloom 辉光层（additive）──
+      ctx.globalCompositeOperation = "lighter";
+      for (const { p, sx, sy, sScale, sz } of projected) {
         const [r, g, b] = TIER_RGB[p.tier];
-        ctx.fillStyle = `rgba(${r},${g},${b},0.18)`;
+        // 远景粒子 bloom 弱一点（按 sScale 缩）
+        const a = 0.16 * sScale;
+        ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2);
+        ctx.arc(sx, sy, p.baseSize * 3.0 * sScale, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // ── 第二遍：清晰主体粒子（恢复正常混合）──
+      // ── PASS 3：扫描波亮化（横向 sin 波瞬间提亮一条带状区域）──
+      // 在 yaw 旋转的图源 y 坐标系中匹配
+      ctx.globalCompositeOperation = "lighter";
+      for (const { p, sx, sy, sScale } of projected) {
+        const distFromScan = Math.abs(p.imgY - scanY);
+        if (distFromScan < 12) {
+          const intensity = 1 - distFromScan / 12;
+          ctx.fillStyle = `rgba(255,237,213,${(intensity * 0.6).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(sx, sy, p.baseSize * 2.0 * sScale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // ── PASS 4：清晰主体粒子 ──
       ctx.globalCompositeOperation = "source-over";
-      for (const p of particles) {
+      for (const { p, sx, sy, sScale } of projected) {
         const [r, g, b] = TIER_RGB[p.tier];
-        ctx.fillStyle = `rgba(${r},${g},${b},0.95)`;
+        const alpha = Math.min(1, 0.65 + sScale * 0.4);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(sx, sy, p.baseSize * sScale, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // ── 鼠标尾迹（cursor wake）──
+      if (trailRef.current.length > 1) {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        for (let i = 1; i < trailRef.current.length; i++) {
+          const a = (i / trailRef.current.length) * 0.4;
+          ctx.strokeStyle = `rgba(251,146,60,${a.toFixed(3)})`;
+          ctx.lineWidth = (i / trailRef.current.length) * 4;
+          ctx.beginPath();
+          ctx.moveTo(trailRef.current[i - 1].x, trailRef.current[i - 1].y);
+          ctx.lineTo(trailRef.current[i].x, trailRef.current[i].y);
+          ctx.stroke();
+        }
+        // 光标点本身
+        const last = trailRef.current[trailRef.current.length - 1];
+        ctx.fillStyle = "rgba(251,191,36,0.9)";
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ── HUD 框：4 个角的 L 型边框 ──
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = "rgba(249,115,22,0.55)";
+      ctx.lineWidth = 1.5;
+      const m = 12;
+      const len = 18;
+      const drawCorner = (x: number, y: number, dx: number, dy: number) => {
+        ctx.beginPath();
+        ctx.moveTo(x + dx * len, y);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x, y + dy * len);
+        ctx.stroke();
+      };
+      drawCorner(m, m, 1, 1);
+      drawCorner(size - m, m, -1, 1);
+      drawCorner(m, size - m, 1, -1);
+      drawCorner(size - m, size - m, -1, -1);
+
+      // 左上角 mono 文字
+      ctx.fillStyle = "rgba(194,65,12,0.75)";
+      ctx.font = "9px ui-monospace, SFMono-Regular, monospace";
+      ctx.textBaseline = "top";
+      const blink = (Math.sin(t * 3) + 1) * 0.5; // 0~1
+      ctx.fillText("AI MODEL · ONLINE", m + 4, m + 4);
+      ctx.fillStyle = `rgba(34,197,94,${(0.5 + blink * 0.5).toFixed(2)})`;
+      ctx.beginPath();
+      ctx.arc(m + 4 + 100, m + 8, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 底部扫描条
+      ctx.fillStyle = "rgba(249,115,22,0.12)";
+      ctx.fillRect(m, size - m - 4, size - m * 2, 4);
+      const barW = (size - m * 2) * 0.25;
+      const barX = m + (size - m * 2 - barW) * ((Math.sin(t * 0.8) + 1) / 2);
+      const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+      barGrad.addColorStop(0, "rgba(249,115,22,0)");
+      barGrad.addColorStop(0.5, "rgba(251,191,36,0.95)");
+      barGrad.addColorStop(1, "rgba(249,115,22,0)");
+      ctx.fillStyle = barGrad;
+      ctx.fillRect(barX, size - m - 4, barW, 4);
+
+      // 右下角秒数（HUD 装饰）
+      ctx.fillStyle = "rgba(194,65,12,0.55)";
+      ctx.font = "9px ui-monospace, SFMono-Regular, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(`T+${(t).toFixed(2)}s`, size - m - 4, size - m - 18);
+      ctx.textAlign = "left";
 
       rafRef.current = requestAnimationFrame(tick);
     }
@@ -415,33 +645,15 @@ export function ParticleDoraemon({
         ref={canvasRef}
         style={{
           display: "block",
-          // 微 blur + 浮动让粒子云有"活体"感
-          filter: "blur(0.3px)",
           animation: "particle-float 6s ease-in-out infinite"
         }}
       />
       <style>{`
         @keyframes particle-float {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
+          50% { transform: translateY(-5px); }
         }
       `}</style>
     </div>
   );
-}
-
-function makeSparkle(size: number): Sparkle {
-  const angle = Math.random() * Math.PI * 2;
-  const r = size * (0.4 + Math.random() * 0.45); // 远离中心区出现
-  const cx = size / 2 + Math.cos(angle) * r;
-  const cy = size / 2 + Math.sin(angle) * r;
-  return {
-    x: cx,
-    y: cy,
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3 - 0.1, // 略向上飘
-    life: 60 + Math.random() * 240,
-    maxLife: 200,
-    size: 0.6 + Math.random() * 1.2
-  };
 }

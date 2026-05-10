@@ -84,14 +84,24 @@ const TIER_RGB = [
   [154, 52, 18]
 ] as const;
 
-const TARGET_PARTICLES = 2800;
+/** 性能档位 —— 根据画布大小自动选粒子数和邻接半径 */
+type PerfTier = { particles: number; connDist: number; cellSize: number; cursorRadius: number };
+
+function pickPerfTier(canvasSize: number): PerfTier {
+  if (canvasSize <= 260) {
+    // 小屏 / 极致省电：1200 颗 + 短连线
+    return { particles: 1200, connDist: 18, cellSize: 22, cursorRadius: 90 };
+  }
+  if (canvasSize <= 360) {
+    // 中等：1800 颗
+    return { particles: 1800, connDist: 22, cellSize: 26, cursorRadius: 110 };
+  }
+  // 大画布：2800 颗，全特效
+  return { particles: 2800, connDist: 26, cellSize: 32, cursorRadius: 140 };
+}
+
 const SAMPLE_W = 280;
 const FOV = 600;
-const CONN_DIST = 26;
-const CONN_DIST_SQ = CONN_DIST * CONN_DIST;
-const CELL_SIZE = 32;
-const CURSOR_RADIUS = 140;
-const CURSOR_RADIUS_SQ = CURSOR_RADIUS * CURSOR_RADIUS;
 const MORPH_DURATION_MS = 1500;
 const TRAIL_LEN = 10;
 
@@ -137,7 +147,7 @@ function fibonacciSphere(count: number, radius: number) {
   return points;
 }
 
-function sampleImageToParticles(src: string): Promise<Particle[]> {
+function sampleImageToParticles(src: string, targetCount: number): Promise<Particle[]> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -209,8 +219,8 @@ function sampleImageToParticles(src: string): Promise<Particle[]> {
       }
 
       // 限制到目标数（避免过多）
-      const final = pre.length > TARGET_PARTICLES
-        ? pre.sort(() => Math.random() - 0.5).slice(0, TARGET_PARTICLES)
+      const final = pre.length > targetCount
+        ? pre.sort(() => Math.random() - 0.5).slice(0, targetCount)
         : pre;
       resolve(final);
     };
@@ -285,7 +295,12 @@ export function ParticleDoraemon({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
-    sampleImageToParticles(imageSrc)
+    // 根据画布大小自动选性能档（小 → 少粒子 + 短连线，大 → 全特效）
+    const perf = pickPerfTier(size);
+    const CONN_DIST_SQ = perf.connDist * perf.connDist;
+    const CURSOR_RADIUS_SQ = perf.cursorRadius * perf.cursorRadius;
+
+    sampleImageToParticles(imageSrc, perf.particles)
       .then((p) => {
         particlesRef.current = p;
         readyRef.current = true;
@@ -435,7 +450,7 @@ export function ParticleDoraemon({
           const distSq = dx * dx + dy * dy;
           if (distSq < CURSOR_RADIUS_SQ && distSq > 0.5) {
             const dist = Math.sqrt(distSq);
-            const norm = 1 - dist / CURSOR_RADIUS;
+            const norm = 1 - dist / perf.cursorRadius;
             const force = norm * norm * p.magnetism * 8;
             // 径向斥力
             p.vx += (dx / dist) * force * 0.18;
@@ -458,8 +473,8 @@ export function ParticleDoraemon({
         projected.push({ p, sx: p.x, sy: p.y, sz, sScale });
 
         // 加入空间哈希
-        const cellX = Math.floor(p.x / CELL_SIZE);
-        const cellY = Math.floor(p.y / CELL_SIZE);
+        const cellX = Math.floor(p.x / perf.cellSize);
+        const cellY = Math.floor(p.y / perf.cellSize);
         const key = `${cellX},${cellY}`;
         let bucket = cellMap.get(key);
         if (!bucket) {
@@ -476,8 +491,8 @@ export function ParticleDoraemon({
         ctx.lineWidth = 0.5;
         const connAlphaScale = (morphProgress - 0.6) / 0.4; // 0 → 1 渐入
         for (const item of projected) {
-          const cellX = Math.floor(item.sx / CELL_SIZE);
-          const cellY = Math.floor(item.sy / CELL_SIZE);
+          const cellX = Math.floor(item.sx / perf.cellSize);
+          const cellY = Math.floor(item.sy / perf.cellSize);
           // 检查 3×3 邻居 cell（包含自己）
           for (let oy = -1; oy <= 1; oy++) {
             for (let ox = -1; ox <= 1; ox++) {
@@ -492,7 +507,7 @@ export function ParticleDoraemon({
                 const distSq = dx * dx + dy * dy;
                 if (distSq < CONN_DIST_SQ && distSq > 0.5) {
                   const dist = Math.sqrt(distSq);
-                  const alpha = (1 - dist / CONN_DIST) * 0.32 * connAlphaScale;
+                  const alpha = (1 - dist / perf.connDist) * 0.32 * connAlphaScale;
                   // 取两端 tier 的混合色（简化：用 item 的 tier）
                   const [r, g, b] = TIER_RGB[item.p.tier];
                   ctx.strokeStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;

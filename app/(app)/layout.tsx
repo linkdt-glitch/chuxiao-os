@@ -1,12 +1,22 @@
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
 import { MobileTabbar } from "@/components/layout/mobile-tabbar";
 import { EnergyProvider } from "@/components/energy/energy-provider";
 import { AnnouncementBanner } from "@/components/dashboard/announcement-banner";
-import { SciFiEffects } from "@/components/effects/sci-fi-effects";
-import { CompanionCat } from "@/components/pet/companion-cat";
+// 装饰性组件（鼠标轨迹 + 电子宠物猫）—— 不在关键渲染路径，
+// 用 next/dynamic ssr: false 让 SSR 不输出它们，减少首屏 HTML 体积
+// 和 hydration 工作量。客户端水合完成后再异步加载。
+const SciFiEffects = dynamic(
+  () => import("@/components/effects/sci-fi-effects").then((m) => ({ default: m.SciFiEffects })),
+  { ssr: false }
+);
+const CompanionCat = dynamic(
+  () => import("@/components/pet/companion-cat").then((m) => ({ default: m.CompanionCat })),
+  { ssr: false }
+);
 import {
   getCurrentMember,
   getCurrentOrganization,

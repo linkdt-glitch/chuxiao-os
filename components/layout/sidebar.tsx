@@ -116,8 +116,9 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
               <Image
                 src="/brand/kairosmini-mark.svg"
                 alt="初晓 OS"
-                width={512}
-                height={512}
+                width={40}
+                height={40}
+                priority
                 className="h-full w-full object-contain"
                 style={{ animation: "logo-sphere-energy 3.2s ease-in-out infinite" }}
               />

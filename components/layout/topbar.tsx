@@ -40,8 +40,9 @@ export function Topbar({
           <Image
             src="/brand/kairosmini-mark.svg"
             alt="初晓 OS"
-            width={512}
-            height={512}
+            width={36}
+            height={36}
+            priority
             className="h-full w-full object-contain"
           />
         </div>

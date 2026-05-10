@@ -1,5 +1,5 @@
-"use client";
-
+// 纯 CSS marquee 动画，无 hook —— 不需要 "use client"，让它走 RSC
+// 减少 client bundle 注水，每次首屏少一份序列化。
 const DEFAULT_ANNOUNCEMENTS = [
   "系统正常运行中",
   "今日 AI 调用量正常",

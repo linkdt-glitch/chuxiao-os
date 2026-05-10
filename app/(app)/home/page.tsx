@@ -79,15 +79,20 @@ export default async function HomePage({
                   <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  {/* 文字块用 min-w-0 + flex-1 撑满剩余空间并允许换行（避免长描述溢出右侧） */}
+                  {/* 文字块：title 字号 + 字重 + 颜色都加重，明显从描述里"跳出来"
+                      title (15px 黑字 bold) > description (12.5px 浅灰)，
+                      title 后面用一个更细的小竖线代替原来太弱的点分隔 */}
                   <div className="min-w-0 flex-1 leading-relaxed">
-                    <span className="text-[13px] font-semibold text-slate-900">
+                    <span className="text-[15px] font-bold tracking-tight text-slate-900">
                       {value.title}
                     </span>
                     {value.description ? (
                       <>
-                        <span className="mx-1.5 text-slate-300">·</span>
-                        <span className="text-[12px] text-slate-600">
+                        <span
+                          aria-hidden
+                          className="mx-2 inline-block h-3 w-px translate-y-[2px] bg-slate-300"
+                        />
+                        <span className="text-[12.5px] font-normal text-slate-500">
                           {value.description}
                         </span>
                       </>

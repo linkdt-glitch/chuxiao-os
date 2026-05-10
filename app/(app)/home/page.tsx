@@ -79,10 +79,9 @@ export default async function HomePage({
                   <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  {/* 文字块：title 字号 + 字重 + 颜色都加重，明显从描述里"跳出来"
-                      title (15px 黑字 bold) > description (12.5px 浅灰)，
-                      title 后面用一个更细的小竖线代替原来太弱的点分隔 */}
-                  <div className="min-w-0 flex-1 leading-relaxed">
+                  {/* 文字块：标题大且重（突出锁眼），描述刻意压小压淡（变成解释性陪衬）
+                      用 leading-snug 收紧标题区域，描述 11.5px slate-400 完全不抢戏 */}
+                  <div className="min-w-0 flex-1 leading-snug">
                     <span className="text-[15px] font-bold tracking-tight text-slate-900">
                       {value.title}
                     </span>
@@ -90,9 +89,9 @@ export default async function HomePage({
                       <>
                         <span
                           aria-hidden
-                          className="mx-2 inline-block h-3 w-px translate-y-[2px] bg-slate-300"
+                          className="mx-2 inline-block h-3 w-px translate-y-[2px] bg-slate-200"
                         />
-                        <span className="text-[12.5px] font-normal text-slate-500">
+                        <span className="text-[11.5px] font-normal leading-relaxed text-slate-400">
                           {value.description}
                         </span>
                       </>

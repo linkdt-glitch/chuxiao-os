@@ -79,22 +79,16 @@ export default async function HomePage({
                   <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  {/* 文字块：标题大且重（突出锁眼），描述刻意压小压淡（变成解释性陪衬）
-                      用 leading-snug 收紧标题区域，描述 11.5px slate-400 完全不抢戏 */}
-                  <div className="min-w-0 flex-1 leading-snug">
-                    <span className="text-[15px] font-bold tracking-tight text-slate-900">
+                  {/* 标题独占一行（明显），描述换行落到下方变小变淡（陪衬）。
+                      不再 inline 排，彻底分开两行视觉层级 */}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[15px] font-bold tracking-tight leading-snug text-slate-900">
                       {value.title}
-                    </span>
+                    </div>
                     {value.description ? (
-                      <>
-                        <span
-                          aria-hidden
-                          className="mx-2 inline-block h-3 w-px translate-y-[2px] bg-slate-200"
-                        />
-                        <span className="text-[11.5px] font-normal leading-relaxed text-slate-400">
-                          {value.description}
-                        </span>
-                      </>
+                      <div className="mt-1 text-[11px] font-normal leading-relaxed text-slate-400">
+                        {value.description}
+                      </div>
                     ) : null}
                   </div>
                 </li>

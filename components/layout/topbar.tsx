@@ -47,7 +47,10 @@ export function Topbar({
           />
         </div>
         <div className="min-w-0 leading-tight">
-          <div className="truncate text-sm font-semibold text-slate-900">{organization.name}</div>
+          {/* 组织名在 360px 屏幕只剩 ~80px 宽，sm 以下用更小字号让中文 6+ 字也能完整显示 */}
+          <div className="truncate text-[13px] font-semibold text-slate-900 sm:text-sm" title={organization.name}>
+            {organization.name}
+          </div>
           <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-orange-500/85">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
             系统在线

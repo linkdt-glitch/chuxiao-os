@@ -110,13 +110,14 @@ export function CompanionCat() {
     }
   }, []);
 
-  // 移动端要让开 tabbar (~64px) + 安全区；resize 时同步重写 transform
+  // 桌面才显示咪咪；手机屏幕太小，容易盖住操作按钮 + 占用宝贵竖向空间
+  // （之前手机端 bottomOffset=84 但仍会撞 mobile-tabbar 的扩展弹层和审批 sticky 按钮）
   useEffect(() => {
     const checkLayout = () => {
       if (typeof window === "undefined") return;
       const isMobile = window.innerWidth < 1024;
-      setBottomOffset(isMobile ? 84 : 20);
-      setHidden(window.innerHeight < 480);
+      setBottomOffset(20); // 不再需要为 tabbar 让位，因为手机直接 hidden
+      setHidden(isMobile || window.innerHeight < 480);
       applyPosition(positionRef.current); // 视窗变了重新映射 px
     };
     checkLayout();

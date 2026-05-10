@@ -124,7 +124,9 @@ export function FinanceRecordForm({
             <input type="checkbox" name="submit_for_approval" defaultChecked={defaults?.need_approval} className="h-4 w-4" />
             提交审批
           </label>
-          <div className="sticky bottom-20 z-10 flex flex-col-reverse gap-3 rounded-2xl border border-white/80 bg-white/82 p-3 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl md:static md:col-span-2 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+          {/* sticky 提交栏：之前 bottom-20 (80px) 不够，被 mobile-tabbar (h≈90px+safe-area) 挡住。
+              改成跟 AssistantChat composer 同样的算法，让按钮永远浮在 tabbar 上方。 */}
+          <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 flex flex-col-reverse gap-3 rounded-2xl border border-white/80 bg-white/82 p-3 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl md:static md:col-span-2 md:flex-row md:justify-end md:border-0 md:bg-transparent md:p-0 md:shadow-none md:bottom-auto">
             <Button type="button" variant="outline" asChild>
               <Link href="/finance/records">取消</Link>
             </Button>

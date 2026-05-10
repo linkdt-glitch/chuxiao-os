@@ -244,7 +244,7 @@ function ExpenseDetailDrawer({
             </div>
 
             {canApprove && pendingStatuses.includes(report.status) ? (
-              <div className="rounded-2xl border border-cyan-100 bg-cyan-50/40 p-4">
+              <div className="rounded-2xl border border-cyan-100 bg-cyan-50/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="mb-3 text-sm font-semibold">审批操作</div>
                 <form action={approveExpenseReportAction} className="mb-3">
                   <input type="hidden" name="id" value={report.id} />
@@ -409,7 +409,7 @@ export function ExpenseApprovalWorkbench({
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索编号、员工、商家、说明" className="pl-9" />
           </label>
-          <select value={status} onChange={(event) => setStatus(event.target.value as ExpenseStatus | "all")} className="h-9 rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">
+          <select value={status} onChange={(event) => setStatus(event.target.value as ExpenseStatus | "all")} className="h-11 rounded-md border border-slate-200/80 bg-white/70 px-3 text-base sm:h-10 sm:text-sm">
             <option value="all">全部状态</option>
             <option value="submitted">已提交待分派</option>
             <option value="pending_manager">待一级审批</option>
@@ -420,7 +420,7 @@ export function ExpenseApprovalWorkbench({
             <option value="rejected">已驳回</option>
             <option value="draft">草稿</option>
           </select>
-          <select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className="h-9 rounded-md border border-slate-200/80 bg-white/70 px-3 text-sm">
+          <select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className="h-11 rounded-md border border-slate-200/80 bg-white/70 px-3 text-base sm:h-10 sm:text-sm">
             <option value="">全部部门</option>
             {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
           </select>

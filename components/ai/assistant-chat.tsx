@@ -167,7 +167,14 @@ export function AssistantChat({
         {/* 空状态：粒子多啦A梦 hero —— 用户没说话之前用粒子云替代纯文字欢迎 */}
         {showStarter ? (
           <div className="flex flex-col items-center pt-2 pb-2">
-            <AIMark size={200} />
+            {/* 移动端 360px 屏 size=200 + sparkle 偏移 ±42% 会顶到边缘，
+                用 sm:size 在桌面才放大；视觉上手机紧凑、桌面更醒目 */}
+            <div className="sm:hidden">
+              <AIMark size={150} />
+            </div>
+            <div className="hidden sm:block">
+              <AIMark size={200} />
+            </div>
             <h2 className="mt-2 text-center text-[20px] font-semibold tracking-tight text-slate-900">
               你好，我是初晓 AI
             </h2>

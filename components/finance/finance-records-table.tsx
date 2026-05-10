@@ -81,8 +81,8 @@ function FinanceRecordMobileCard({
             <StatusBadge value={record.status} />
             <RiskBadge value={record.risk_level} />
           </div>
-          <div className="mt-3 text-base font-semibold text-slate-950">{record.description}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{record.record_no} · {record.occurred_at}</div>
+          <div className="mt-3 break-words text-base font-semibold text-slate-950">{record.description}</div>
+          <div className="mt-1 truncate text-[13px] text-muted-foreground">{record.record_no} · {record.occurred_at}</div>
         </div>
         <div className={cn("shrink-0 text-right text-lg font-semibold", record.record_type === "income" ? "text-emerald-700" : "text-slate-950")}>
           {money(record)}

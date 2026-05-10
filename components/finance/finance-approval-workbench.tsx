@@ -348,8 +348,9 @@ function RecordDetailPanel({
         </section>
       </div>
 
-      {/* 底部操作栏：批准 / 驳回 + 原因 */}
-      <div className="space-y-3 border-t border-slate-200 bg-orange-50/40 p-5">
+      {/* 底部操作栏：批准 / 驳回 + 原因
+          加 safe-area-inset-bottom 让 iPhone home indicator 不挡住「驳回这笔」按钮 */}
+      <div className="space-y-3 border-t border-slate-200 bg-orange-50/40 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="text-[12px] font-semibold uppercase tracking-wider text-orange-700">是否批准 · 写清原因</div>
         <form action={approveFinanceRecordAction}>
           <input type="hidden" name="id" value={record.id} />

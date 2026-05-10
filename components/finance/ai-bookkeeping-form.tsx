@@ -237,7 +237,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
               </div>
               <div className="space-y-2">
                 <Label>类型</Label>
-                <select name="record_type" defaultValue={parsed.record_type} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                <select name="record_type" defaultValue={parsed.record_type} className="h-11 w-full rounded-md border bg-background px-3 text-base sm:h-10 sm:text-sm">
                   <option value="income">收入</option>
                   <option value="expense">支出</option>
                   <option value="reimbursement">报销</option>
@@ -257,14 +257,14 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
               </div>
               <div className="space-y-2">
                 <Label>核心类目</Label>
-                <select name="category_id" defaultValue={category?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                <select name="category_id" defaultValue={category?.id ?? ""} className="h-11 w-full rounded-md border bg-background px-3 text-base sm:h-10 sm:text-sm">
                   <option value="">先不分类</option>
                   {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <Label>账户</Label>
-                <select name="account_id" defaultValue={account?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                <select name="account_id" defaultValue={account?.id ?? ""} className="h-11 w-full rounded-md border bg-background px-3 text-base sm:h-10 sm:text-sm">
                   <option value="">未选择</option>
                   {accounts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.currency}</option>)}
                 </select>
@@ -284,7 +284,7 @@ export function AIBookkeepingForm({ categories, accounts }: { categories: Financ
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>细分</Label>
-                    <select name="subcategory_id" defaultValue={subcategory?.id ?? ""} className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                    <select name="subcategory_id" defaultValue={subcategory?.id ?? ""} className="h-11 w-full rounded-md border bg-background px-3 text-base sm:h-10 sm:text-sm">
                       <option value="">不选</option>
                       {allCategories.filter((item) => item.parent_id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </select>

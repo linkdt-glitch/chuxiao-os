@@ -17,6 +17,45 @@ function formatDate(d: string) {
   return d.replaceAll("-", ".");
 }
 
+/**
+ * 把价值观条目智能拆成「核心短语（标题）+ 长描述」。
+ *
+ * 用户的实际输入（线上数据）是把全部内容塞到 title 字段里：
+ *   title = "1. 保持谦卑 承认\"我不知道\"...——雅各书 4"
+ *   description = "6"  ← 章节号
+ *
+ * 期望的视觉：
+ *   标题：保持谦卑           ← 加粗大字
+ *   描述：承认\"我不知道\"... 雅各书 4:6  ← 小字陪衬
+ *
+ * 算法：
+ *   1. 去掉 "1. " / "01." 这种数字前缀
+ *   2. 找第一个空格 —— 前面 2-10 字当核心短语，后面全部当长描述
+ *   3. 如果原 description 是纯数字（章节号），用 ":" 拼到长描述末尾
+ *   4. 拆不开就保持原样（已经短的就直接渲染）
+ */
+function parseValueEntry(rawTitle: string, rawDescription?: string): { title: string; description?: string } {
+  const trimmed = (rawTitle ?? "").trim();
+  // 去前缀 "1. " / "01、" / "1、" / "1." / "1 "
+  const withoutPrefix = trimmed.replace(/^\d+\s*[.、]?\s*/, "");
+  const firstSpace = withoutPrefix.indexOf(" ");
+
+  if (firstSpace >= 2 && firstSpace <= 10) {
+    const core = withoutPrefix.slice(0, firstSpace).trim();
+    let rest = withoutPrefix.slice(firstSpace + 1).trim();
+    // 原 description 是纯数字（章节末尾节号）→ 用 ":" 接到末尾
+    if (rawDescription && /^\d+$/.test(rawDescription.trim())) {
+      rest = rest ? `${rest}:${rawDescription.trim()}` : `:${rawDescription.trim()}`;
+    } else if (rawDescription && rawDescription.trim()) {
+      rest = rest ? `${rest} ${rawDescription.trim()}` : rawDescription.trim();
+    }
+    return { title: core, description: rest || undefined };
+  }
+
+  // 已经是「短标题 + 描述」结构，原样返回
+  return { title: trimmed || rawTitle, description: rawDescription };
+}
+
 export default async function HomePage({
   searchParams
 }: {
@@ -71,28 +110,31 @@ export default async function HomePage({
         <SectionCard icon={Sparkles} label="价值观" accent="amber" delayMs={120} compact>
           {content.values.length ? (
             <ul className="divide-y divide-slate-200">
-              {content.values.map((value, i) => (
-                <li
-                  key={`${value.title}-${i}`}
-                  className="flex items-baseline gap-2 py-1.5 first:pt-0 last:pb-0"
-                >
-                  <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  {/* 标题独占一行（明显），描述换行落到下方变小变淡（陪衬）。
-                      不再 inline 排，彻底分开两行视觉层级 */}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-bold tracking-tight leading-snug text-slate-900">
-                      {value.title}
-                    </div>
-                    {value.description ? (
-                      <div className="mt-1 text-[11px] font-normal leading-relaxed text-slate-400">
-                        {value.description}
+              {content.values.map((value, i) => {
+                // 智能拆解：用户线上数据把整段塞到 title 里，拆出核心短语 + 长描述
+                const parsed = parseValueEntry(value.title, value.description);
+                return (
+                  <li
+                    key={`${value.title}-${i}`}
+                    className="flex items-baseline gap-2 py-1.5 first:pt-0 last:pb-0"
+                  >
+                    <span className="w-5 shrink-0 font-mono text-[10px] font-bold tabular-nums text-amber-600">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {/* 标题独占一行（明显），描述换行落到下方变小变淡（陪衬） */}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[15px] font-bold tracking-tight leading-snug text-slate-900">
+                        {parsed.title}
                       </div>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
+                      {parsed.description ? (
+                        <div className="mt-1 text-[11px] font-normal leading-relaxed text-slate-400">
+                          {parsed.description}
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-[12px] text-muted-foreground">

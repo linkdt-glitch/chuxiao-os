@@ -69,7 +69,9 @@ export default async function AISettingsPage() {
                 员工对话走平衡型，记账解析走极速模型 —— 既保证关键决策的质量，也避免高频小任务烧钱。
               </p>
               {ALL_MODELS.map((model) => (
-                <ModelCatalogCard key={model.id} model={model} />
+                // FAST_PARSE 和 VISION 现在共用同一个 id (Qwen3-VL-32B-Instruct)
+                // 所以 React key 要用 tier+id 组合，否则同 id 会导致 dup key warning
+                <ModelCatalogCard key={`${model.tier}-${model.id}`} model={model} />
               ))}
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
                 价格按 SiliconFlow 2026-05 公开报价估算，按 token 实际计费。

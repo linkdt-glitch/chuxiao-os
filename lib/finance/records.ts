@@ -212,7 +212,20 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   //   owner 提交的非报销类支出 / 收入 → 直接 approved（自己批自己的日常没意义）
   //   报销类（reimbursement_required / record_type=reimbursement）仍走原审批流程
   //   非 owner → 维持原 draft / pending_approval 逻辑
-  const isOwner = member.role?.key === "owner";
+  //
+  // 注意：Supabase nested join 偶尔会把 roles(*) 当数组返回（FK shape 不确定时），
+  // 所以这里要兼容 role = Role 和 role = [Role] 两种形态，且任何异常都 fallback 到
+  // 原审批流程，确保保存动作不会因为角色解析失败而 crash。
+  let isOwner = false;
+  try {
+    const rawRole = (member as { role?: unknown }).role;
+    const roleKey = Array.isArray(rawRole)
+      ? ((rawRole[0] as { key?: string } | undefined)?.key)
+      : ((rawRole as { key?: string } | null | undefined)?.key);
+    isOwner = roleKey === "owner";
+  } catch {
+    isOwner = false;
+  }
   const isReimbursement = Boolean(input.reimbursement_required) || input.record_type === "reimbursement";
   const ownerAutoApprove = isOwner && !isReimbursement;
 

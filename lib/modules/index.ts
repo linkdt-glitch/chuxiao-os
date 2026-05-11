@@ -1,7 +1,25 @@
+import { unstable_cache } from "next/cache";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoModules, demoOrganizationModules } from "@/lib/data/demo";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { getRolePermissionKeys } from "@/lib/permissions";
+
+// 缓存「这个组织开了哪些模块」—— admin 偶尔切一次开关，但 (app) 布局每次切页面都要读。
+// 1 小时 TTL，admin 切换时通过 revalidateTag("organization_modules") 立即失效。
+const _getOrgModulesRaw = unstable_cache(
+  async (orgId: string) => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return null;
+    const { data } = await admin
+      .from("organization_modules")
+      .select("is_enabled, modules(*)")
+      .eq("organization_id", orgId);
+    return data ?? [];
+  },
+  ["organization_modules_raw"],
+  { revalidate: 3600, tags: ["organization_modules"] }
+);
 
 /**
  * 模块名重映射 — 代码层覆盖 DB modules.name，无需等 DB migration 也能立即生效。
@@ -40,10 +58,8 @@ export async function getNavigationModules() {
   let modules = demoModules;
 
   if (supabase) {
-    const { data } = await supabase
-      .from("organization_modules")
-      .select("is_enabled, modules(*)")
-      .eq("organization_id", organization.id);
+    // 从缓存读 —— 命中后是 0ms 内存返回，省 100-200ms DB 往返
+    const data = await _getOrgModulesRaw(organization.id);
 
     if (data?.length) {
       modules = data
@@ -89,6 +105,9 @@ export async function toggleModule(moduleId: string, enabled: boolean) {
     .eq("module_id", moduleId);
 
   if (error) throw error;
+  // 立即失效缓存，下次 getNavigationModules 读到新数据
+  const { revalidateTag } = await import("next/cache");
+  revalidateTag("organization_modules");
   return { ok: true };
 }
 

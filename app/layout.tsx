@@ -45,7 +45,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://api.deepseek.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.siliconflow.cn" crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* ⭐ Service Worker：员工首次加载后，所有 JS / CSS / 字体 / 图片
+            从浏览器本地缓存返回，0ms 网络。
+            对深圳员工特别重要 —— 即使跨境网络抖动 / GFW 干扰，
+            重复访问也是丝滑的（除了首次和需要 HTML 的页面）。
+
+            注册策略：
+              - 异步注册，不阻塞页面渲染
+              - 失败静默（老浏览器 / 隐身模式等不支持）
+              - 注册脚本本身只有 1 行，不会让 HTML 变大
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); }); }`
+          }}
+        />
+      </body>
     </html>
   );
 }

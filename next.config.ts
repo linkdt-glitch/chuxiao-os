@@ -92,6 +92,15 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
         ]
+      },
+      {
+        // Service Worker：必须每次新部署都更新，不能长缓存（否则旧 SW 一直跑）
+        // Service-Worker-Allowed: / 让 SW 能拦截整个站点
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" }
+        ]
       }
     ];
   },

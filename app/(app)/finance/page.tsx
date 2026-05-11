@@ -7,7 +7,8 @@ import { NoticeBanner } from "@/components/ui/notice-banner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentMember } from "@/lib/auth";
+import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
+import { ensureMinimal6FinanceCategories } from "@/lib/finance/categories";
 import { getExpenseReports } from "@/lib/finance/expenses";
 import { canViewAllFinance } from "@/lib/finance/permissions";
 import { getFinanceRecords } from "@/lib/finance/records";
@@ -164,6 +165,16 @@ export default async function FinancePage({
   // ────────────────────────────────────────────────────────────────────────
   // 创始人 / 管理员视图：完整仪表盘
   // ────────────────────────────────────────────────────────────────────────
+  // 首次进入：自动把财务类目迁移到「极简 6 大类」（幂等；旧类目存在时才动）
+  // 用户不用再手动跑 SQL；调用是 fire-and-forget 但 await 以确保后续 getFinanceCategories 拿到新类目
+  try {
+    const organization = await getCurrentOrganization();
+    await ensureMinimal6FinanceCategories(organization.id);
+  } catch (error) {
+    // 类目迁移失败不能拖死整个财务中心
+    console.warn("[finance/page] ensureMinimal6FinanceCategories failed:", error);
+  }
+
   const [summary, executiveDashboard, pendingApprovalRecords] = await Promise.all([
     getFinanceSummary(),
     getFinanceExecutiveDashboard(),

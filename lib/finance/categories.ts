@@ -2,8 +2,90 @@ import { revalidatePath } from "next/cache";
 import { getCurrentOrganization } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FinanceCategory, FinanceCategoryType } from "@/lib/finance/types";
+
+/**
+ * 极简 6 大类（跨境电商 + AI 原生公司，第一性原理）：
+ *   - 货物与物流：产品采购 / 国际物流 / 仓储 / 关税清关
+ *   - 平台与渠道：平台月费佣金 / 广告投放 / 红人 Affiliate / 支付通道
+ *   - AI 与软件工具：AI 模型调用 / SaaS 订阅 / 云服务 / 域名代码库
+ *   - 人员与外包：工资奖金 / 社保公积金 / 外包兼职 / 招聘培训
+ *   - 办公与差旅：房租水电 / 办公设备 / 差旅交通 / 商务餐饮 / 通讯
+ *   - 品牌与其他：品牌设计 / 内容拍摄 / 法务税务 / 其他兜底
+ *
+ * 所有 type='both'，让收入 / 支出 / 报销都能用同一套。
+ */
+const MINIMAL_6_CATEGORIES = [
+  { code: "goods_logistics", name: "货物与物流", description: "产品采购 / 国际物流 / 仓储 / 关税清关", sort_order: 10 },
+  { code: "platform_channel", name: "平台与渠道", description: "平台月费佣金 / 广告投放 / 红人 Affiliate / 支付通道", sort_order: 20 },
+  { code: "ai_tools", name: "AI 与软件工具", description: "AI 模型调用 / SaaS 订阅 / 云服务 / 域名代码库", sort_order: 30 },
+  { code: "people", name: "人员与外包", description: "工资奖金 / 社保公积金 / 外包兼职 / 招聘培训", sort_order: 40 },
+  { code: "office_travel", name: "办公与差旅", description: "房租水电 / 办公设备 / 差旅交通 / 商务餐饮 / 通讯", sort_order: 50 },
+  { code: "brand_others", name: "品牌与其他", description: "品牌设计 / 内容拍摄 / 法务税务 / 其他兜底", sort_order: 60 }
+] as const;
+
+const MINIMAL_6_CODES = new Set(MINIMAL_6_CATEGORIES.map((c) => c.code));
+
+/**
+ * 确保组织的财务类目已迁移到「极简 6 大类」。幂等。
+ *
+ * 第一次调用（旧的 18+ 类目还在）：
+ *   1. DELETE 该组织所有 finance_categories（子类目 cascade，旧流水的 category_id 因
+ *      on delete set null 自动置空 → UI 显示「未分类」，老板可后续手动归类）
+ *   2. INSERT 6 大类，type='both'，is_system=true，code 用作迁移标记
+ *
+ * 后续调用（已经是 6 大类）：直接返回，不做任何写操作。
+ *
+ * 用 admin client 是为了绕过 RLS（DELETE + INSERT 需要服务端权限）；
+ * 调用方应当确保只在 owner/admin 视图上触发（避免普通员工误触发）。
+ */
+export async function ensureMinimal6FinanceCategories(organizationId: string) {
+  const admin = createSupabaseAdminClient();
+  if (!admin) return; // 没有 service role key（本地 demo 模式）→ 直接跳过
+
+  // 检查标记：只要 6 个新 code 任意一个已存在，就认为已经迁移过
+  const { data: marker, error: markerError } = await admin
+    .from("finance_categories")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .in("code", Array.from(MINIMAL_6_CODES))
+    .limit(1);
+
+  if (markerError) {
+    // 表/字段不存在等 schema 问题 → 静默放过，不要拖死页面加载
+    console.warn("[ensureMinimal6FinanceCategories] marker check failed:", markerError.message);
+    return;
+  }
+  if (marker && marker.length > 0) return; // 已经是 6 大类，无需操作
+
+  // 旧类目还在 → 全删后插入 6 大类
+  const { error: deleteError } = await admin
+    .from("finance_categories")
+    .delete()
+    .eq("organization_id", organizationId);
+  if (deleteError) {
+    console.warn("[ensureMinimal6FinanceCategories] delete old categories failed:", deleteError.message);
+    return;
+  }
+
+  const { error: insertError } = await admin.from("finance_categories").insert(
+    MINIMAL_6_CATEGORIES.map((c) => ({
+      organization_id: organizationId,
+      name: c.name,
+      type: "both" as const,
+      code: c.code,
+      description: c.description,
+      is_system: true,
+      is_active: true,
+      sort_order: c.sort_order
+    }))
+  );
+  if (insertError) {
+    console.warn("[ensureMinimal6FinanceCategories] insert new categories failed:", insertError.message);
+  }
+}
 
 export const demoFinanceCategories: FinanceCategory[] = [
   { id: "cat_product_sales", organization_id: "org_qiming", name: "商品销售收入", type: "income", description: "跨境电商商品销售", is_system: true, is_active: true, sort_order: 10, created_at: "", updated_at: "" },

@@ -340,11 +340,13 @@ export function AIBookkeepingForm({
                     {confirmState.error}
                   </div>
                 ) : null}
+                {/* 保存成功后按钮标签显示「已保存」让用户明确知道操作完成，
+                    避免「按钮还转圈以为没保存」反复点击。 */}
                 <Button type="submit" name="intent" value="confirm" disabled={confirming || Boolean(confirmState.success)} className="h-11">
-                  {confirming ? "保存中..." : "确认并保存"}
+                  {confirmState.success ? "✓ 已保存" : confirming ? "保存中..." : "确认并保存"}
                 </Button>
                 <Button type="submit" variant="outline" name="intent" value="draft" disabled={confirming || Boolean(confirmState.success)} className="h-11">
-                  {confirming ? "正在保存..." : "保存草稿"}
+                  {confirmState.success ? "✓ 已保存" : confirming ? "正在保存..." : "保存草稿"}
                 </Button>
               </div>
             </form>

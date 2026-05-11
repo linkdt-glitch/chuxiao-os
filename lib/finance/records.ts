@@ -151,9 +151,16 @@ function writeFinanceRecordTrace(input: {
 }
 
 function revalidateFinanceRecordPaths(...paths: string[]) {
-  runAfter("finance.revalidate", () => {
-    for (const path of paths) revalidatePath(path);
-  });
+  // ⚠️ revalidatePath 必须同步调用（响应送出前），否则客户端 router cache
+  // (staleTimes 120s) 在用户保存后跳转列表时仍返回旧数据，新记录看不到。
+  // revalidatePath 是纯内存操作（毫秒级），不需要异步化。
+  for (const path of paths) {
+    try {
+      revalidatePath(path);
+    } catch (error) {
+      console.warn(`[revalidateFinanceRecordPaths] failed for ${path}:`, error);
+    }
+  }
 }
 
 export async function getFinanceRecords(filters?: {

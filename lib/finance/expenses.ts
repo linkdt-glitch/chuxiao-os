@@ -495,12 +495,13 @@ export async function getExpenseReports(filters?: ExpenseListFilters) {
   if (filters?.keyword) {
     const keyword = filters.keyword.toLowerCase();
     reports = reports.filter((report) => {
+      // 防御：DB 异常时 items 可能是 null，加 ?? [] 兜底避免 crash
       const haystack = [
         report.report_no,
         report.title,
         report.submitter?.display_name,
         report.department?.name,
-        ...report.items.flatMap((item) => [item.description, item.merchant_name, item.category?.name])
+        ...(report.items ?? []).flatMap((item) => [item.description, item.merchant_name, item.category?.name])
       ].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(keyword);
     });
@@ -974,7 +975,7 @@ export async function buildExpenseReconciliationWorkbook(input: { month?: string
     { header: "流水号", key: "payment_reference", width: 22 }
   ];
   reports.forEach((report) => {
-    const item = report.items[0];
+    const item = (report.items ?? [])[0]; // 防御：items 可能为 null/空
     detail.addRow({
       report_no: report.report_no,
       status: expenseStatusLabel(report.status),
@@ -998,7 +999,7 @@ export async function buildExpenseReconciliationWorkbook(input: { month?: string
   ];
   const buckets = new Map<string, { department: string; category: string; amount: number }>();
   reports.forEach((report) => {
-    const item = report.items[0];
+    const item = (report.items ?? [])[0]; // 防御：items 可能为 null/空
     const department = report.department?.name ?? "未分部门";
     const category = item?.category?.name ?? "未分类";
     const key = `${department}__${category}`;
@@ -1017,9 +1018,13 @@ export async function buildExpenseReconciliationWorkbook(input: { month?: string
 }
 
 function revalidateFinanceExpensePaths() {
-  runAfter("finance.expense.revalidate", () => {
-    revalidatePath("/finance/reimbursements");
-    revalidatePath("/finance/reimbursements/payments");
-    revalidatePath("/finance/records");
-  });
+  // 同步调用，确保保存/审批后跳转列表能立即看到最新数据
+  // （client router cache staleTimes=120s，不主动失效就会显示旧数据）
+  for (const path of ["/finance/reimbursements", "/finance/reimbursements/payments", "/finance/records"]) {
+    try {
+      revalidatePath(path);
+    } catch (error) {
+      console.warn(`[revalidateFinanceExpensePaths] failed for ${path}:`, error);
+    }
+  }
 }

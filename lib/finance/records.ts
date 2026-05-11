@@ -286,13 +286,44 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   if (!supabase) return { ...payload, id: "demo_created", created_at: now, updated_at: now } as FinanceRecord;
 
   const { data, error } = await supabase.from("finance_records").insert(payload).select().single();
-  if (error) throw error;
+  if (error) {
+    // 详细日志：让 Render Logs 能看到 RLS / FK / constraint 等具体错因
+    console.error("[createFinanceRecord] INSERT failed:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      payload_summary: {
+        org: payload.organization_id,
+        member: payload.member_id,
+        submitted_by: payload.submitted_by,
+        status: payload.status,
+        record_type: payload.record_type,
+        amount: payload.amount
+      }
+    });
+    // 把错误码也带到用户错误信息里，方便老板转发给我修
+    const msg = error.code
+      ? `${error.message} (code: ${error.code}${error.hint ? `, hint: ${error.hint}` : ""})`
+      : error.message;
+    throw new Error(msg);
+  }
 
   let record = data as FinanceRecord;
   if (targetStatus === "pending_approval") {
     // 从 draft → pending_approval 的合法状态机转移（RLS 允许）
     // 同时关联新建的 approval_request
-    record = await submitFinanceRecord(record.id, record);
+    try {
+      record = await submitFinanceRecord(record.id, record);
+    } catch (submitError) {
+      // 转移失败：草稿已落库但没提审，给用户明确提示而不是吞错误
+      console.error("[createFinanceRecord] submit step failed (draft saved OK):", submitError);
+      // 不抛 —— 草稿已经保存了，重要的是不让用户重复提交，提示状态即可
+      // 让 UI 显示「草稿已保存，但自动提交审批失败，请进流水列表手动点提交」
+      throw new Error(
+        `记录已保存为草稿，但自动提交审批失败：${submitError instanceof Error ? submitError.message : "未知错误"}。请进流水列表手动提交。`
+      );
+    }
   } else {
     writeFinanceRecordTrace({
       event_key: ownerAutoApprove ? "finance.record.owner_auto_approved" : "finance.record.created",

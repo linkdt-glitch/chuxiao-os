@@ -234,17 +234,26 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   const isReimbursement = Boolean(input.reimbursement_required) || input.record_type === "reimbursement";
   const ownerAutoApprove = isOwner && !isReimbursement;
 
-  const status: FinanceRecordStatus = ownerAutoApprove
+  // 终态：决定提交后该是什么状态
+  const targetStatus: FinanceRecordStatus = ownerAutoApprove
     ? "approved"
     : input.submit_for_approval || input.status === "pending_approval"
       ? "pending_approval"
       : input.status ?? "draft";
 
+  // ⭐ 关键修复 (RLS bug)：UPDATE 策略要求 status in ('draft', 'rejected') 才能让
+  // submitter 自己更新。如果 INSERT 直接写 'pending_approval'，后续 submitFinanceRecord
+  // 想 UPDATE 加 approval_request_id 时 RLS 拒绝 → 错误 PGRST116 "0 rows"。
+  //
+  // 解决：INSERT 一律先用 'draft'，再让 submitFinanceRecord 做合法的状态转移
+  // （draft → pending_approval）。owner 自动入账走另一条 fast path（直接 approved）。
+  const insertStatus: FinanceRecordStatus = ownerAutoApprove ? "approved" : "draft";
+
   const payload = {
     organization_id: organization.id,
     record_no: await nextRecordNo(),
     record_type: input.record_type,
-    status,
+    status: insertStatus,
     amount: input.amount,
     currency: (input.currency || "CNY").toUpperCase(),
     occurred_at: input.occurred_at || new Date().toISOString().slice(0, 10),
@@ -273,8 +282,9 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   if (error) throw error;
 
   let record = data as FinanceRecord;
-  if (status === "pending_approval") {
-    // Pass the freshly-inserted record to skip the redundant SELECT inside submit (saves 1 round-trip).
+  if (targetStatus === "pending_approval") {
+    // 从 draft → pending_approval 的合法状态机转移（RLS 允许）
+    // 同时关联新建的 approval_request
     record = await submitFinanceRecord(record.id, record);
   } else {
     writeFinanceRecordTrace({

@@ -43,11 +43,18 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
   const pendingRecords = records.filter((record) => record.status === "pending_approval");
   const unclassified = records.filter((record) => !record.category_id).length;
 
+  // 区分员工视图（仅自己的）vs owner/admin 视图（公司全部）
+  const isEmployeeOwnView = !canApprove;
+
   return (
     <>
       <PageHeader
-        title="财务流水"
-        description="统一管理收入、支出、报销流水，支持按类型、状态、日期、类目筛选与导出。"
+        title={isEmployeeOwnView ? "我的财务流水" : "财务流水"}
+        description={
+          isEmployeeOwnView
+            ? "你提交的记账和报销记录（按时间倒序）—— 实时查看每条记录的审批状态。"
+            : "统一管理收入、支出、报销流水，支持按类型、状态、日期、类目筛选与导出。"
+        }
         action={
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild variant="outline"><Link href={`/api/finance/export?type=${params.type ?? "all"}&date_from=${params.date_from ?? ""}&date_to=${params.date_to ?? ""}`}><Download className="h-4 w-4" />导出当前筛选</Link></Button>

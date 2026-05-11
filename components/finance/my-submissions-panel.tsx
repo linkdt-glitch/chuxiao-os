@@ -81,9 +81,10 @@ function getExpenseRejectReason(report: ExpenseReport) {
 /**
  * 普通成员（非 owner / admin）登录后看到的"我的提交"面板：
  *
- *   - 我的报销 / 支出 (finance_records 中 record_type=reimbursement 或 reimbursement_required=true)
+ *   - 我的所有记账 / 支出 / 报销 (finance_records，已被服务端按 submitted_by/member_id 过滤)
  *   - 我的报销单 (finance_expense_reports submitter=我)
  *   - 每条带状态、金额、日期；如被驳回/需修改，醒目展示驳回原因
+ *   - 顶部统计：待审批 / 已通过 / 已驳回 数量
  */
 export function MySubmissionsPanel({
   records,
@@ -100,21 +101,50 @@ export function MySubmissionsPanel({
   );
   const totalCount = sortedRecords.length + sortedReports.length;
 
+  // 统计三种关键状态（让员工一眼看到「还有几个在等」「批了几个」「驳回了几个」）
+  const pendingStatuses = ["pending_approval", "submitted", "pending_manager", "pending_finance"];
+  const okStatuses = ["approved", "paid"];
+  const failStatuses = ["rejected", "need_revision"];
+
+  const allItems = [
+    ...sortedReports.map((r) => ({ status: r.status as string })),
+    ...sortedRecords.map((r) => ({ status: r.status as string }))
+  ];
+  const counts = {
+    pending: allItems.filter((it) => pendingStatuses.includes(it.status)).length,
+    ok: allItems.filter((it) => okStatuses.includes(it.status)).length,
+    fail: allItems.filter((it) => failStatuses.includes(it.status)).length
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ReceiptText className="h-4 w-4" /> 报销反馈
+          <ReceiptText className="h-4 w-4" /> 我提交的记录
+          <span className="text-xs font-normal text-muted-foreground">（{totalCount} 条）</span>
         </CardTitle>
         <p className="mt-1 text-sm text-muted-foreground">
-          已提交报销的当前状态：等待审批 / 已通过 / 已驳回；被驳回时会附上原因。
+          所有你提交的记账和报销 —— 实时审批状态：等待 / 已通过 / 已驳回（含原因）。
         </p>
+        {totalCount > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {counts.pending > 0 ? (
+              <StatusChip label={`${counts.pending} 待审批`} tone="pending" />
+            ) : null}
+            {counts.ok > 0 ? (
+              <StatusChip label={`${counts.ok} 已通过 / 已支付`} tone="ok" />
+            ) : null}
+            {counts.fail > 0 ? (
+              <StatusChip label={`${counts.fail} 被驳回 / 待修改`} tone="fail" />
+            ) : null}
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent>
         {totalCount === 0 ? (
           <EmptyState
-            title="还没有提交过报销"
-            description="在上方「申请报销」用一句话 AI 或手动新建报销，提交后这里会显示状态。"
+            title="还没有提交过任何记录"
+            description="在上方点击「记一笔」或「新建报销」开始记录；提交后这里会实时显示审批状态。"
           />
         ) : (
           <div className="space-y-3">
@@ -135,9 +165,16 @@ export function MySubmissionsPanel({
                         {formatDate(report.occurred_at)} · {money(report.total_amount, report.currency)}
                       </div>
                     </div>
-                    <Button asChild variant="outline" size="sm" className="shrink-0">
-                      <Link href={`/finance/reimbursements/${report.id}`}>查看详情</Link>
-                    </Button>
+                    {/* 报销单详情对员工不开放（审批工作台保留给 owner/admin）。
+                        审批状态 + 驳回原因都已在卡片里展示，员工无需点详情。
+                        若已支付且关联到 finance_record，给个跳转方便对账。*/}
+                    {report.finance_record_id ? (
+                      <Button asChild variant="outline" size="sm" className="shrink-0">
+                        <Link href={`/finance/records?highlight=${report.finance_record_id}`}>
+                          查看对应流水
+                        </Link>
+                      </Button>
+                    ) : null}
                   </div>
                   {reason ? (
                     <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">
@@ -168,8 +205,9 @@ export function MySubmissionsPanel({
                         {formatDate(record.occurred_at)} · {money(Number(record.amount), record.currency)}
                       </div>
                     </div>
+                    {/* 流水详情页未实现，跳到流水列表并 highlight 这一行 */}
                     <Button asChild variant="outline" size="sm" className="shrink-0">
-                      <Link href={`/finance/records/${record.id}`}>查看详情</Link>
+                      <Link href={`/finance/records?highlight=${record.id}`}>在流水里查看</Link>
                     </Button>
                   </div>
                   {reason ? (

@@ -133,30 +133,26 @@ export default async function FinancePage({
   if (!showFullDashboard) {
     const [myRecords, myReports] = await Promise.all([
       // getFinanceRecords 内置 finance scope，member 自动只拿到 submitted_by 或 member_id 是自己的记录
-      getFinanceRecords({ limit: 50 }),
-      getExpenseReports({ limit: 50 })
+      getFinanceRecords({ limit: 100 }),
+      getExpenseReports({ limit: 100 })
     ]);
     // expense reports 没有自动 scope，需要在这里按 member.id 过滤
     const myOwnReports = myReports.filter((report) => report.submitter_member_id === member.id);
-    // 只保留报销 / 报销相关的记账（过滤掉日常支出，避免噪音）
-    const reimbursementRecords = myRecords.filter(
-      (record) => record.record_type === "reimbursement" || record.reimbursement_required
-    );
 
     return (
       <>
         <NoticeBanner error={params.error} notice={params.notice} />
         <PageHeader
           title="我的报销与记账"
-          description="申请报销（垫付费用找公司报销）/ 记一笔（自己的日常收支）/ 在下方查看报销审批反馈。"
+          description="所有你提交的记账和报销都在这里 —— 实时跟踪审批状态、查看驳回原因、补充资料。"
         />
 
         {/* 统一入口卡 */}
         <EntryActionsCard isOwnerView={false} />
 
-        {/* 报销反馈 */}
+        {/* 我的所有提交（记账 + 报销，按时间倒序）*/}
         <div className="mt-6">
-          <MySubmissionsPanel records={reimbursementRecords} expenseReports={myOwnReports} />
+          <MySubmissionsPanel records={myRecords} expenseReports={myOwnReports} />
         </div>
       </>
     );

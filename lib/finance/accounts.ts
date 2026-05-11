@@ -1,7 +1,9 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { getCurrentOrganization } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { runAfter } from "@/lib/server/after";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FinanceAccount, FinanceAccountType } from "@/lib/finance/types";
 
@@ -12,19 +14,29 @@ export const demoFinanceAccounts: FinanceAccount[] = [
   { id: "acc_paypal", organization_id: "org_qiming", name: "PayPal", account_type: "paypal", currency: "USD", opening_balance: 0, current_balance: 3200, is_active: true, metadata: {}, created_at: "", updated_at: "" }
 ];
 
+// 账户清单和类目一样：改动极少（owner 一次性建好），但几乎每个财务页都要读。
+// 缓存 5 分钟省下每次 ~150-200ms 的 Render→Supabase 往返。
+const _getFinanceAccountsByOrg = unstable_cache(
+  async (orgId: string): Promise<FinanceAccount[]> => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return [];
+    const { data, error } = await admin
+      .from("finance_accounts")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("created_at");
+    if (error) throw error;
+    return (data ?? []) as FinanceAccount[];
+  },
+  ["finance_accounts_by_org"],
+  { revalidate: 300, tags: ["finance_accounts"] }
+);
+
 export async function getFinanceAccounts() {
-  const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
+  const supabase = await createSupabaseServerClient();
   if (!supabase) return demoFinanceAccounts;
-
-  const { data, error } = await supabase
-    .from("finance_accounts")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .order("created_at");
-
-  if (error) throw error;
-  return (data ?? []) as FinanceAccount[];
+  return _getFinanceAccountsByOrg(organization.id);
 }
 
 export async function createFinanceAccount(input: {
@@ -53,9 +65,10 @@ export async function createFinanceAccount(input: {
     .single();
 
   if (error) throw error;
-  await logAction({ event_key: "finance.account.created", action: "create", module: "finance", related_record_type: "finance_account", related_record_id: data.id, after_data: data });
-  await emitEvent({ event_key: "finance.account.created", module: "finance", payload: { id: data.id, name: data.name } });
+  revalidateTag("finance_accounts");
   revalidatePath("/finance/accounts");
+  runAfter("finance.account.created", () => logAction({ event_key: "finance.account.created", action: "create", module: "finance", related_record_type: "finance_account", related_record_id: data.id, after_data: data }));
+  runAfter("finance.account.created.event", () => emitEvent({ event_key: "finance.account.created", module: "finance", payload: { id: data.id, name: data.name } }));
   return data as FinanceAccount;
 }
 
@@ -68,7 +81,8 @@ export async function updateFinanceAccount(id: string, input: Partial<Pick<Finan
   const { data, error } = await supabase.from("finance_accounts").update(input).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
-  await logAction({ event_key: "finance.account.updated", action: "update", module: "finance", related_record_type: "finance_account", related_record_id: id, before_data: before, after_data: data });
+  revalidateTag("finance_accounts");
   revalidatePath("/finance/accounts");
+  runAfter("finance.account.updated", () => logAction({ event_key: "finance.account.updated", action: "update", module: "finance", related_record_type: "finance_account", related_record_id: id, before_data: before, after_data: data }));
   return data as FinanceAccount;
 }

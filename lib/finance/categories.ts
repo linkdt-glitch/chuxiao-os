@@ -1,10 +1,19 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { getCurrentOrganization } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { runAfter } from "@/lib/server/after";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FinanceCategory, FinanceCategoryType } from "@/lib/finance/types";
+
+// ──────────────────────────────────────────────────────────────────
+// 缓存策略：类目改动极少（owner 一次性建好就不动），但几乎每个财务页都要读。
+// HK/SZ 员工 → Render Oregon → Supabase 一次往返 ~150-200ms。
+// 用 unstable_cache 缓存 5 分钟，命中后服务端零 DB 查询，纯内存返回。
+// 任何 mutation 后用 revalidateTag 立即失效，不影响数据实时性。
+// ──────────────────────────────────────────────────────────────────
+const categoriesTag = (orgId: string) => `finance:${orgId}:categories`;
 
 /**
  * 极简 6 大类（跨境电商 + AI 原生公司，第一性原理）：
@@ -84,7 +93,10 @@ export async function ensureMinimal6FinanceCategories(organizationId: string) {
   );
   if (insertError) {
     console.warn("[ensureMinimal6FinanceCategories] insert new categories failed:", insertError.message);
+    return;
   }
+  // 迁移成功后让所有缓存失效，下次 getFinanceCategories 会拿到新的 6 大类
+  revalidateTag("finance_categories");
 }
 
 export const demoFinanceCategories: FinanceCategory[] = [
@@ -124,23 +136,45 @@ function nestCategories(categories: FinanceCategory[]) {
   return roots.sort((a, b) => a.sort_order - b.sort_order);
 }
 
+/**
+ * 真正的 DB 读取，被 unstable_cache 包起来：
+ *   - 缓存 key 包含 orgId，多组织不会串
+ *   - 用 admin client 因为 unstable_cache 回调在请求上下文外执行（拿不到 cookies）
+ *   - 安全：getFinanceCategories 入口已经 await getCurrentOrganization() 做了用户鉴权
+ *   - 拉 active=true 的所有类目（无 type 过滤），过滤逻辑放到 caller 内存里做，
+ *     避免 type 不同造成多份缓存（owner / member 同时打开各拉一份就浪费）
+ */
+const _getActiveFinanceCategoriesByOrg = unstable_cache(
+  async (orgId: string): Promise<FinanceCategory[]> => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return [];
+    const { data, error } = await admin
+      .from("finance_categories")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("is_active", true)
+      .order("sort_order");
+    if (error) throw error;
+    return (data ?? []) as FinanceCategory[];
+  },
+  ["finance_categories_active_by_org"],
+  { revalidate: 300, tags: ["finance_categories"] }
+);
+
 export async function getFinanceCategories(type?: FinanceCategoryType | "all") {
-  const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
+  const supabase = await createSupabaseServerClient();
   if (!supabase) return demoFinanceCategories;
 
-  let query = supabase
-    .from("finance_categories")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .eq("is_active", true)
-    .order("sort_order");
+  // 命中缓存就是 0ms 的内存返回；缓存 miss 走一次 admin 客户端
+  const all = await _getActiveFinanceCategoriesByOrg(organization.id);
 
-  if (type && type !== "all") query = query.in("type", [type, "both"]);
+  // 过滤 type 在内存里做（不同 type 共享同一份缓存）
+  const filtered = type && type !== "all"
+    ? all.filter((c) => c.type === type || c.type === "both")
+    : all;
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return nestCategories((data ?? []) as FinanceCategory[]);
+  return nestCategories(filtered);
 }
 
 export async function createFinanceCategory(input: {
@@ -169,9 +203,12 @@ export async function createFinanceCategory(input: {
     .single();
 
   if (error) throw error;
-  await logAction({ event_key: "finance.category.created", action: "create", module: "finance", related_record_type: "finance_category", related_record_id: data.id, after_data: data });
-  await emitEvent({ event_key: "finance.category.created", module: "finance", payload: { id: data.id, name: data.name } });
+  // 立即让所有 getFinanceCategories 的缓存失效（不阻塞响应）
+  revalidateTag("finance_categories");
   revalidatePath("/finance/categories");
+  // 审计 + 事件 fire-and-forget，用户不需要等
+  runAfter("finance.category.created", () => logAction({ event_key: "finance.category.created", action: "create", module: "finance", related_record_type: "finance_category", related_record_id: data.id, after_data: data }));
+  runAfter("finance.category.created.event", () => emitEvent({ event_key: "finance.category.created", module: "finance", payload: { id: data.id, name: data.name } }));
   return data as FinanceCategory;
 }
 
@@ -184,7 +221,8 @@ export async function updateFinanceCategory(id: string, input: Partial<Pick<Fina
   const { data, error } = await supabase.from("finance_categories").update(input).eq("organization_id", organization.id).eq("id", id).select().single();
   if (error) throw error;
 
-  await logAction({ event_key: "finance.category.updated", action: "update", module: "finance", related_record_type: "finance_category", related_record_id: id, before_data: before, after_data: data });
+  revalidateTag("finance_categories");
   revalidatePath("/finance/categories");
+  runAfter("finance.category.updated", () => logAction({ event_key: "finance.category.updated", action: "update", module: "finance", related_record_type: "finance_category", related_record_id: id, before_data: before, after_data: data }));
   return data as FinanceCategory;
 }

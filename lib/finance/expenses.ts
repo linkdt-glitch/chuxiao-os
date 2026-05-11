@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import ExcelJS from "exceljs";
 import { logAction } from "@/lib/audit";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
@@ -9,6 +9,7 @@ import type { FinanceCategory } from "@/lib/finance/types";
 import { linkFileToRecord, uploadFile } from "@/lib/files";
 import { hasPermission, requirePermission } from "@/lib/permissions";
 import { runAfter } from "@/lib/server/after";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ExpenseStatus =
@@ -276,62 +277,91 @@ export function expenseStatusTone(status: ExpenseStatus) {
   return "secondary";
 }
 
+// ──────────────────────────────────────────────────────────────────
+// 缓存：部门 / 报销类目 / 审批规则 都是 admin 偶尔改一次，但每次报销页都要拉。
+// 缓存 5 分钟，命中后 0ms 返回；mutation 后通过 revalidateTag 立即失效。
+// ──────────────────────────────────────────────────────────────────
+const _getDepartmentsByOrg = unstable_cache(
+  async (orgId: string): Promise<Department[]> => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return [];
+    const { data, error } = await admin
+      .from("departments")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("is_active", true)
+      .order("name");
+    if (error) {
+      if (isMissingTable(error)) return [];
+      throw error;
+    }
+    return (data ?? []) as Department[];
+  },
+  ["departments_by_org"],
+  { revalidate: 300, tags: ["departments"] }
+);
+
 export async function getDepartments() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as Department[];
-
-  const { data, error } = await supabase
-    .from("departments")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    if (isMissingTable(error)) return [];
-    throw error;
-  }
-  return (data ?? []) as Department[];
+  return _getDepartmentsByOrg(organization.id);
 }
+
+const _getExpenseCategoriesByOrg = unstable_cache(
+  async (orgId: string): Promise<FinanceCategory[]> => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return [];
+    const { data, error } = await admin
+      .from("finance_categories")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("is_active", true)
+      .eq("expense_enabled", true)
+      .order("sort_order");
+    if (error) {
+      if (isMissingTable(error)) return [];
+      throw error;
+    }
+    return (data ?? []) as FinanceCategory[];
+  },
+  ["expense_categories_by_org"],
+  // 复用 finance_categories tag，类目任意变动都会触发失效
+  { revalidate: 300, tags: ["finance_categories"] }
+);
 
 export async function getExpenseCategories() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as FinanceCategory[];
-
-  const { data, error } = await supabase
-    .from("finance_categories")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .eq("is_active", true)
-    .eq("expense_enabled", true)
-    .order("sort_order");
-
-  if (error) {
-    if (isMissingTable(error)) return [];
-    throw error;
-  }
-  return (data ?? []) as FinanceCategory[];
+  return _getExpenseCategoriesByOrg(organization.id);
 }
+
+const _getExpenseApprovalRulesByOrg = unstable_cache(
+  async (orgId: string): Promise<ExpenseApprovalRule[]> => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return [];
+    const { data, error } = await admin
+      .from("finance_expense_approval_rules")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("is_active", true)
+      .order("min_amount", { ascending: true });
+    if (error) {
+      if (isMissingTable(error)) return [];
+      throw error;
+    }
+    return (data ?? []).map((row) => normalizeRule(row as Record<string, unknown>));
+  },
+  ["expense_approval_rules_by_org"],
+  { revalidate: 300, tags: ["expense_approval_rules"] }
+);
 
 export async function getExpenseApprovalRules() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as ExpenseApprovalRule[];
-
-  const { data, error } = await supabase
-    .from("finance_expense_approval_rules")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .eq("is_active", true)
-    .order("min_amount", { ascending: true });
-
-  if (error) {
-    if (isMissingTable(error)) return [];
-    throw error;
-  }
-  return (data ?? []).map((row) => normalizeRule(row as Record<string, unknown>));
+  return _getExpenseApprovalRulesByOrg(organization.id);
 }
 
 export async function getDepartmentBudgets(budgetMonth?: string) {
@@ -754,8 +784,9 @@ export async function upsertDepartment(input: { id?: string; name: string; code?
     : supabase.from("departments").insert(payload);
   const { data, error } = await query.select().single();
   if (error) throw error;
-  await logAction({ event_key: "finance.expense.department.updated", action: input.id ? "update" : "create", module: "finance", related_record_type: "department", related_record_id: data.id, after_data: data });
+  revalidateTag("departments");
   revalidatePath("/finance/reimbursements/settings");
+  runAfter("finance.expense.department.updated", () => logAction({ event_key: "finance.expense.department.updated", action: input.id ? "update" : "create", module: "finance", related_record_type: "department", related_record_id: data.id, after_data: data }));
   return data as Department;
 }
 
@@ -783,8 +814,8 @@ export async function upsertDepartmentBudget(input: {
     .select()
     .single();
   if (error) throw error;
-  await logAction({ event_key: "finance.expense.budget.updated", action: "upsert", module: "finance", related_record_type: "finance_department_budget", related_record_id: data.id, after_data: data });
   revalidatePath("/finance/reimbursements/settings");
+  runAfter("finance.expense.budget.updated", () => logAction({ event_key: "finance.expense.budget.updated", action: "upsert", module: "finance", related_record_type: "finance_department_budget", related_record_id: data.id, after_data: data }));
   return data as DepartmentBudget;
 }
 
@@ -812,8 +843,9 @@ export async function createExpenseApprovalRule(input: {
     .select()
     .single();
   if (error) throw error;
-  await logAction({ event_key: "finance.expense.rule.created", action: "create", module: "finance", related_record_type: "finance_expense_approval_rule", related_record_id: data.id, after_data: data });
+  revalidateTag("expense_approval_rules");
   revalidatePath("/finance/reimbursements/settings");
+  runAfter("finance.expense.rule.created", () => logAction({ event_key: "finance.expense.rule.created", action: "create", module: "finance", related_record_type: "finance_expense_approval_rule", related_record_id: data.id, after_data: data }));
   return normalizeRule(data as Record<string, unknown>);
 }
 

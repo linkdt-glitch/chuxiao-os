@@ -1,16 +1,19 @@
 import Image from "next/image";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { isDemoModeEnabled } from "@/lib/auth";
 
-const errorMessages: Record<string, string> = {
-  not_invited: "这个账号暂未加入初晓 OS 的准入名单。",
-  missing_supabase_env: "生产环境还没有配置 Supabase 环境变量，请先完成部署环境设置。"
-};
+// ⭐ /login 是公司大部分员工每天第一个看到的页面。强制静态化：
+//   - 没有 searchParams 服务端读取（挪到 LoginForm 客户端用 useSearchParams 读）
+//   - 没有 cookies / headers / 数据库查询
+//   - isDemoModeEnabled 走 NEXT_PUBLIC_* 在 build 时内联
+//
+// 效果：Render 不再走 Next.js SSR 流程，直接当静态 HTML serve。
+// HK/SZ 员工 TTFB 从 ~200ms 降到 ~30-50ms（仅 TLS + HK PoP 到 Render 静态发回）。
+export const dynamic = "force-static";
 
-const noticeMessages: Record<string, string> = {
-  switched: "已退出当前账号，请用另一个账号登录。"
-};
+// 演示模式判断：NEXT_PUBLIC_ENABLE_DEMO_MODE 在 build 时被 Next.js 内联成字面量，
+// 所以在 server component 里直接读没问题，不会让页面变 dynamic。
+const isDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
 
 const demoAccounts = [
   { name: "创始人", identifier: "founder@qiming.ai", phone: "18800000001", role: "Owner", color: "text-orange-700 bg-orange-50 border-orange-200" },
@@ -19,27 +22,12 @@ const demoAccounts = [
   { name: "普通成员", identifier: "member@qiming.ai", phone: "18800000004", role: "Member", color: "text-slate-600 bg-slate-50 border-slate-200" }
 ];
 
-export default async function LoginPage({
-  searchParams
-}: {
-  searchParams?: Promise<{ error?: string; notice?: string }>;
-}) {
-  const params = await searchParams;
-  const initialMessage = params?.error ? errorMessages[params.error] ?? params.error : undefined;
-  const noticeMessage = params?.notice ? noticeMessages[params.notice] : undefined;
-  const isDemo = isDemoModeEnabled();
-
+export default function LoginPage() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
       <div className="pointer-events-none absolute inset-x-0 top-10 mx-auto h-56 max-w-4xl rounded-full bg-gradient-to-r from-orange-200/40 via-rose-200/28 to-amber-200/35 blur-3xl" />
 
       <div className="relative w-full max-w-lg space-y-4">
-        {noticeMessage ? (
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-            {noticeMessage}
-          </div>
-        ) : null}
         <Card className="overflow-hidden">
           <CardHeader className="items-center pb-5 text-center">
             <div className="mb-3 flex flex-col items-center">
@@ -67,7 +55,8 @@ export default async function LoginPage({
             <CardDescription>使用邮箱或手机号 + 密码登录工作台</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginForm initialMessage={initialMessage} />
+            {/* LoginForm 内部用 useSearchParams 读 ?error / ?notice，自己显示提示 */}
+            <LoginForm />
           </CardContent>
         </Card>
 

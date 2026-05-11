@@ -1,15 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WelcomeOverlay } from "@/components/auth/welcome-overlay";
 
+// URL searchParams → 中文友好消息映射。
+// 之前在 server component 里做，导致整个 /login 页被强制 dynamic 渲染，
+// 每次都要 Render 服务端 SSR。挪到 client 这一层后 /login 可以静态化，
+// HK/SZ 员工拿到的就是 Render 直接 serve 的静态 HTML，几乎零服务端延迟。
+const ERROR_MESSAGES: Record<string, string> = {
+  not_invited: "这个账号暂未加入初晓 OS 的准入名单。",
+  missing_supabase_env: "生产环境还没有配置 Supabase 环境变量，请先完成部署环境设置。"
+};
+
+const NOTICE_MESSAGES: Record<string, string> = {
+  switched: "已退出当前账号，请用另一个账号登录。"
+};
+
 export function LoginForm({ initialMessage }: { initialMessage?: string }) {
-  const [message, setMessage] = useState(initialMessage ?? "");
-  const [isError, setIsError] = useState(Boolean(initialMessage));
+  const searchParams = useSearchParams();
+  // 从 URL 取 error / notice 参数，转成中文消息
+  const errorParam = searchParams?.get("error");
+  const noticeParam = searchParams?.get("notice");
+  const urlMessage = errorParam
+    ? (ERROR_MESSAGES[errorParam] ?? errorParam)
+    : noticeParam
+      ? (NOTICE_MESSAGES[noticeParam] ?? null)
+      : null;
+
+  const [message, setMessage] = useState(initialMessage ?? urlMessage ?? "");
+  const [isError, setIsError] = useState(Boolean(initialMessage || errorParam));
+
+  // searchParams 变化时（比如登录失败回跳带新的 error）同步显示
+  useEffect(() => {
+    if (urlMessage) {
+      setMessage(urlMessage);
+      setIsError(Boolean(errorParam));
+    }
+  }, [urlMessage, errorParam]);
   const [pendingAction, setPendingAction] = useState<"password" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [welcomeRedirectTo, setWelcomeRedirectTo] = useState<string | null>(null);

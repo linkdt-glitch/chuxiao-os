@@ -615,38 +615,40 @@ export async function createExpenseReport(input: ExpenseReportInput, submit = fa
 
   if (reportError) throw reportError;
 
-  const postCreateTasks: Promise<unknown>[] = [
-    (async () => {
-      const { error } = await supabase
-        .from("finance_expense_items")
-        .insert({
-          organization_id: organization.id,
-          expense_report_id: report.id,
-          category_id: input.category_id || null,
-          amount: input.amount,
-          currency: (input.currency || "CNY").toUpperCase(),
-          occurred_at: input.occurred_at,
-          merchant_name: input.merchant_name || null,
-          description: input.description.trim(),
-          risk_flags: riskFlags,
-          metadata: {}
-        });
-      if (error) throw error;
-    })()
-  ];
+  // ⭐ 关键路径：报销主明细必须落库（影响金额校验和审批显示），其他全部异步化
+  const { error: itemError } = await supabase
+    .from("finance_expense_items")
+    .insert({
+      organization_id: organization.id,
+      expense_report_id: report.id,
+      category_id: input.category_id || null,
+      amount: input.amount,
+      currency: (input.currency || "CNY").toUpperCase(),
+      occurred_at: input.occurred_at,
+      merchant_name: input.merchant_name || null,
+      description: input.description.trim(),
+      risk_flags: riskFlags,
+      metadata: {}
+    });
+  if (itemError) throw itemError;
 
-  if (input.files?.length) postCreateTasks.push(linkExpenseFiles(report.id, input.files));
+  // ⭐ 票据上传 + 模板保存：用户不需要等。
+  // - 文件已经从浏览器传到 Render（multipart 阶段），只剩 Render → Supabase Storage 这一段
+  // - 每个文件 200-1000ms，多张图片可能 2-3 秒，让用户白等没必要
+  // - 用户先看到「保存成功」跳转，文件在后台默默上传
+  // - 极少数失败（网络抖动等）由 runAfter 内部 try/catch 兜，下次重试即可
+  if (input.files?.length) {
+    runAfter("finance.expense.link_files", () => linkExpenseFiles(report.id, input.files!));
+  }
   if (input.save_as_template && input.template_name?.trim()) {
-    postCreateTasks.push(upsertExpenseTemplate({
-      name: input.template_name.trim(),
+    runAfter("finance.expense.save_template", () => upsertExpenseTemplate({
+      name: input.template_name!.trim(),
       category_id: input.category_id,
       amount: input.amount,
       merchant_name: input.merchant_name,
       description: input.description
     }));
   }
-
-  await Promise.all(postCreateTasks);
 
   runAfter("finance.expense.created", () =>
     Promise.all([

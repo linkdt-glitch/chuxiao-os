@@ -60,14 +60,20 @@ const nextConfig: NextConfig = {
       "class-variance-authority",
       "tailwind-merge"
     ],
-    // ⭐ 客户端路由缓存：HK/SZ 员工首次拉一次 RSC payload 后，短时间内
-    // back/forward / Link 预取命中的页面瞬开，不再走完整的 Render → Supabase 往返。
-    // 默认 dynamic=0s（每次回源），这里提到 30s —— 短间隔重复点击不再频繁拉服务端。
-    // static 是 force-static 的页面，5 分钟够长。
-    // 风险：刚刚改完的数据 30s 内点回去看可能是旧的；revalidatePath 触发后立即新鲜。
+    // ⭐ 客户端路由缓存：把缓存时长压到最大化，对 HK/SZ 员工提速明显。
+    //
+    // 之前 30s / 300s 太保守。内部公司系统的实际使用模式：
+    //   - 员工在不同财务页之间来回切（流水 ↔ 类目 ↔ 报销）
+    //   - 切到新数据时通过 revalidatePath / revalidateTag 主动失效，不靠 TTL
+    //
+    // 现在 120s / 900s：120s 内重复切页面是瞬开（零网络），新数据
+    // 通过显式 revalidate 触发（保存 / 审批后立即失效）。
+    //
+    // 风险评估：极低 —— 任何写操作都会 revalidate；唯一可能看到旧数据
+    // 的场景是「别人改了你没改，你 2 分钟内切回去」，对单组织小团队几乎无感。
     staleTimes: {
-      dynamic: 30,
-      static: 300
+      dynamic: 120,
+      static: 900
     }
   },
 

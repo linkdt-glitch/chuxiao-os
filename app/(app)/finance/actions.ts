@@ -291,10 +291,16 @@ export async function confirmParsedFinanceRecordAction(_: AIParseState, formData
       metadata: { notes: value(formData, "notes") ?? "" }
     });
     const recordId = "id" in record ? record.id : undefined;
-    await Promise.all([
-      linkPendingReceiptFiles(formData, recordId),
-      attachReceiptFiles(formData, recordId)
-    ]);
+    // ⭐ 文件关联从阻塞改成 fire-and-forget：
+    //   - 记录本身已经成功落库（关键操作完成）
+    //   - 票据关联只是把已上传的文件 ID 绑到记录上，慢一点不影响用户感知
+    //   - 用户立即看到「保存成功」跳转，HK/SZ 员工省 200-500ms
+    runAfter("finance.ai_confirm.link_files", () =>
+      Promise.all([
+        linkPendingReceiptFiles(formData, recordId),
+        attachReceiptFiles(formData, recordId)
+      ])
+    );
     return {
       recordId,
       success: intent === "draft" ? "草稿已保存，正在返回财务流水。" : "财务记录已保存，正在返回财务流水。"

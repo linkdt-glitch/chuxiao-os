@@ -71,9 +71,21 @@ const nextConfig: NextConfig = {
       },
       {
         // 图片 / 字体 / 静态资源：1 年强缓存（发版时 hashed URL 自然过期）
+        // ⭐ Cloudflare 缓存修复：Next.js 默认会输出两条 vary: Accept-Encoding 头，
+        //    Cloudflare 看到「多个 Vary 头」会保守拒绝缓存。这里显式输出单条 Vary 覆盖，
+        //    让 Cloudflare HK PoP 能正确缓存这些静态资源。
         source: "/:path*\\.(png|jpg|jpeg|webp|avif|svg|woff|woff2|ttf|otf|ico)",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          { key: "Vary", value: "Accept-Encoding" }
+        ]
+      },
+      {
+        // Next.js 编译产物（JS / CSS / 字体 hash 后的 chunks）：同样的待遇
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          { key: "Vary", value: "Accept-Encoding" }
         ]
       }
     ];

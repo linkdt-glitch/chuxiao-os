@@ -3,6 +3,9 @@ services:
     name: chuxiao-os
     runtime: node
     plan: starter
+    # ⭐ HK/SZ 员工速度优化：Render Singapore PoP 离深圳 / 香港 ~30-50ms（vs Oregon US West ~180ms）
+    # 切区域后第一次部署会重新拉镜像 + 重启，约 5-8 分钟一次性成本，之后每个请求节省 ~140ms。
+    region: singapore
     buildCommand: npm ci && npm run build
     startCommand: npm run start -- -H 0.0.0.0 -p $PORT
     envVars:

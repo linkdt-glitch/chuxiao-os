@@ -50,7 +50,16 @@ const nextConfig: NextConfig = {
       "@supabase/ssr",
       "class-variance-authority",
       "tailwind-merge"
-    ]
+    ],
+    // ⭐ 客户端路由缓存：HK/SZ 员工首次拉一次 RSC payload 后，短时间内
+    // back/forward / Link 预取命中的页面瞬开，不再走完整的 Render → Supabase 往返。
+    // 默认 dynamic=0s（每次回源），这里提到 30s —— 短间隔重复点击不再频繁拉服务端。
+    // static 是 force-static 的页面，5 分钟够长。
+    // 风险：刚刚改完的数据 30s 内点回去看可能是旧的；revalidatePath 触发后立即新鲜。
+    staleTimes: {
+      dynamic: 30,
+      static: 300
+    }
   },
 
   // 静态资源缓存策略 —— logo / 图标长期缓存，HTML 不缓存

@@ -3,7 +3,7 @@ import { approveApproval, createApproval, rejectApproval } from "@/lib/approvals
 import { logAction } from "@/lib/audit";
 import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
 import { emitEvent } from "@/lib/events";
-import { canApproveFinance, canRecordCompanyExpense, getFinanceScope } from "@/lib/finance/permissions";
+import { canApproveFinance, canRecordCompanyIncome, getFinanceScope } from "@/lib/finance/permissions";
 import { demoFinanceAccounts } from "@/lib/finance/accounts";
 import { demoFinanceCategories } from "@/lib/finance/categories";
 import { runAfter } from "@/lib/server/after";
@@ -208,10 +208,10 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   if (!input.description.trim()) {
     throw new Error("财务记录说明不能为空。");
   }
-  // 服务端兜底：非 owner/admin 不能直接记录公司「支出」类型，
-  // 他们要记花了公司钱的事情，请走「申请报销」流程。
-  if (input.record_type === "expense" && !(await canRecordCompanyExpense())) {
-    throw new Error("你没有权限直接记录公司支出。请改用「申请报销」让创始人 / 管理员批准后入账。");
+  // 服务端兜底：非 owner/admin 不能直接记录公司「收入」类型。
+  // 公司收款入账由 owner/admin 登记，员工只记自己花的钱。
+  if (input.record_type === "income" && !(await canRecordCompanyIncome())) {
+    throw new Error("你没有权限直接记录公司收入。公司收款入账请由创始人 / 管理员登记。");
   }
   // 创始人记账自动入账规则：
   //   owner 提交的非报销类支出 / 收入 → 直接 approved（自己批自己的日常没意义）

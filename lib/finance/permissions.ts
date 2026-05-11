@@ -28,21 +28,21 @@ export async function canViewAllFinance() {
 }
 
 /**
- * 是否可以直接记录公司「支出」类型的财务记录。
+ * 是否可以直接记录公司「收入」类型的财务记录。
  *
  * 业务规则（owner 决定）：
- *   - owner / admin → 可以（公司账钱出入由他们直接登记）
+ *   - owner / admin → 可以（公司收款入账由他们登记，财务/老板的职责）
  *   - 其他角色（manager / member / agent）→ 不可
- *     他们能做的是「申请报销」，由 owner/admin 批准后才生成公司支出。
+ *     员工只记自己花的钱（支出 / 报销 / 转账），公司收入不归他们登记。
  *
  * 影响范围：
- *   1. 手动记账表单：record_type 下拉去掉「支出」
+ *   1. 手动记账表单：record_type 下拉去掉「收入」
  *   2. AI 一句话记账确认表单：同上
- *   3. 类目下拉：去掉所有 type="expense" 类目
- *   4. 服务端 createFinanceRecord：直接拒绝 record_type="expense" 的提交
- *   5. 流水列表筛选：type 选项去掉「支出」
+ *   3. 类目下拉：去掉所有 type="income" 类目
+ *   4. 服务端 createFinanceRecord：直接拒绝 record_type="income" 的提交
+ *   5. 流水列表筛选：type 选项去掉「收入」
  */
-export async function canRecordCompanyExpense() {
+export async function canRecordCompanyIncome() {
   const member = await getCurrentMember();
   if (member.role?.key === "agent") return false;
   return financeAllRoles.has(member.role?.key ?? "");

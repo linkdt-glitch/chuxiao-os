@@ -61,12 +61,12 @@ function getSpeechRecognition() {
 export function AIBookkeepingForm({
   categories,
   accounts,
-  canRecordExpense = true
+  canRecordIncome = true
 }: {
   categories: FinanceCategory[];
   accounts: FinanceAccount[];
-  /** 是否允许「支出」类型；非 owner/admin 应传 false，下拉去掉支出选项 + 过滤支出类目 */
-  canRecordExpense?: boolean;
+  /** 是否允许「收入」类型；非 owner/admin 应传 false，下拉去掉收入选项 + 过滤收入类目 */
+  canRecordIncome?: boolean;
 }) {
   const router = useRouter();
   const [parseState, parseAction, parsing] = useActionState<AIParseState, FormData>(parseFinanceTextAction, {});
@@ -81,14 +81,14 @@ export function AIBookkeepingForm({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const parsed = parseState.parsed;
-  // 非特权用户：过滤掉 type="expense" 类目，保留 income / both
-  const visibleCategories = canRecordExpense ? categories : categories.filter((c) => c.type !== "expense");
+  // 非特权用户：过滤掉 type="income" 类目，保留 expense / both
+  const visibleCategories = canRecordIncome ? categories : categories.filter((c) => c.type !== "income");
   const allCategories = flat(visibleCategories);
   const category = rootCategoryFor(visibleCategories, parsed?.category_name) ?? rootCategoryFor(visibleCategories, parsed?.subcategory_name);
   const subcategory = allCategories.find((item) => item.name === parsed?.subcategory_name);
   const account = accounts.find((item) => item.name === parsed?.account_name);
-  // 默认类型：特权用户跟着 AI parse；非特权且 AI 建议「支出」时，回落到「报销」
-  const defaultRecordType = parsed?.record_type === "expense" && !canRecordExpense ? "reimbursement" : parsed?.record_type;
+  // 默认类型：特权用户跟着 AI parse；非特权且 AI 建议「收入」时回落到「支出」
+  const defaultRecordType = parsed?.record_type === "income" && !canRecordIncome ? "expense" : parsed?.record_type;
 
   function focusTextInput(message: string) {
     setVoiceFallback(true);
@@ -251,8 +251,8 @@ export function AIBookkeepingForm({
               <div className="space-y-2">
                 <Label>类型</Label>
                 <select name="record_type" defaultValue={defaultRecordType ?? parsed.record_type} className="h-11 w-full rounded-md border bg-background px-3 text-base sm:h-10 sm:text-sm">
-                  <option value="income">收入</option>
-                  {canRecordExpense ? <option value="expense">支出</option> : null}
+                  {canRecordIncome ? <option value="income">收入</option> : null}
+                  <option value="expense">支出</option>
                   <option value="reimbursement">报销</option>
                 </select>
               </div>

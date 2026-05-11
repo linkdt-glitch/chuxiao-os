@@ -24,7 +24,7 @@ export function FinanceRecordForm({
   defaults,
   action = createFinanceRecordAction,
   submitLabel = "保存记录",
-  canRecordExpense = true
+  canRecordIncome = true
 }: {
   categories: FinanceCategory[];
   accounts: FinanceAccount[];
@@ -32,25 +32,27 @@ export function FinanceRecordForm({
   action?: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
   /**
-   * 是否允许记录公司「支出」类型。
-   * 默认 true（向后兼容）；非 owner/admin 应该传 false，
-   * 这样会从类型下拉去掉「支出」选项 + 从类目下拉过滤掉 type=expense 的类目。
+   * 是否允许记录公司「收入」类型。
+   * 默认 true（向后兼容）；非 owner/admin 应传 false，
+   * 类型下拉去掉「收入」+ 类目下拉过滤掉 type=income 的类目。
    */
-  canRecordExpense?: boolean;
+  canRecordIncome?: boolean;
 }) {
-  // 非特权用户：去掉所有「纯支出」类目（type === "expense"），保留 income / both
+  // 非特权用户：去掉「纯收入」类目（type === "income"），保留 expense / both
   // both 类目（如「其他」）保留 —— 既可记收入也可记支出，灵活
-  const visibleCategories = canRecordExpense
+  const visibleCategories = canRecordIncome
     ? categories
-    : categories.filter((c) => c.type !== "expense");
+    : categories.filter((c) => c.type !== "income");
   const flatCategories = flattenCategories(visibleCategories);
   const category = rootCategoryFor(visibleCategories, defaults?.category_name) ?? rootCategoryFor(visibleCategories, defaults?.subcategory_name);
   const subcategory = flatCategories.find((item) => item.name === defaults?.subcategory_name);
   const account = accounts.find((item) => item.name === defaults?.account_name);
   const fieldClass = "h-11 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:h-10 sm:text-sm";
   const selectClass = `${fieldClass} w-full px-3`;
-  // 非特权用户的默认类型不应该是「支出」，改成「报销」（他们最常用的）
-  const defaultRecordType = defaults?.record_type ?? (canRecordExpense ? "expense" : "reimbursement");
+  // 默认类型 "expense"（员工最常用）；如果 AI 解析建议「收入」且非特权用户 → 回落到「支出」
+  const defaultRecordType = defaults?.record_type === "income" && !canRecordIncome
+    ? "expense"
+    : defaults?.record_type ?? "expense";
 
   return (
     <Card>
@@ -67,8 +69,8 @@ export function FinanceRecordForm({
           <div className="space-y-2">
             <Label htmlFor="record_type">类型</Label>
             <select id="record_type" name="record_type" defaultValue={defaultRecordType} className={selectClass}>
-              <option value="income">收入</option>
-              {canRecordExpense ? <option value="expense">支出</option> : null}
+              {canRecordIncome ? <option value="income">收入</option> : null}
+              <option value="expense">支出</option>
               <option value="reimbursement">报销</option>
             </select>
           </div>

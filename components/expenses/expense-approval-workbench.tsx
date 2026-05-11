@@ -11,6 +11,7 @@ import {
 } from "@/app/(app)/finance/reimbursements/actions";
 import { DepartmentBudgetProgress, ExpenseRiskBadges, ExpenseStatusBadge, reportRiskFlags } from "@/components/expenses/expense-shared";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -237,7 +238,7 @@ function ExpenseDetailDrawer({
                       <div className="font-medium">{step.step_order}. {step.label}</div>
                       <div className="text-xs text-muted-foreground">{step.approver_role_key ?? "admin"} · {step.comment || "无意见"}</div>
                     </div>
-                    <Badge variant={step.status === "approved" ? "success" : step.status === "rejected" ? "danger" : step.status === "need_revision" ? "info" : "warning"}>{step.status}</Badge>
+                    <StatusBadge value={step.status} />
                   </div>
                 )) : <div className="text-sm text-muted-foreground">提交后会自动生成审批链。</div>}
               </div>

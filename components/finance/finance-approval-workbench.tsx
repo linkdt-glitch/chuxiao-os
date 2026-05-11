@@ -183,14 +183,14 @@ function ReceiptPreview({ record }: { record: FinanceRecord }) {
 
   if (!attachments.length) {
     return (
-      <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 p-6 text-center">
+      <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center">
         <div>
-          <FileImage className="mx-auto mb-3 h-9 w-9 text-amber-600" />
-          <div className="font-semibold text-amber-900">没有可预览票据</div>
-          <p className="mt-2 text-sm text-amber-800">
+          <FileImage className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+          <div className="font-semibold text-slate-700">这笔没有票据</div>
+          <p className="mt-2 text-sm text-slate-600">
             {hasFileDescription
-              ? "记录描述里有票据文件名，但没有找到已关联的文件，建议要求员工补传。"
-              : "审批前建议要求补充票据，或确认这笔费用无需附件。"}
+              ? "记录描述里提到了票据文件名，但没有关联到文件，可让员工补传一下。"
+              : "票据是可选的，根据描述判断是否需要让员工补传即可。"}
           </p>
         </div>
       </div>

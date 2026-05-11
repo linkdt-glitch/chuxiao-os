@@ -101,8 +101,9 @@ export function FinanceRecordForm({
             <Textarea id="description" name="description" required defaultValue={defaults?.description ?? ""} className="min-h-28 rounded-xl border-slate-200/80 bg-white/80 text-base shadow-sm sm:text-sm" />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="receipt_files">票据附件</Label>
+            <Label htmlFor="receipt_files">票据附件 <span className="text-xs font-normal text-muted-foreground">（可选）</span></Label>
             <Input id="receipt_files" name="receipt_files" type="file" multiple className={fieldClass} accept="image/*,.pdf" />
+            <p className="text-xs text-muted-foreground">没有票据也能直接保存，留空就好。</p>
           </div>
           <details className="rounded-2xl border border-slate-200/80 bg-white/50 p-4 md:col-span-2">
             <summary className="cursor-pointer text-sm font-medium">更多信息</summary>

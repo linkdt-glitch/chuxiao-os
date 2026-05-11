@@ -45,8 +45,8 @@ export function ExpenseReportForm({
   }, [occurredAt]);
   const warnings = [
     dateAge > 90 ? "发生日期超过 90 天，审批时会重点关注。" : "",
-    numericAmount >= 5000 ? "金额较高，请补充清楚用途和票据。" : "",
-    fileCount === 0 ? "未上传票据，提交后会被标记为异常。" : ""
+    numericAmount >= 5000 ? "金额较高，建议在说明里讲清楚用途。" : ""
+    // 票据可选：不再因为没传票据就给红色警告
   ].filter(Boolean);
 
   function applyTemplate(templateId: string) {
@@ -130,7 +130,7 @@ export function ExpenseReportForm({
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="receipt_files">发票 / 票据附件</Label>
+            <Label htmlFor="receipt_files">发票 / 票据附件 <span className="text-xs font-normal text-muted-foreground">（可选）</span></Label>
             {/* 注意：不要在多文件 input 上加 capture，iOS Safari 会强制只能拍照而无法选 PDF。
                 想从相册多选 + 拍照 + 选 PDF 三种都能用，最稳的就是不写 capture 属性。 */}
             <Input
@@ -142,7 +142,7 @@ export function ExpenseReportForm({
               className={fieldClass}
               onChange={(event) => setFileCount(event.target.files?.length ?? 0)}
             />
-            <p className="text-xs text-muted-foreground">支持多张图片或 PDF（手机上可点击后选拍照 / 相册 / 文件）。缺少票据会自动标记为红色异常，但不阻止保存草稿。</p>
+            <p className="text-xs text-muted-foreground">支持多张图片或 PDF（手机上可点击后选拍照 / 相册 / 文件）。没有票据也能直接提交，老板审批时再自行判断是否需要补传。</p>
           </div>
 
           <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4 md:col-span-2">
@@ -164,8 +164,8 @@ export function ExpenseReportForm({
                 <div className="mt-1 font-semibold">{selectedCategory?.name ?? "未分类"}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">票据</div>
-                <div className="mt-1 font-semibold">{fileCount ? `${fileCount} 个附件` : "未上传"}</div>
+                <div className="text-xs text-muted-foreground">票据（可选）</div>
+                <div className="mt-1 font-semibold">{fileCount ? `${fileCount} 个附件` : "未上传，也可提交"}</div>
               </div>
             </div>
             {warnings.length ? (

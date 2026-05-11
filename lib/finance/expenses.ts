@@ -489,9 +489,8 @@ async function buildRiskFlags(input: ExpenseReportInput) {
   const occurred = new Date(`${input.occurred_at}T00:00:00`);
   const daysAgo = Math.floor((today.getTime() - occurred.getTime()) / 86_400_000);
 
-  if (!input.files?.length) {
-    flags.push({ key: "missing_receipt", severity: "danger", message: "缺少发票或票据附件。" });
-  }
+  // 票据是可选的（用户决定不强制）：不再因为没传票据就打红色 danger 标记。
+  // 老板审批时自己看「票据」一栏是否需要追问，不需要系统强行警告。
   if (daysAgo > 90) {
     flags.push({ key: "older_than_90_days", severity: "warning", message: "发生日期超过 90 天，请确认是否仍可报销。" });
   }

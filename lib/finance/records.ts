@@ -208,7 +208,19 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
   if (!input.description.trim()) {
     throw new Error("财务记录说明不能为空。");
   }
-  const status: FinanceRecordStatus = input.submit_for_approval || input.status === "pending_approval" ? "pending_approval" : input.status ?? "draft";
+  // 创始人记账自动入账规则：
+  //   owner 提交的非报销类支出 / 收入 → 直接 approved（自己批自己的日常没意义）
+  //   报销类（reimbursement_required / record_type=reimbursement）仍走原审批流程
+  //   非 owner → 维持原 draft / pending_approval 逻辑
+  const isOwner = member.role?.key === "owner";
+  const isReimbursement = Boolean(input.reimbursement_required) || input.record_type === "reimbursement";
+  const ownerAutoApprove = isOwner && !isReimbursement;
+
+  const status: FinanceRecordStatus = ownerAutoApprove
+    ? "approved"
+    : input.submit_for_approval || input.status === "pending_approval"
+      ? "pending_approval"
+      : input.status ?? "draft";
 
   const payload = {
     organization_id: organization.id,
@@ -228,6 +240,8 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
     project_name: input.project_name || null,
     member_id: input.member_id || member.id,
     submitted_by: member.id,
+    // owner 自动入账时，approved_by 也记录 owner 自己，审计可追溯
+    approved_by: ownerAutoApprove ? member.id : null,
     reimbursement_required: Boolean(input.reimbursement_required),
     reimbursed: Boolean(input.reimbursed),
     risk_level: input.risk_level || "low",
@@ -246,11 +260,16 @@ export async function createFinanceRecord(input: FinanceRecordInput) {
     record = await submitFinanceRecord(record.id, record);
   } else {
     writeFinanceRecordTrace({
-      event_key: "finance.record.created",
-      action: "create",
+      event_key: ownerAutoApprove ? "finance.record.owner_auto_approved" : "finance.record.created",
+      action: ownerAutoApprove ? "approve" : "create",
       related_record_id: record.id,
       after_data: record as unknown as Record<string, unknown>,
-      payload: { id: record.id, record_no: record.record_no, amount: record.amount }
+      payload: {
+        id: record.id,
+        record_no: record.record_no,
+        amount: record.amount,
+        ...(ownerAutoApprove ? { auto_approve_reason: "owner_non_reimbursement" } : {})
+      }
     });
   }
 

@@ -1,8 +1,37 @@
+import { unstable_cache } from "next/cache";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/lib/auth";
 import { ensureDefaultAIProviders } from "@/lib/ai/default-providers";
 import { getFinanceRecords } from "@/lib/finance/records";
 import type { FinanceRecord } from "@/lib/finance/types";
+
+// 成员列表 + 角色 缓存：admin 偶尔邀请一次新人，但 (app) 布局每页都要读（创始人尤甚）。
+// 5 分钟 TTL，邀请 / 移除成员时通过 revalidateTag("members") 失效。
+const _getMembersWithRolesByOrg = unstable_cache(
+  async (orgId: string) => {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return null;
+    const [{ data: members }, { data: roles }] = await Promise.all([
+      admin
+        .from("organization_members")
+        .select("*")
+        .eq("organization_id", orgId)
+        .order("created_at"),
+      admin
+        .from("roles")
+        .select("*")
+        .eq("organization_id", orgId)
+    ]);
+    const rolesById = new Map((roles ?? []).map((r) => [r.id, r]));
+    return (members ?? []).map((item) => ({
+      ...item,
+      role: rolesById.get(item.role_id) ?? null
+    }));
+  },
+  ["members_with_roles_by_org"],
+  { revalidate: 300, tags: ["members"] }
+);
 import {
   demoAIInvocationLogs,
   demoAgentRunLogs,
@@ -103,30 +132,9 @@ export async function getMembers() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return demoMembers;
-
-  // Fetch members and roles separately to avoid silent join failures
-  const [{ data: members, error: membersError }, { data: roles }] = await Promise.all([
-    supabase
-      .from("organization_members")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("created_at"),
-    supabase
-      .from("roles")
-      .select("*")
-      .eq("organization_id", organization.id)
-  ]);
-
-  if (membersError) {
-    console.error("[getMembers] error:", membersError.message);
-    return demoMembers;
-  }
-
-  const rolesById = new Map((roles ?? []).map((r) => [r.id, r]));
-  return (members ?? []).map((item) => ({
-    ...item,
-    role: rolesById.get(item.role_id) ?? null
-  }));
+  const cached = await _getMembersWithRolesByOrg(organization.id);
+  if (cached === null) return demoMembers;
+  return cached;
 }
 
 export async function getRolesAndPermissions() {

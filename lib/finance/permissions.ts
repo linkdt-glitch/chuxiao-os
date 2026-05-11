@@ -4,27 +4,53 @@ import type { FinanceRecord } from "@/lib/finance/types";
 
 const financeAllRoles = new Set(["owner", "admin"]);
 
+/**
+ * 从 member 里安全取出 role.key。
+ *
+ * 兼容三种形态（Supabase nested join 在不同 FK shape 下行为不一致）：
+ *   - role 是单个对象：{ key: "owner", ... }     → 取 key
+ *   - role 是数组：    [{ key: "owner", ... }]   → 取 [0].key
+ *   - role 是 null / undefined                   → 返回 ""
+ *
+ * 之前所有 helper 直接 member.role?.key，如果 Supabase 返回的是数组，
+ * 永远拿到 undefined，权限检查全部失效（owner 自动入账等隐性 bug）。
+ */
+function readRoleKey(member: { role?: unknown } | null | undefined): string {
+  try {
+    const role = member?.role;
+    if (!role) return "";
+    if (Array.isArray(role)) {
+      return (role[0] as { key?: string } | undefined)?.key ?? "";
+    }
+    return (role as { key?: string }).key ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export async function canManageFinance() {
   const member = await getCurrentMember();
-  const role = member.role?.key ?? "member";
+  const role = readRoleKey(member) || "member";
   return financeAllRoles.has(role) || (await hasPermission("finance.category.manage"));
 }
 
 export async function canApproveFinance() {
   const member = await getCurrentMember();
-  if (member.role?.key === "agent") return false;
-  return financeAllRoles.has(member.role?.key ?? "") || (await hasPermission("finance.approve"));
+  const role = readRoleKey(member);
+  if (role === "agent") return false;
+  return financeAllRoles.has(role) || (await hasPermission("finance.approve"));
 }
 
 export async function canExportFinance() {
   const member = await getCurrentMember();
-  if (member.role?.key === "agent") return false;
-  return financeAllRoles.has(member.role?.key ?? "") || (await hasPermission("finance.export"));
+  const role = readRoleKey(member);
+  if (role === "agent") return false;
+  return financeAllRoles.has(role) || (await hasPermission("finance.export"));
 }
 
 export async function canViewAllFinance() {
   const member = await getCurrentMember();
-  return financeAllRoles.has(member.role?.key ?? "") || (await hasPermission("finance.view_all"));
+  return financeAllRoles.has(readRoleKey(member)) || (await hasPermission("finance.view_all"));
 }
 
 /**
@@ -44,8 +70,9 @@ export async function canViewAllFinance() {
  */
 export async function canRecordCompanyIncome() {
   const member = await getCurrentMember();
-  if (member.role?.key === "agent") return false;
-  return financeAllRoles.has(member.role?.key ?? "");
+  const role = readRoleKey(member);
+  if (role === "agent") return false;
+  return financeAllRoles.has(role);
 }
 
 export async function canViewTeamFinance() {

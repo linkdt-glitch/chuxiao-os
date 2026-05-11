@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Download, FileSpreadsheet, ListChecks, NotebookPen, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, Download, FileSpreadsheet, ListChecks, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
 import { ApprovalSpotlight } from "@/components/finance/approval-spotlight";
 import { FinanceExecutiveDashboard } from "@/components/finance/finance-executive-dashboard";
 import { MySubmissionsPanel } from "@/components/finance/my-submissions-panel";
 import { NoticeBanner } from "@/components/ui/notice-banner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentMember } from "@/lib/auth";
 import { getExpenseReports } from "@/lib/finance/expenses";
 import { canViewAllFinance } from "@/lib/finance/permissions";
@@ -15,6 +15,104 @@ import { getFinanceExecutiveDashboard, getFinanceSummary } from "@/lib/finance/r
 
 function money(value: number) {
   return new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(value);
+}
+
+/**
+ * 统一入口卡片 —— 顶部一张大卡片把所有「记账 / 报销」入口聚到一处。
+ *
+ * 之前 PageHeader 5 个按钮 + 中间 2 张大卡片 + 各种隐性入口，
+ * 用户嫌太乱。这里压成一张卡，3 个等宽大按钮一字排开。
+ */
+function EntryActionsCard({
+  isOwnerView
+}: {
+  /** owner/admin 视图（看公司全局）vs member 视图（只看自己提交的） */
+  isOwnerView: boolean;
+}) {
+  // owner 用「记账」措辞（含收入 / 支出 / 转账），member 用「记一笔」（不含收入）
+  const actions: Array<{
+    href: string;
+    icon: typeof Sparkles;
+    title: string;
+    subtitle: string;
+    accent: "primary" | "outline";
+  }> = isOwnerView
+    ? [
+        {
+          href: "/finance/ai-bookkeeping",
+          icon: Sparkles,
+          title: "一句话 AI 记账",
+          subtitle: "说一句、拍张照就生成",
+          accent: "primary"
+        },
+        {
+          href: "/finance/records/new",
+          icon: Plus,
+          title: "手动记账",
+          subtitle: "精确选类目 / 账户 / 项目",
+          accent: "outline"
+        },
+        {
+          href: "/finance/reimbursements/new",
+          icon: ReceiptText,
+          title: "新建报销",
+          subtitle: "上传票据，走审批流程",
+          accent: "outline"
+        }
+      ]
+    : [
+        {
+          href: "/finance/ai-bookkeeping?intent=reimbursement",
+          icon: Sparkles,
+          title: "一句话 AI 报销",
+          subtitle: "描述一下就行",
+          accent: "primary"
+        },
+        {
+          href: "/finance/reimbursements/new",
+          icon: ReceiptText,
+          title: "手动新建报销",
+          subtitle: "上传票据等审批",
+          accent: "outline"
+        },
+        {
+          href: "/finance/records/new",
+          icon: Plus,
+          title: "记一笔",
+          subtitle: "支出 / 转账 / 退款",
+          accent: "outline"
+        }
+      ];
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-[15px] text-slate-900">
+          {isOwnerView ? "记账 / 报销 / 票据 入口" : "申请报销 / 记一笔"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {actions.map((action) => (
+            <Button
+              key={action.href}
+              asChild
+              variant={action.accent === "primary" ? "default" : "outline"}
+              className="h-auto min-h-[64px] justify-start gap-3 px-3 py-3 sm:flex-col sm:items-center sm:justify-center sm:gap-1 sm:px-2 sm:py-4 sm:text-center"
+            >
+              <Link href={action.href}>
+                <action.icon className="h-5 w-5 shrink-0" />
+                <span className="flex min-w-0 flex-col items-start sm:items-center">
+                  <span className="text-[14px] font-semibold leading-tight">{action.title}</span>
+                  <span className="text-[11px] font-normal leading-tight opacity-75">{action.subtitle}</span>
+                </span>
+              </Link>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default async function FinancePage({
@@ -46,67 +144,14 @@ export default async function FinancePage({
 
     return (
       <>
+        <NoticeBanner error={params.error} notice={params.notice} />
         <PageHeader
           title="我的报销与记账"
           description="申请报销（垫付费用找公司报销）/ 记一笔（自己的日常收支）/ 在下方查看报销审批反馈。"
         />
 
-        {/* 两类入口：报销 + 记账，每一类都有「一句话 AI」+「手动」两种方式 */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* 报销 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ReceiptText className="h-4 w-4 text-orange-400" /> 申请报销
-              </CardTitle>
-              <CardDescription>
-                把已经替公司垫付的费用提交报销，等待负责人审批；提交后下方会显示状态。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button asChild className="w-full justify-start">
-                <Link href="/finance/ai-bookkeeping?intent=reimbursement">
-                  <Sparkles className="h-4 w-4" />
-                  <span>一句话 AI 报销</span>
-                  <span className="ml-auto text-xs opacity-70">描述一下就行</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start">
-                <Link href="/finance/reimbursements/new">
-                  <Plus className="h-4 w-4" />
-                  <span>手动新建报销</span>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* 记账 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <NotebookPen className="h-4 w-4 text-orange-400" /> 记一笔
-              </CardTitle>
-              <CardDescription>
-                记录你的日常收入、支出、转账。无需审批，自动归到你的流水。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button asChild className="w-full justify-start">
-                <Link href="/finance/ai-bookkeeping">
-                  <Sparkles className="h-4 w-4" />
-                  <span>一句话 AI 记账</span>
-                  <span className="ml-auto text-xs opacity-70">说一句就生成</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start">
-                <Link href="/finance/records/new">
-                  <Plus className="h-4 w-4" />
-                  <span>手动记账</span>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {/* 统一入口卡 */}
+        <EntryActionsCard isOwnerView={false} />
 
         {/* 报销反馈 */}
         <div className="mt-6">
@@ -145,30 +190,16 @@ export default async function FinancePage({
 
       <PageHeader
         title="财务能量中心"
-        description="看清收入、支出、利润、现金流和经营健康度；包含一句话记账、报销审批、收支流水、财务看板与 Excel 导出。"
+        description="看清收入、支出、利润、现金流和经营健康度；含一句话记账、报销审批、收支流水、财务看板与 Excel 导出。"
         action={
+          // 只保留工具类按钮（报表 / 导出），记账 / 报销入口下移到统一卡里
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button asChild>
-              <Link href="/finance/ai-bookkeeping">
-                <Sparkles className="h-4 w-4" />一句话记账
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/finance/records/new">
-                <Plus className="h-4 w-4" />手动记账
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/finance/reimbursements/new">
-                <ReceiptText className="h-4 w-4" />新建报销
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" size="sm">
               <Link href="/finance/reports">
                 <FileSpreadsheet className="h-4 w-4" />报表
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" size="sm">
               <Link href="/api/finance/export?type=expense">
                 <Download className="h-4 w-4" />导出支出
               </Link>
@@ -177,14 +208,19 @@ export default async function FinancePage({
         }
       />
 
+      {/* ⭐ 统一入口卡 — 所有「记账 / 报销」按钮集中在这里 */}
+      <EntryActionsCard isOwnerView={true} />
+
       {/* ⭐ 财务审批入口 — 只显示统计 + 大按钮，详细处理在工作台里做 */}
-      <ApprovalSpotlight
-        totalCount={summary.pendingReimbursements}
-        totalAmount={pendingApprovalAmount}
-      />
+      <div className="mt-3">
+        <ApprovalSpotlight
+          totalCount={summary.pendingReimbursements}
+          totalAmount={pendingApprovalAmount}
+        />
+      </div>
 
       {/* 4 个核心指标 */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((item) => (
           <Card key={item.label}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -230,7 +266,6 @@ export default async function FinancePage({
           </Button>
         </CardContent>
       </Card>
-
     </>
   );
 }

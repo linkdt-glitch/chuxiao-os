@@ -30,8 +30,17 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   typedRoutes: false,
 
-  // 启用 brotli/gzip 压缩响应（默认就开但显式声明一下）
-  compress: true,
+  // ⭐ 关键：关闭 Next.js 内置 compression。
+  //
+  // 原因：Next.js 的 compression 中间件 + RSC 框架各加一次 Vary: Accept-Encoding，
+  // 导致响应头出现两条相同的 Vary（已知 issue #55389，Next.js 内无法修复）。
+  // Cloudflare 看到多条 Vary 头时会保守地标 cf-cache-status: DYNAMIC，
+  // 任何 Cache Rule 都覆盖不了这一层判断 → 整套 HK PoP 静态资源缓存全部失效。
+  //
+  // 关掉后 Render 直接发未压缩响应给 Cloudflare，由 Cloudflare HK PoP 用 Brotli
+  // 实时压缩 + 缓存（已在 Cloudflare Speed → Settings 启用 Brotli）。
+  // 净效果：HK 员工拿到的是 Cloudflare 已压缩 + 已缓存的版本，比 Next.js gzip 更小更快。
+  compress: false,
 
   // React strict 模式 + 启用 strict mode 双重渲染（开发期捕获副作用问题）
   reactStrictMode: true,

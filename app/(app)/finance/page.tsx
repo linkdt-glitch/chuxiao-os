@@ -1,60 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, Download, FileSpreadsheet, ListChecks, NotebookPen, Plus, ReceiptText, Sparkles, Trash2, WalletCards } from "lucide-react";
-import { cleanupOwnFinanceSubmissionsAction } from "./actions";
+import { ArrowRight, Download, FileSpreadsheet, ListChecks, NotebookPen, Plus, ReceiptText, Sparkles, WalletCards } from "lucide-react";
 import { ApprovalSpotlight } from "@/components/finance/approval-spotlight";
-import { ConfirmSubmitButton } from "@/components/finance/confirm-submit-button";
 import { FinanceExecutiveDashboard } from "@/components/finance/finance-executive-dashboard";
 import { MySubmissionsPanel } from "@/components/finance/my-submissions-panel";
 import { NoticeBanner } from "@/components/ui/notice-banner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentMember, getCurrentOrganization } from "@/lib/auth";
+import { getCurrentMember } from "@/lib/auth";
 import { getExpenseReports } from "@/lib/finance/expenses";
 import { canViewAllFinance } from "@/lib/finance/permissions";
 import { getFinanceRecords } from "@/lib/finance/records";
 import { getFinanceExecutiveDashboard, getFinanceSummary } from "@/lib/finance/reports";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function money(value: number) {
   return new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(value);
-}
-
-/**
- * 创始人「我提交了多少」的计数 —— 用来在 /finance 显示清理按钮里的预览数字。
- * 只统计「我作为提交人」的记账 + 报销，不动其他人的数据。
- *
- * 包了 try/catch：这个数字纯属辅助 UI，绝不能因为它失败就把整个
- * 财务中心页崩成 (app)/error.tsx。返回 0 等于「没东西要清理」，
- * 用户至少能继续记账 / 看仪表盘。
- */
-async function getOwnSubmissionCounts(memberId?: string | null) {
-  if (!memberId) return { records: 0, reports: 0 };
-  try {
-    const supabase = await createSupabaseServerClient();
-    if (!supabase) return { records: 0, reports: 0 };
-    const organization = await getCurrentOrganization();
-
-    const [recordsResult, reportsResult] = await Promise.all([
-      supabase
-        .from("finance_records")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", organization.id)
-        .or(`submitted_by.eq.${memberId},member_id.eq.${memberId}`),
-      supabase
-        .from("finance_expense_reports")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", organization.id)
-        .eq("submitter_member_id", memberId)
-    ]);
-    return {
-      records: recordsResult.count ?? 0,
-      reports: reportsResult.count ?? 0
-    };
-  } catch (error) {
-    console.error("[getOwnSubmissionCounts] error:", error);
-    return { records: 0, reports: 0 };
-  }
 }
 
 export default async function FinancePage({
@@ -172,17 +132,12 @@ export default async function FinancePage({
     0
   );
 
-  // 创始人「清理我提交过的测试数据」入口需要的 count
-  const ownSubmissions = await getOwnSubmissionCounts(member.id);
   const cards = [
     { label: "本月收入", value: money(summary.monthIncome), tone: "text-emerald-700", hint: "已批准 / 已入账收入" },
     { label: "本月支出", value: money(summary.monthExpense), tone: "text-red-700", hint: "已批准 / 已入账支出" },
     { label: "本月利润", value: money(summary.monthProfit), tone: summary.monthProfit >= 0 ? "text-emerald-700" : "text-red-700", hint: "收入 - 支出" },
     { label: "现金余额", value: money(summary.cashBalance), tone: "text-sky-700", hint: "CNY 账户余额合计" }
   ];
-
-  const isFounder = member.role?.key === "owner";
-  const ownTotal = ownSubmissions.records + ownSubmissions.reports;
 
   return (
     <>
@@ -276,35 +231,6 @@ export default async function FinancePage({
         </CardContent>
       </Card>
 
-      {/* 创始人专属：清理我自己提交过的记账 / 报销（测试数据收尾）—— 只对 owner 显示 */}
-      {isFounder && ownTotal > 0 ? (
-        <Card className="mt-6 border-rose-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[15px] text-rose-700">
-              <Trash2 className="h-4 w-4" />
-              清理我提交过的记账 / 报销（创始人专用）
-            </CardTitle>
-            <CardDescription className="text-slate-700">
-              你名下目前有 <strong className="text-rose-700">{ownSubmissions.records}</strong> 条记账 +{" "}
-              <strong className="text-rose-700">{ownSubmissions.reports}</strong> 条报销。
-              点击下方按钮会一次性删掉这些「你作为提交人」的数据，
-              <strong>员工的记录（吴恩典等）完全不动</strong>。
-              动作不可撤销，但会写入审计日志，可在系统日志里查到清理时间和数量。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={cleanupOwnFinanceSubmissionsAction}>
-              <ConfirmSubmitButton
-                confirmText={`确认删除你提交的 ${ownSubmissions.records} 条记账 + ${ownSubmissions.reports} 条报销？此操作不可撤销，但员工的记录不会被动。`}
-                variant="destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                清理我提交的全部记账 + 报销
-              </ConfirmSubmitButton>
-            </form>
-          </CardContent>
-        </Card>
-      ) : null}
     </>
   );
 }

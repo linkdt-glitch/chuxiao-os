@@ -280,11 +280,12 @@ export function expenseStatusTone(status: ExpenseStatus) {
 // ──────────────────────────────────────────────────────────────────
 // 缓存：部门 / 报销类目 / 审批规则 都是 admin 偶尔改一次，但每次报销页都要拉。
 // 缓存 5 分钟，命中后 0ms 返回；mutation 后通过 revalidateTag 立即失效。
+// 失败时抛错让上层 fallback 到 server client，绝不让表单类目下拉变空。
 // ──────────────────────────────────────────────────────────────────
 const _getDepartmentsByOrg = unstable_cache(
   async (orgId: string): Promise<Department[]> => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return [];
+    if (!admin) throw new Error("admin_client_unavailable");
     const { data, error } = await admin
       .from("departments")
       .select("*")
@@ -305,13 +306,30 @@ export async function getDepartments() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as Department[];
-  return _getDepartmentsByOrg(organization.id);
+
+  try {
+    return await _getDepartmentsByOrg(organization.id);
+  } catch (error) {
+    console.warn("[getDepartments] cached path failed, falling back:", error);
+    const { data, error: queryError } = await supabase
+      .from("departments")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .eq("is_active", true)
+      .order("name");
+    if (queryError) {
+      if (isMissingTable(queryError)) return [] as Department[];
+      console.error("[getDepartments] fallback also failed:", queryError);
+      return [] as Department[];
+    }
+    return (data ?? []) as Department[];
+  }
 }
 
 const _getExpenseCategoriesByOrg = unstable_cache(
   async (orgId: string): Promise<FinanceCategory[]> => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return [];
+    if (!admin) throw new Error("admin_client_unavailable");
     const { data, error } = await admin
       .from("finance_categories")
       .select("*")
@@ -334,13 +352,31 @@ export async function getExpenseCategories() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as FinanceCategory[];
-  return _getExpenseCategoriesByOrg(organization.id);
+
+  try {
+    return await _getExpenseCategoriesByOrg(organization.id);
+  } catch (error) {
+    console.warn("[getExpenseCategories] cached path failed, falling back:", error);
+    const { data, error: queryError } = await supabase
+      .from("finance_categories")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .eq("is_active", true)
+      .eq("expense_enabled", true)
+      .order("sort_order");
+    if (queryError) {
+      if (isMissingTable(queryError)) return [] as FinanceCategory[];
+      console.error("[getExpenseCategories] fallback also failed:", queryError);
+      return [] as FinanceCategory[];
+    }
+    return (data ?? []) as FinanceCategory[];
+  }
 }
 
 const _getExpenseApprovalRulesByOrg = unstable_cache(
   async (orgId: string): Promise<ExpenseApprovalRule[]> => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return [];
+    if (!admin) throw new Error("admin_client_unavailable");
     const { data, error } = await admin
       .from("finance_expense_approval_rules")
       .select("*")
@@ -361,7 +397,24 @@ export async function getExpenseApprovalRules() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return [] as ExpenseApprovalRule[];
-  return _getExpenseApprovalRulesByOrg(organization.id);
+
+  try {
+    return await _getExpenseApprovalRulesByOrg(organization.id);
+  } catch (error) {
+    console.warn("[getExpenseApprovalRules] cached path failed, falling back:", error);
+    const { data, error: queryError } = await supabase
+      .from("finance_expense_approval_rules")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .eq("is_active", true)
+      .order("min_amount", { ascending: true });
+    if (queryError) {
+      if (isMissingTable(queryError)) return [] as ExpenseApprovalRule[];
+      console.error("[getExpenseApprovalRules] fallback also failed:", queryError);
+      return [] as ExpenseApprovalRule[];
+    }
+    return (data ?? []).map((row) => normalizeRule(row as Record<string, unknown>));
+  }
 }
 
 export async function getDepartmentBudgets(budgetMonth?: string) {

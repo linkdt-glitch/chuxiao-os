@@ -16,10 +16,11 @@ export const demoFinanceAccounts: FinanceAccount[] = [
 
 // 账户清单和类目一样：改动极少（owner 一次性建好），但几乎每个财务页都要读。
 // 缓存 5 分钟省下每次 ~150-200ms 的 Render→Supabase 往返。
+// 失败时抛错（不缓存 null）让上层 fallback 到 server client，确保表单永远有账户可选。
 const _getFinanceAccountsByOrg = unstable_cache(
   async (orgId: string): Promise<FinanceAccount[]> => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return [];
+    if (!admin) throw new Error("admin_client_unavailable");
     const { data, error } = await admin
       .from("finance_accounts")
       .select("*")
@@ -36,7 +37,22 @@ export async function getFinanceAccounts() {
   const organization = await getCurrentOrganization();
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoFinanceAccounts;
-  return _getFinanceAccountsByOrg(organization.id);
+
+  try {
+    return await _getFinanceAccountsByOrg(organization.id);
+  } catch (error) {
+    console.warn("[getFinanceAccounts] cached path failed, falling back:", error);
+    const { data, error: queryError } = await supabase
+      .from("finance_accounts")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .order("created_at");
+    if (queryError) {
+      console.error("[getFinanceAccounts] fallback also failed:", queryError);
+      return [];
+    }
+    return (data ?? []) as FinanceAccount[];
+  }
 }
 
 export async function createFinanceAccount(input: {

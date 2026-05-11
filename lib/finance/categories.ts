@@ -54,20 +54,39 @@ export async function ensureMinimal6FinanceCategories(organizationId: string) {
   const admin = createSupabaseAdminClient();
   if (!admin) return; // 没有 service role key（本地 demo 模式）→ 直接跳过
 
-  // 检查标记：只要 6 个新 code 任意一个已存在，就认为已经迁移过
-  const { data: marker, error: markerError } = await admin
+  // 检查 6 大类是否已存在
+  const { data: existing, error: markerError } = await admin
     .from("finance_categories")
-    .select("id")
+    .select("id, code, expense_enabled, is_active")
     .eq("organization_id", organizationId)
-    .in("code", Array.from(MINIMAL_6_CODES))
-    .limit(1);
+    .in("code", Array.from(MINIMAL_6_CODES));
 
   if (markerError) {
     // 表/字段不存在等 schema 问题 → 静默放过，不要拖死页面加载
     console.warn("[ensureMinimal6FinanceCategories] marker check failed:", markerError.message);
     return;
   }
-  if (marker && marker.length > 0) return; // 已经是 6 大类，无需操作
+
+  // ⚠️ 修复历史 bug：之前的迁移漏了 expense_enabled=true，导致 6 大类全部
+  // 不能在「新建报销」表单中被选中（getExpenseCategories 过滤 expense_enabled=true）。
+  // 此处兜底：发现已迁移但 expense_enabled=false 的，立即 UPDATE 修复。
+  if (existing && existing.length > 0) {
+    const needsFix = existing.some((c) => !c.expense_enabled || !c.is_active);
+    if (needsFix) {
+      const { error: fixError } = await admin
+        .from("finance_categories")
+        .update({ expense_enabled: true, is_active: true })
+        .eq("organization_id", organizationId)
+        .in("code", Array.from(MINIMAL_6_CODES));
+      if (fixError) {
+        console.warn("[ensureMinimal6FinanceCategories] fix expense_enabled failed:", fixError.message);
+      } else {
+        console.log("[ensureMinimal6FinanceCategories] fixed expense_enabled on existing 6 categories");
+        revalidateTag("finance_categories");
+      }
+    }
+    return; // 已迁移过（不论是否需要修复），不再删旧重建
+  }
 
   // 旧类目还在 → 全删后插入 6 大类
   const { error: deleteError } = await admin
@@ -88,6 +107,8 @@ export async function ensureMinimal6FinanceCategories(organizationId: string) {
       description: c.description,
       is_system: true,
       is_active: true,
+      // ⭐ 关键字段：必须 = true，否则报销表单的类目下拉为空，整个报销功能瘫痪
+      expense_enabled: true,
       sort_order: c.sort_order
     }))
   );
@@ -143,11 +164,15 @@ function nestCategories(categories: FinanceCategory[]) {
  *   - 安全：getFinanceCategories 入口已经 await getCurrentOrganization() 做了用户鉴权
  *   - 拉 active=true 的所有类目（无 type 过滤），过滤逻辑放到 caller 内存里做，
  *     避免 type 不同造成多份缓存（owner / member 同时打开各拉一份就浪费）
+ *   - 失败时抛错（不返回 [] 避免污染缓存），上层 fallback 到 server client 直查
  */
 const _getActiveFinanceCategoriesByOrg = unstable_cache(
   async (orgId: string): Promise<FinanceCategory[]> => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return [];
+    if (!admin) {
+      // 不缓存这种 null 结果，抛错让上层 fallback
+      throw new Error("admin_client_unavailable");
+    }
     const { data, error } = await admin
       .from("finance_categories")
       .select("*")
@@ -166,8 +191,26 @@ export async function getFinanceCategories(type?: FinanceCategoryType | "all") {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return demoFinanceCategories;
 
-  // 命中缓存就是 0ms 的内存返回；缓存 miss 走一次 admin 客户端
-  const all = await _getActiveFinanceCategoriesByOrg(organization.id);
+  // 优先走缓存路径（admin client + 5 分钟缓存）
+  // Fallback：缓存层抛错（service role key 缺失 / DB 临时故障）→ 直接用
+  //          server client 查一次（带 RLS，慢但保证有数据，绝不让前端类目空）
+  let all: FinanceCategory[];
+  try {
+    all = await _getActiveFinanceCategoriesByOrg(organization.id);
+  } catch (error) {
+    console.warn("[getFinanceCategories] cached path failed, falling back to server client:", error);
+    const { data, error: queryError } = await supabase
+      .from("finance_categories")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .eq("is_active", true)
+      .order("sort_order");
+    if (queryError) {
+      console.error("[getFinanceCategories] fallback query also failed:", queryError);
+      return [];
+    }
+    all = (data ?? []) as FinanceCategory[];
+  }
 
   // 过滤 type 在内存里做（不同 type 共享同一份缓存）
   const filtered = type && type !== "all"

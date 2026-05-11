@@ -79,40 +79,47 @@ export const STANDARD_CHAT_MODEL: ModelCatalogEntry = {
 };
 
 /**
- * 极速短任务 —— 一句话记账、AI 解析、自动归类。
+ * 极速短任务 + 票据 OCR 通吃 —— 升级到 Qwen3-VL-32B-Instruct。
  *
- *   首字节 < 300ms，单次成本 < 1 分钱，绝不阻塞用户。
- *   这一档不要追求多聪明，要追求「快+稳」。
+ *   原 Qwen2.5-7B 只支持文本，VISION 单独走 VL-7B；
+ *   新 Qwen3-VL-32B 同时支持文本 + 视觉，且：
+ *     - 输入价 ¥0.2/M（比 7B 的 ¥0.35 更便宜 40%）
+ *     - 输出价 ¥0.6/M（输出短，差距不大）
+ *     - 参数量 32B（7B 的 4.5×，中文票据识别精度大幅提升）
+ *     - Qwen3 新架构，对结构化 JSON 输出更稳
+ *
+ *   净结果：单次成本基本持平甚至更便宜，但智能提升明显。
+ *   FAST_PARSE 和 VISION 共用同一模型，简化路由、统一定价。
  */
 export const FAST_PARSE_MODEL: ModelCatalogEntry = {
-  id: "Qwen/Qwen2.5-7B-Instruct",
-  label: "Qwen2.5-7B",
+  id: "Qwen/Qwen3-VL-32B-Instruct",
+  label: "Qwen3-VL-32B",
   tier: "fast",
-  vendor: "通义千问 · 7B",
-  description: "极速短任务，首字节 < 300ms，单次约 1 分钱。",
-  inputPriceCnyPerMillion: 0.35,
-  outputPriceCnyPerMillion: 0.35,
-  contextWindowK: 32,
-  approxCostPerTurnCny: 0.001,
+  vendor: "通义千问 · 32B 视觉文本通用",
+  description: "新一代 32B 多模态，文本 + 图片通吃。输入比 7B 还便宜，准确率提升明显。",
+  inputPriceCnyPerMillion: 0.2,
+  outputPriceCnyPerMillion: 0.6,
+  contextWindowK: 128,
+  approxCostPerTurnCny: 0.0002,
   recommendedFor: "AI 记账解析、字段抽取、自动归类"
 };
 
 /**
  * 视觉理解 —— 拍照记账、票据 OCR、图片识别。
  *
- *   Qwen2.5-VL-7B 比 72B 快 5-10×，识别票据、商品、表格足够，
- *   单次成本极低，适合高频拍照场景。
+ *   跟 FAST_PARSE 用同一个 Qwen3-VL-32B，统一定价 + 简化运维。
+ *   独立 catalog 条目方便后续按模块切换（比如想让 OCR 走更贵的 72B 提高精度）。
  */
 export const VISION_MODEL: ModelCatalogEntry = {
-  id: "Qwen/Qwen2.5-VL-7B-Instruct",
-  label: "Qwen2.5-VL-7B",
+  id: "Qwen/Qwen3-VL-32B-Instruct",
+  label: "Qwen3-VL-32B",
   tier: "vision",
-  vendor: "通义千问 · 7B 多模态",
-  description: "拍照识别票据 / 截图，比 72B 快 5-10×，单次约 5 厘钱。",
-  inputPriceCnyPerMillion: 0.35,
-  outputPriceCnyPerMillion: 0.35,
-  contextWindowK: 32,
-  approxCostPerTurnCny: 0.005,
+  vendor: "通义千问 · 32B 多模态",
+  description: "拍照识别票据 / 截图，32B 模型对中文 OCR + 表格提取明显比 7B 准。",
+  inputPriceCnyPerMillion: 0.2,
+  outputPriceCnyPerMillion: 0.6,
+  contextWindowK: 128,
+  approxCostPerTurnCny: 0.0005,
   recommendedFor: "拍照记账、票据 OCR、图片识别"
 };
 

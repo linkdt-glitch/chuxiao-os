@@ -319,10 +319,10 @@ function numberEnv(key: string, fallback: number) {
 /**
  * SiliconFlow 推荐模型组合（2026 最新最优，按用途 + 角色分）
  *
- *   FAST    Qwen/Qwen2.5-7B-Instruct        极速短任务（一句话记账解析）首字节 <300ms
+ *   FAST    Qwen/Qwen3-VL-32B-Instruct      文本解析 + 视觉 OCR 通吃，32B 更准更便宜
  *   CHAT    deepseek-ai/DeepSeek-V3.1       员工日常对话，性价比之王
  *   FOUNDER deepseek-ai/DeepSeek-R1         🧠 创始人专属，671B 顶级推理（对标 o1）
- *   VISION  Qwen/Qwen2.5-VL-7B-Instruct     拍照识别票据，比 72B 快 5-10×
+ *   VISION  Qwen/Qwen3-VL-32B-Instruct      与 FAST 共用同一个 32B VL 模型，简化运维
  *   DEFAULT deepseek-ai/DeepSeek-V3.1       通用 fallback
  *
  * 模型 id + 价格的单一来源在 lib/ai/models-catalog.ts 里。

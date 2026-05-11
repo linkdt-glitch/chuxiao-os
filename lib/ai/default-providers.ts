@@ -54,8 +54,8 @@ const defaultAIProviders = [
       // 实际模型由代码按 module + 角色挑：
       //   owner + ai_chat       → deepseek-ai/DeepSeek-R1     (顶级推理)
       //   非 owner + ai_chat    → deepseek-ai/DeepSeek-V3.1   (平衡)
-      //   finance.ai_parse.*    → Qwen/Qwen2.5-7B-Instruct    (极速)
-      //   带图片                → Qwen/Qwen2.5-VL-7B-Instruct (视觉)
+      //   finance.ai_parse.*    → Qwen/Qwen3-VL-32B-Instruct  (32B 文本+视觉通吃)
+      //   带图片                → Qwen/Qwen3-VL-32B-Instruct  (同上)
       role_routing: "founder→deepseek-r1; staff→deepseek-v3.1"
     }
   }

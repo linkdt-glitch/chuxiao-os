@@ -2,6 +2,7 @@ import { AIBookkeepingForm } from "@/components/finance/ai-bookkeeping-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { getFinanceAccounts } from "@/lib/finance/accounts";
 import { getFinanceCategories } from "@/lib/finance/categories";
+import { canRecordCompanyExpense } from "@/lib/finance/permissions";
 
 export default async function AIBookkeepingPage({
   searchParams
@@ -10,7 +11,11 @@ export default async function AIBookkeepingPage({
 }) {
   const params = (await searchParams) ?? {};
   const isReimbursement = params.intent === "reimbursement";
-  const [categories, accounts] = await Promise.all([getFinanceCategories("all"), getFinanceAccounts()]);
+  const [categories, accounts, canRecordExpense] = await Promise.all([
+    getFinanceCategories("all"),
+    getFinanceAccounts(),
+    canRecordCompanyExpense()
+  ]);
 
   return (
     <>
@@ -22,7 +27,7 @@ export default async function AIBookkeepingPage({
             : "支持一句话、手机语音和票据拍照识别。AI 只生成草稿，必须人工确认后才会创建财务记录。"
         }
       />
-      <AIBookkeepingForm categories={categories} accounts={accounts} />
+      <AIBookkeepingForm categories={categories} accounts={accounts} canRecordExpense={canRecordExpense} />
     </>
   );
 }

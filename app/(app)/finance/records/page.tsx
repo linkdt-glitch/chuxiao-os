@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getFinanceCategories } from "@/lib/finance/categories";
-import { canApproveFinance } from "@/lib/finance/permissions";
+import { canApproveFinance, canRecordCompanyExpense } from "@/lib/finance/permissions";
 import { getFinanceRecords } from "@/lib/finance/records";
 import type { FinanceRecordStatus, FinanceRecordType } from "@/lib/finance/types";
 
@@ -22,7 +22,7 @@ function money(value: number) {
 
 export default async function FinanceRecordsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
-  const [records, categories, canApprove] = await Promise.all([
+  const [records, categories, canApprove, canRecordExpense] = await Promise.all([
     getFinanceRecords({
       record_type: (params.type ?? "all") as FinanceRecordType | "all",
       status: (params.status ?? "all") as FinanceRecordStatus | "all",
@@ -31,8 +31,11 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
       category_id: params.category_id
     }),
     getFinanceCategories("all"),
-    canApproveFinance()
+    canApproveFinance(),
+    canRecordCompanyExpense()
   ]);
+  // 非特权用户：从类目筛选下拉也过滤掉「支出」类目
+  const visibleCategories = canRecordExpense ? categories : categories.filter((c) => c.type !== "expense");
   const booked = records.filter((record) => ["approved", "paid"].includes(record.status));
   const income = booked.filter((record) => record.record_type === "income").reduce((sum, record) => sum + Number(record.amount), 0);
   const expense = booked.filter((record) => ["expense", "reimbursement"].includes(record.record_type)).reduce((sum, record) => sum + Number(record.amount), 0);
@@ -125,7 +128,7 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
             <select name="type" defaultValue={params.type ?? "all"} className="h-11 rounded-xl border border-slate-200/80 bg-white/75 px-3 text-base shadow-sm sm:text-sm xl:h-10">
               <option value="all">全部类型</option>
               <option value="income">收入</option>
-              <option value="expense">支出</option>
+              {canRecordExpense ? <option value="expense">支出</option> : null}
               <option value="reimbursement">报销</option>
             </select>
             <select name="status" defaultValue={params.status ?? "all"} className="h-11 rounded-xl border border-slate-200/80 bg-white/75 px-3 text-base shadow-sm sm:text-sm xl:h-10">
@@ -140,7 +143,7 @@ export default async function FinanceRecordsPage({ searchParams }: { searchParam
             <Input name="date_to" type="date" defaultValue={params.date_to ?? ""} className="h-11 rounded-xl bg-white/75 text-base sm:text-sm xl:h-10" />
             <select name="category_id" defaultValue={params.category_id ?? ""} className="h-11 rounded-xl border border-slate-200/80 bg-white/75 px-3 text-base shadow-sm sm:text-sm xl:h-10">
               <option value="">全部类目</option>
-              {categories.map((category) => (
+              {visibleCategories.map((category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
               ))}
             </select>

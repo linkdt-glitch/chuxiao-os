@@ -8,11 +8,12 @@ import type { FinanceRecord } from "@/lib/finance/types";
 
 // 成员列表 + 角色 缓存：admin 偶尔邀请一次新人，但 (app) 布局每页都要读（创始人尤甚）。
 // 5 分钟 TTL，邀请 / 移除成员时通过 revalidateTag("members") 失效。
+// 失败时抛错（不缓存 null）让上层 fallback 到 server client。
 const _getMembersWithRolesByOrg = unstable_cache(
   async (orgId: string) => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return null;
-    const [{ data: members }, { data: roles }] = await Promise.all([
+    if (!admin) throw new Error("admin_client_unavailable");
+    const [{ data: members, error: mErr }, { data: roles, error: rErr }] = await Promise.all([
       admin
         .from("organization_members")
         .select("*")
@@ -23,6 +24,8 @@ const _getMembersWithRolesByOrg = unstable_cache(
         .select("*")
         .eq("organization_id", orgId)
     ]);
+    if (mErr) throw mErr;
+    if (rErr) throw rErr;
     const rolesById = new Map((roles ?? []).map((r) => [r.id, r]));
     return (members ?? []).map((item) => ({
       ...item,
@@ -132,9 +135,34 @@ export async function getMembers() {
   const supabase = await createSupabaseServerClient();
   const organization = await getCurrentOrganization();
   if (!supabase) return demoMembers;
-  const cached = await _getMembersWithRolesByOrg(organization.id);
-  if (cached === null) return demoMembers;
-  return cached;
+
+  try {
+    const cached = await _getMembersWithRolesByOrg(organization.id);
+    if (cached === null) return demoMembers;
+    return cached;
+  } catch (error) {
+    console.warn("[getMembers] cached path failed, falling back:", error);
+    const [{ data: members, error: membersError }, { data: roles }] = await Promise.all([
+      supabase
+        .from("organization_members")
+        .select("*")
+        .eq("organization_id", organization.id)
+        .order("created_at"),
+      supabase
+        .from("roles")
+        .select("*")
+        .eq("organization_id", organization.id)
+    ]);
+    if (membersError) {
+      console.error("[getMembers] fallback also failed:", membersError.message);
+      return demoMembers;
+    }
+    const rolesById = new Map((roles ?? []).map((r) => [r.id, r]));
+    return (members ?? []).map((item) => ({
+      ...item,
+      role: rolesById.get(item.role_id) ?? null
+    }));
+  }
 }
 
 export async function getRolesAndPermissions() {

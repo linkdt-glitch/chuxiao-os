@@ -7,14 +7,16 @@ import { getRolePermissionKeys } from "@/lib/permissions";
 
 // 缓存「这个组织开了哪些模块」—— admin 偶尔切一次开关，但 (app) 布局每次切页面都要读。
 // 1 小时 TTL，admin 切换时通过 revalidateTag("organization_modules") 立即失效。
+// 失败时抛错（不缓存 null），上层 fallback 到 server client 直查
 const _getOrgModulesRaw = unstable_cache(
   async (orgId: string) => {
     const admin = createSupabaseAdminClient();
-    if (!admin) return null;
-    const { data } = await admin
+    if (!admin) throw new Error("admin_client_unavailable");
+    const { data, error } = await admin
       .from("organization_modules")
       .select("is_enabled, modules(*)")
       .eq("organization_id", orgId);
+    if (error) throw error;
     return data ?? [];
   },
   ["organization_modules_raw"],
@@ -58,8 +60,18 @@ export async function getNavigationModules() {
   let modules = demoModules;
 
   if (supabase) {
-    // 从缓存读 —— 命中后是 0ms 内存返回，省 100-200ms DB 往返
-    const data = await _getOrgModulesRaw(organization.id);
+    // 优先用缓存（admin client）；失败 fallback 到 server client 直查
+    let data: Array<{ is_enabled: boolean; modules: unknown }> | null = null;
+    try {
+      data = await _getOrgModulesRaw(organization.id) as typeof data;
+    } catch (error) {
+      console.warn("[getNavigationModules] cached path failed, fallback:", error);
+      const { data: fallbackData } = await supabase
+        .from("organization_modules")
+        .select("is_enabled, modules(*)")
+        .eq("organization_id", organization.id);
+      data = fallbackData as typeof data;
+    }
 
     if (data?.length) {
       modules = data

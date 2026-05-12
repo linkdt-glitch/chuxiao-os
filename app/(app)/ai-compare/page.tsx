@@ -10,12 +10,14 @@ import { getCurrentMember } from "@/lib/auth";
  */
 export default async function AICompare() {
   const member = await getCurrentMember();
-  const roleKey = (() => {
-    const role = (member as { role?: unknown }).role;
-    if (!role) return "";
-    if (Array.isArray(role)) return (role[0] as { key?: string } | undefined)?.key ?? "";
-    return (role as { key?: string }).key ?? "";
-  })();
+  const roleObj: unknown = (member as { role?: unknown }).role;
+  let roleKey = "";
+  if (Array.isArray(roleObj)) {
+    const first = roleObj[0] as { key?: string } | undefined;
+    roleKey = first?.key ?? "";
+  } else if (roleObj && typeof roleObj === "object" && "key" in roleObj) {
+    roleKey = (roleObj as { key?: string }).key ?? "";
+  }
 
   if (roleKey !== "owner" && roleKey !== "admin") {
     redirect("/dashboard");

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentMember } from "@/lib/auth";
 import { compareDualModels } from "@/lib/ai/openrouter";
 
@@ -10,15 +10,17 @@ import { compareDualModels } from "@/lib/ai/openrouter";
  *
  * 鉴权：必须是 owner / admin，其他角色 403。
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   // 鉴权
   const member = await getCurrentMember();
-  const roleKey = (() => {
-    const role = (member as { role?: unknown }).role;
-    if (!role) return "";
-    if (Array.isArray(role)) return (role[0] as { key?: string } | undefined)?.key ?? "";
-    return (role as { key?: string }).key ?? "";
-  })();
+  const roleObj: unknown = (member as { role?: unknown }).role;
+  let roleKey = "";
+  if (Array.isArray(roleObj)) {
+    const first = roleObj[0] as { key?: string } | undefined;
+    roleKey = first?.key ?? "";
+  } else if (roleObj && typeof roleObj === "object" && "key" in roleObj) {
+    roleKey = (roleObj as { key?: string }).key ?? "";
+  }
 
   if (roleKey !== "owner" && roleKey !== "admin") {
     return NextResponse.json(
@@ -27,9 +29,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { prompt?: string; systemPrompt?: string };
+  // 用 default 初始化避免 TS 严格模式 "used before assigned" 警告
+  let body: { prompt?: string; systemPrompt?: string } = {};
   try {
-    body = await request.json();
+    body = (await request.json()) as { prompt?: string; systemPrompt?: string };
   } catch {
     return NextResponse.json({ error: "请求体格式错误。" }, { status: 400 });
   }

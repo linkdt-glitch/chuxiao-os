@@ -85,7 +85,15 @@ export async function callOpenRouter(input: {
           { role: "user", content: input.prompt }
         ],
         // 不开 streaming，简化 UI（对比场景两个一起出比较好对照）
-        stream: false
+        stream: false,
+        // ⭐ 关键：显式声明允许数据收集 + 允许 fallback
+        //   - 顶级模型（Claude/GPT-5）通过 OpenRouter 转售要求允许日志，
+        //     否则直接报「provider Terms Of Service violation」
+        //   - allow_fallbacks: 上游某 endpoint 拒绝时自动换备用 endpoint
+        provider: {
+          data_collection: "allow",
+          allow_fallbacks: true
+        }
       }),
       signal: controller.signal
     });

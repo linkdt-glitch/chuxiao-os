@@ -61,19 +61,21 @@ export async function getNavigationModules() {
 
   if (supabase) {
     // 优先用缓存（admin client）；失败 fallback 到 server client 直查
-    let data: Array<{ is_enabled: boolean; modules: unknown }> | null = null;
+    // 用 unknown[] 作中间类型避开 supabase 返回类型与 narrow 后类型不兼容的强转报错
+    let data: Array<{ is_enabled: boolean; modules: unknown }> = [];
     try {
-      data = await _getOrgModulesRaw(organization.id) as typeof data;
+      const cached = await _getOrgModulesRaw(organization.id);
+      data = (cached ?? []) as unknown as Array<{ is_enabled: boolean; modules: unknown }>;
     } catch (error) {
       console.warn("[getNavigationModules] cached path failed, fallback:", error);
       const { data: fallbackData } = await supabase
         .from("organization_modules")
         .select("is_enabled, modules(*)")
         .eq("organization_id", organization.id);
-      data = fallbackData as typeof data;
+      data = (fallbackData ?? []) as unknown as Array<{ is_enabled: boolean; modules: unknown }>;
     }
 
-    if (data?.length) {
+    if (data.length) {
       modules = data
         .map((item) => ({ ...(item.modules as any), isEnabled: item.is_enabled }))
         .filter((module) => module.id);

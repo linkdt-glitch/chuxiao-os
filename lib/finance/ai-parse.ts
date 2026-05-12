@@ -221,6 +221,18 @@ export async function parseFinanceText(rawText: string, files: File[] = []) {
   const fallback = inferParsedText(fallbackText);
   const rawLogText = fallbackText || "[空白 AI 记账请求]";
 
+  // ⭐ 拉当前组织的实际类目，让 AI 在「真实可选名字」里挑，避免它自己造一个对不上的名字
+  // 平铺一级 + 二级，让 AI 既能选大类也能选细分（系统当前是 6 大类 + 无子类，但保留扩展性）
+  const categories = await getFinanceCategories("all");
+  const flatCategories = categories.flatMap((c) => [c, ...(c.children ?? [])]);
+  const categoryHint = flatCategories.length
+    ? `\n可选类目（category_name 必须严格从下面这份清单里挑一个，不要造新名字、不要意译）：\n${
+        flatCategories
+          .map((c) => `- ${c.name}${c.description ? `：${c.description}` : ""}`)
+          .join("\n")
+      }\n挑选规则：根据用户原文 / 票据内容的核心用途，选最贴近的一个；实在拿不准就选「品牌与其他」类作兜底。`
+    : "";
+
   async function saveParsedResult(parsed: ParsedFinanceRecord, aiInvocationLogId?: string | null) {
     if (!supabase) {
       await emitEvent({ event_key: "finance.ai_parsed", module: "finance", payload: { raw_text: rawLogText, parsed, file_count: fileDescriptions.length } });
@@ -263,7 +275,7 @@ export async function parseFinanceText(rawText: string, files: File[] = []) {
 从企业财务文本或票据中提取一条记账记录。字段：
 record_type(income/expense/reimbursement/transfer/refund/adjustment), amount, currency, occurred_at(YYYY-MM-DD),
 category_name, subcategory_name, account_name, payment_method, counterparty_name, project_name, description, quantity,
-reimbursement_required, need_approval, risk_level(low/medium/high/critical), confidence, missing_fields, notes。
+reimbursement_required, need_approval, risk_level(low/medium/high/critical), confidence, missing_fields, notes。${categoryHint}
 今天日期：${today()}
 用户原文：${normalizedText || "无文字，按票据识别"}
 附件：${fileDescriptions.length ? fileDescriptions.join("；") : "无"}`;
@@ -317,11 +329,37 @@ export async function confirmParsedFinanceRecord(parseLogId: string, input: Fina
   return record;
 }
 
+/**
+ * AI 给的类目名 → DB 类目 id。
+ * 1. 严格名字匹配
+ * 2. 严格不匹配 → 去掉「与/和」等连接词做 fuzzy 匹配
+ *    （例：AI 说「办公差旅」也能匹到「办公与差旅」）
+ * 3. 还不行 → 关键词包含匹配（AI 说「外卖」匹「办公与差旅」描述里的「商务餐饮」）
+ */
+function findCategoryByFuzzyName(
+  candidates: Array<{ id: string; name: string; description?: string }>,
+  aiName: string | undefined
+) {
+  if (!aiName) return undefined;
+  // 1. 严格相等
+  const exact = candidates.find((c) => c.name === aiName);
+  if (exact) return exact;
+  // 2. 去 connector 后比较
+  const normalize = (s: string) => s.replace(/[\s/、，,与和及]/g, "").toLowerCase();
+  const target = normalize(aiName);
+  const norm = candidates.find((c) => normalize(c.name) === target);
+  if (norm) return norm;
+  // 3. 关键词包含（AI name 出现在类目 description 里就算）
+  return candidates.find((c) =>
+    (c.description ?? "").toLowerCase().includes(aiName.toLowerCase())
+  );
+}
+
 export async function mapParsedToInput(parsed: ParsedFinanceRecord): Promise<FinanceRecordInput> {
   const [categories, accounts] = await Promise.all([getFinanceCategories("all"), getFinanceAccounts()]);
   const flattened = categories.flatMap((category) => [category, ...(category.children ?? [])]);
-  const category = flattened.find((item) => item.name === parsed.category_name);
-  const subcategory = flattened.find((item) => item.name === parsed.subcategory_name);
+  const category = findCategoryByFuzzyName(flattened, parsed.category_name);
+  const subcategory = findCategoryByFuzzyName(flattened, parsed.subcategory_name);
   const account = accounts.find((item) => item.name === parsed.account_name);
 
   return {

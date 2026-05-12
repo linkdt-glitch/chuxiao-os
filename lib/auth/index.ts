@@ -97,13 +97,22 @@ export const getCurrentMember = cache(async () => {
     if (!supabase) return demoMembers[0];
     if (!user) return demoMembers[0];
 
+    // ⭐ 关键修复：必须和 SQL 函数 current_member_id() 的过滤条件完全一致！
+    // SQL current_member_id 过滤 member_type='human'。如果 JS 这边不过滤，
+    // 当用户在 organization_members 里有多行（多种 member_type）时，可能返回
+    // 不同的 member.id —— 导致：
+    //   1. INSERT 时 submitted_by = JS member.id
+    //   2. SELECT RLS 检查 submitted_by = SQL current_member_id
+    //   3. 不一致 → SELECT 返回 0 行 → PGRST116 错误 + 员工看不到自己记录
+    // 用 maybeSingle 而不是 single 避免 0 行时抛错（被 catch 后回落 demo 误导）
     const { data } = await supabase
       .from("organization_members")
       .select("*, roles(*)")
       .eq("organization_id", organization.id)
       .eq("user_id", user.id)
       .eq("status", "active")
-      .single();
+      .eq("member_type", "human")
+      .maybeSingle();
 
     if (!data) return demoMembers[0];
     return { ...data, role: data.roles };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, Home } from "lucide-react";
+import { ChevronDown, GitCompare, Home, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ModuleDefinition } from "@/lib/types/core";
@@ -26,7 +26,14 @@ function readCollapsed(): string[] {
   }
 }
 
-export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAccess?: boolean; isEnabled?: boolean }> }) {
+export function Sidebar({
+  modules,
+  isOwner = false
+}: {
+  modules: Array<ModuleDefinition & { canAccess?: boolean; isEnabled?: boolean }>;
+  /** 创始人专属功能（AI 对比室等）的展示开关 */
+  isOwner?: boolean;
+}) {
   const pathname = usePathname();
   const byKey = new Map(modules.map((m) => [m.key, m]));
 
@@ -149,6 +156,9 @@ export function Sidebar({ modules }: { modules: Array<ModuleDefinition & { canAc
         <div className="flex-1 p-3">
         {/* 首页 — 所有人可见，永远在最顶部 */}
         <HomeNavLink pathname={pathname} />
+
+        {/* 创始人专属功能 —— 只对 owner 显示，放在首页之后最醒目位置 */}
+        {isOwner ? <FounderOnlyNav pathname={pathname} /> : null}
 
         {sections.map((section) =>
           section.modules.length ? (
@@ -326,6 +336,56 @@ function HomeNavLink({ pathname }: { pathname: string }) {
             )}
           />
           <span className="relative z-10 min-w-0 flex-1 truncate font-medium">首页</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * 创始人专属导航 —— 只对 owner 渲染。
+ * 当前包含：AI 双模型对比（Claude 4.5 + GPT-5 并排）。
+ * 设计意图：把「需要创始人级判断的工具」单独成组，跟员工版业务模块区分开。
+ */
+function FounderOnlyNav({ pathname }: { pathname: string }) {
+  const active = pathname === "/ai-compare" || pathname.startsWith("/ai-compare/");
+  return (
+    <div className="mb-4">
+      <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-600/70">
+        创始人专属
+      </div>
+      <Link href="/ai-compare">
+        <div
+          className={cn(
+            "group relative flex min-h-[2.4rem] items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm transition-all duration-200",
+            active ? "text-orange-700 font-medium" : "text-slate-700"
+          )}
+          style={
+            active
+              ? {
+                  background: "rgba(249,115,22,0.10)",
+                  borderLeft: "2px solid rgba(249,115,22,0.85)"
+                }
+              : { borderLeft: "2px solid transparent" }
+          }
+        >
+          {!active && (
+            <span
+              className="pointer-events-none absolute inset-0 rounded-md opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              style={{ background: "rgba(249,115,22,0.06)" }}
+            />
+          )}
+          <GitCompare
+            className={cn(
+              "relative z-10 h-4 w-4 shrink-0 transition-colors",
+              active ? "text-orange-600" : "text-slate-500 group-hover:text-slate-700"
+            )}
+          />
+          <div className="relative z-10 min-w-0 flex-1">
+            <div className="truncate font-medium">AI 双模型对比</div>
+            <div className="truncate text-[10px] text-muted-foreground">Claude 4.5 + GPT-5 并排</div>
+          </div>
+          <Sparkles className="relative z-10 h-3 w-3 shrink-0 text-amber-500" />
         </div>
       </Link>
     </div>

@@ -74,7 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
-      <Sidebar modules={modules} />
+      <Sidebar modules={modules} isOwner={isOwner} />
       <div className="lg:pl-72">
         <Topbar
           organization={organization}

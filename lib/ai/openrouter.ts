@@ -101,10 +101,26 @@ export async function callOpenRouter(input: {
     const payload = (await response.json().catch(() => ({}))) as {
       choices?: Array<{ message?: { content?: string } }>;
       usage?: { prompt_tokens?: number; completion_tokens?: number };
-      error?: { message?: string };
+      error?: { message?: string; code?: number | string; metadata?: unknown; type?: string };
     };
 
     if (!response.ok) {
+      // 详细日志（Render Logs 可看），帮快速定位「ToS violation」之类的真因
+      console.error("[openrouter] non-OK response", {
+        model: input.modelId,
+        status: response.status,
+        error_code: payload.error?.code,
+        error_type: payload.error?.type,
+        error_message: payload.error?.message,
+        error_metadata: payload.error?.metadata
+      });
+      // UI 上把 error code + metadata 也带上，方便用户截图给我精确定位
+      const baseMsg = payload.error?.message ?? `请求失败 HTTP ${response.status}`;
+      const codeStr = payload.error?.code ? ` [code=${payload.error.code}]` : "";
+      const typeStr = payload.error?.type ? ` [type=${payload.error.type}]` : "";
+      const metaStr = payload.error?.metadata
+        ? ` | metadata: ${JSON.stringify(payload.error.metadata).slice(0, 200)}`
+        : "";
       return {
         modelId: input.modelId,
         modelLabel: modelLabel(input.modelId),
@@ -113,7 +129,7 @@ export async function callOpenRouter(input: {
         outputTokens: 0,
         costCny: 0,
         durationMs: Date.now() - startTime,
-        error: payload.error?.message ?? `请求失败 HTTP ${response.status}`
+        error: `${baseMsg}${codeStr}${typeStr}${metaStr}`
       };
     }
 

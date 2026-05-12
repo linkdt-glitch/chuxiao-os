@@ -280,25 +280,55 @@ reimbursement_required, need_approval, risk_level(low/medium/high/critical), con
 用户原文：${normalizedText || "无文字，按票据识别"}
 附件：${fileDescriptions.length ? fileDescriptions.join("；") : "无"}`;
 
-  const ai = images.length
-    ? await invokeAIWithImages({
-      module: "finance.ai_parse.vision",
-      prompt,
-      images,
-      responseFormat: "json",
-      maxTokens: 650,
-      timeoutMs: Number(process.env.FINANCE_AI_VISION_TIMEOUT_MS || 12_000)
-    })
-    : await invokeAI({
-      module: "finance.ai_parse.text",
-      prompt,
-      responseFormat: "json",
-      maxTokens: 420,
-      timeoutMs: Number(process.env.FINANCE_AI_PARSE_TIMEOUT_MS || 6_500)
+  // AI 调用 + graceful fallback：
+  // - 调用成功 → 用 AI 结果
+  // - 调用失败（超时 / API key 错 / 网络挂等）→ 不抛错，回落到本地规则解析的草稿
+  //   用户依然能看到一个可编辑的草稿（金额 / 描述等本地能抽到的字段），手动补类目即可
+  //   并把真实错误打到 Render Logs，方便定位 API key / 余额 / 超时等问题
+  try {
+    const ai = images.length
+      ? await invokeAIWithImages({
+        module: "finance.ai_parse.vision",
+        prompt,
+        images,
+        responseFormat: "json",
+        maxTokens: 650,
+        timeoutMs: Number(process.env.FINANCE_AI_VISION_TIMEOUT_MS || 12_000)
+      })
+      : await invokeAI({
+        module: "finance.ai_parse.text",
+        prompt,
+        responseFormat: "json",
+        maxTokens: 420,
+        timeoutMs: Number(process.env.FINANCE_AI_PARSE_TIMEOUT_MS || 6_500)
+      });
+    const modelJson = extractJsonObject(ai.text);
+    const parsed = normalizeParsedResult(modelJson, fallback);
+    return saveParsedResult(parsed, ai.invocationLogId ?? null);
+  } catch (aiError) {
+    // AI 调用本身挂了（不是 JSON 解析），打详细日志 + 用本地草稿兜底
+    console.error("[parseFinanceText] AI invocation failed, falling back to local rules:", {
+      error_name: aiError instanceof Error ? aiError.name : typeof aiError,
+      error_message: aiError instanceof Error ? aiError.message : String(aiError),
+      has_images: images.length > 0,
+      prompt_length: prompt.length,
+      text_length: normalizedText.length
     });
-  const modelJson = extractJsonObject(ai.text);
-  const parsed = normalizeParsedResult(modelJson, fallback);
-  return saveParsedResult(parsed, ai.invocationLogId ?? null);
+    return saveParsedResult(
+      {
+        ...fallback,
+        notes: [
+          fallback.notes,
+          `⚠️ AI 服务暂时不可用，已用本地规则生成草稿，请手动检查并完善字段（特别是类目）。原因：${
+            aiError instanceof Error ? aiError.message : "未知错误"
+          }`
+        ]
+          .filter(Boolean)
+          .join(" ")
+      },
+      null
+    );
+  }
 }
 
 export async function confirmParsedFinanceRecord(parseLogId: string, input: FinanceRecordInput) {

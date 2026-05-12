@@ -483,7 +483,8 @@ function ModelCatalogCard({ model }: { model: ModelCatalogEntry }) {
     founder: "创始人专属",
     standard: "员工日常",
     fast: "极速 / 解析",
-    vision: "图像识别"
+    vision: "图像识别",
+    compare: "双模型对比"
   }[model.tier];
 
   return (

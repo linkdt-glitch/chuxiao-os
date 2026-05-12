@@ -73,8 +73,10 @@ export async function callOpenRouter(input: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         // OpenRouter 推荐设置这两个 header（用于他们的 leaderboard 统计）
+        // ⚠️ HTTP header 只允许 ASCII / Latin-1（ByteString），不能塞中文
+        // 否则浏览器/Node fetch 在发请求前会本地报错 "character > 255"
         "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://m0f.com",
-        "X-Title": "初晓 OS 双模型对比"
+        "X-Title": "Chuxiao OS - Dual Model Compare"
       },
       body: JSON.stringify({
         model: input.modelId,

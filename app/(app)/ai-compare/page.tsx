@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { GitCompare } from "lucide-react";
 import { CompareAIPanel } from "@/components/ai/compare-ai-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentMember } from "@/lib/auth";

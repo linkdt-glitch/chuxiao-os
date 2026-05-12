@@ -57,6 +57,11 @@ services:
         value: deepseek-ai/DeepSeek-V3.1
       - key: SILICONFLOW_VISION_MODEL
         value: Qwen/Qwen2.5-VL-7B-Instruct
+      # OpenRouter —— 创始人「双模型对比」功能（/ai-compare 页面）专用。
+      # 调用 anthropic/claude-sonnet-4.5 + openai/gpt-5 并排对比。
+      # 到 https://openrouter.ai/keys 创建 API key（先充值 $5-10 起步），填到 Render Dashboard。
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: AI_DEFAULT_TIMEOUT_MS
         value: "20000"
       - key: AI_CHAT_TIMEOUT_MS

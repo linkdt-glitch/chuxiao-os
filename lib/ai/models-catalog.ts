@@ -11,7 +11,7 @@
  * 一次「正常对话」≈ 800 tokens 输入 + 600 tokens 输出（含历史上下文）
  * 一次「AI 记账解析」≈ 200 tokens 输入 + 150 tokens 输出
  */
-export type ModelTier = "founder" | "standard" | "fast" | "vision";
+export type ModelTier = "founder" | "standard" | "fast" | "vision" | "compare";
 
 export type ModelCatalogEntry = {
   id: string; // SiliconFlow / DeepSeek model id
@@ -123,11 +123,56 @@ export const VISION_MODEL: ModelCatalogEntry = {
   recommendedFor: "拍照记账、票据 OCR、图片识别"
 };
 
+/**
+ * 创始人 AI 对比室 —— OpenRouter 接的国际顶级两个大模型。
+ *
+ *   1. Claude Sonnet 4.5（Anthropic 当前最强）—— 长上下文 / 推理 / 写作俱佳
+ *   2. GPT-5（OpenAI 当前旗舰）—— 多模态 / 工具调用 / 创意俱佳
+ *
+ *   创始人在做关键决策（合同 / 战略 / 招聘评估）时，可以同时问两个模型，
+ *   并排看结果差异，避免单一模型 bias 导致的盲点。
+ *
+ *   价格按 OpenRouter 报价（USD）换算 CNY（汇率 ~7.15）：
+ *     - Claude Sonnet 4.5: $3 / $15 per M USD → ¥21.5 / ¥107 per M CNY
+ *     - GPT-5: $1.25 / $10 per M USD → ¥9 / ¥71.5 per M CNY
+ *   ⚠️ 国际模型比国内贵 5-30 倍，仅创始人专用对比场景使用。
+ */
+export const OPENROUTER_CLAUDE_MODEL: ModelCatalogEntry = {
+  id: "anthropic/claude-sonnet-4.5",
+  label: "Claude Sonnet 4.5（Anthropic 最强）",
+  tier: "compare",
+  vendor: "Anthropic via OpenRouter",
+  description:
+    "Anthropic 当前旗舰，长上下文 + 多步推理 + 写作。商业决策、合同审查、战略分析顶级水平。",
+  // OpenRouter 报价（CNY，按 ¥7.15/USD 换算）
+  inputPriceCnyPerMillion: 21.5,
+  outputPriceCnyPerMillion: 107,
+  contextWindowK: 200,
+  approxCostPerTurnCny: 0.08, // 一次对话约 ¥0.05-0.15
+  recommendedFor: "创始人战略决策、关键文档分析、对比 GPT 用"
+};
+
+export const OPENROUTER_GPT5_MODEL: ModelCatalogEntry = {
+  id: "openai/gpt-5",
+  label: "GPT-5（OpenAI 旗舰）",
+  tier: "compare",
+  vendor: "OpenAI via OpenRouter",
+  description:
+    "OpenAI 当前旗舰，多模态 + 工具调用 + 创意写作俱佳。和 Claude 4.5 作为创始人决策双保险。",
+  inputPriceCnyPerMillion: 9,
+  outputPriceCnyPerMillion: 71.5,
+  contextWindowK: 400,
+  approxCostPerTurnCny: 0.05,
+  recommendedFor: "创始人战略决策、关键文档分析、对比 Claude 用"
+};
+
 export const ALL_MODELS: ReadonlyArray<ModelCatalogEntry> = [
   FOUNDER_CHAT_MODEL,
   STANDARD_CHAT_MODEL,
   FAST_PARSE_MODEL,
-  VISION_MODEL
+  VISION_MODEL,
+  OPENROUTER_CLAUDE_MODEL,
+  OPENROUTER_GPT5_MODEL
 ];
 
 /**

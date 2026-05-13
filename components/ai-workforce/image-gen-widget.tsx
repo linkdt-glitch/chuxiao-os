@@ -417,6 +417,9 @@ export function ImageGenWidget() {
   const initialPresetId = useMemo(() => getPresetsByCategory("main")[0]?.id ?? "", []);
   const [presetId, setPresetId] = useState<string>(initialPresetId);
   const [presetValues, setPresetValues] = useState<Record<string, string>>({});
+  // 用户自定义微调提示词 —— 追加到 preset 生成的 prompt 末尾，让用户能在固定场景之上加自己的要求
+  // 例：在「抠图换纯白底」基础上 +「保留产品的金属反光，背景换成淡米黄色」
+  const [extraPrompt, setExtraPrompt] = useState("");
 
   // ── Reference image upload state (split into two slots) ─────────
   const [productRefs, setProductRefs] = useState<ReferenceImage[]>([]);
@@ -459,6 +462,7 @@ export function ImageGenWidget() {
         setPresetId(first.id);
         setPresetValues({});
         setOverrideModelId(null);
+        setExtraPrompt(""); // 切场景时清空附加调整，避免上一个场景的指令带过来
       }
     }
     setError("");
@@ -468,6 +472,7 @@ export function ImageGenWidget() {
     setPresetId(id);
     setPresetValues({});
     setOverrideModelId(null); // reset override when preset changes
+    setExtraPrompt(""); // 同上：切 preset 时清空附加调整
     setError("");
   }
 
@@ -538,6 +543,11 @@ export function ImageGenWidget() {
         return;
       }
       prompt = built.prompt;
+      // 若用户写了「附加调整」，追加到 preset 末尾让模型同时遵从
+      const trimmedExtra = extraPrompt.trim();
+      if (trimmedExtra) {
+        prompt = `${prompt}\n\n[额外调整要求 —— 严格遵守，优先级高于上面通用模板]：${trimmedExtra}`;
+      }
       modelId = overrideModelId ?? activePreset.recommendedModelId;
 
       if (activePreset.mode === "edit") {
@@ -893,6 +903,43 @@ export function ImageGenWidget() {
                     </div>
                   );
                 })}
+              </div>
+            ) : null}
+
+            {/* 附加调整提示词（可选）—— 在 preset 模板上做个性化微调 */}
+            {activePreset ? (
+              <div className="space-y-1">
+                <label className="flex items-center justify-between text-xs font-medium text-slate-700">
+                  <span>
+                    附加调整 <span className="text-[10px] text-muted-foreground">（可选 · 自定义微调）</span>
+                  </span>
+                  {extraPrompt ? (
+                    <button
+                      type="button"
+                      onClick={() => setExtraPrompt("")}
+                      disabled={loading}
+                      className="text-[10px] text-orange-600 hover:underline disabled:opacity-50"
+                    >
+                      清空
+                    </button>
+                  ) : null}
+                </label>
+                <Textarea
+                  value={extraPrompt}
+                  onChange={(e) => setExtraPrompt(e.target.value)}
+                  placeholder={
+                    activePreset.mode === "edit"
+                      ? "例：保留产品上的金属反光 / 背景换成淡米黄色 / 加柔和顶光投影"
+                      : "例：偏冷色调 / 复古胶片风 / 加雾感氛围"
+                  }
+                  disabled={loading}
+                  rows={2}
+                  maxLength={500}
+                  className="resize-none"
+                />
+                <div className="text-[10px] text-muted-foreground">
+                  💡 这里写的内容会**叠加**到默认模板之上，AI 会优先遵守你的额外要求
+                </div>
               </div>
             ) : null}
 

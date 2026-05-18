@@ -19,7 +19,7 @@
 
 // 版本号：每次有新部署应该 bump。可以让 build 时自动注入，这里用日期串当默认。
 // 实际部署可以通过 next.config.ts 在 build 时把这一行替换成真实 commit hash。
-const CACHE_VERSION = "chuxiao-static-v1";
+const CACHE_VERSION = "chuxiao-static-v2";
 
 // 匹配「值得缓存」的静态资源路径
 function isStaticAsset(url) {

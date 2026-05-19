@@ -25,6 +25,25 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+/**
+ * 把用户输入的手机号格式归一为纯 11 位数字。
+ * 支持：
+ *   "138 0013 8000"      → "13800138000"
+ *   "138-0013-8000"      → "13800138000"
+ *   "+86 138 0013 8000"  → "13800138000"
+ *   "0086 138 0013 8000" → "13800138000"
+ *   "(86) 138 0013 8000" → "13800138000"
+ * 不符合规则的返回原始 trim 结果，让上层校验抛错给用户看。
+ */
+export function normalizePhone(raw: string): string {
+  if (!raw) return "";
+  // 1. 删空格 / 短横线 / 圆括号 / 加号
+  const digitsOnly = raw.replace(/[\s\-()+]/g, "");
+  // 2. 砍掉国家码前缀 86 / 0086
+  const noCC = digitsOnly.replace(/^0086/, "").replace(/^86(?=1[3-9]\d{9}$)/, "");
+  return noCC;
+}
+
 async function getOrCreateAuthUser({
   email,
   password,
@@ -97,12 +116,21 @@ export async function createHumanMemberAction(
     const display_name = value(formData, "display_name");
     const password = value(formData, "password");
     const role_key = value(formData, "role_key") ?? "member";
+    // ⭐ 手机号是可选的；前端 add-member-form 一直有这个输入框，但 action 之前
+    //    没读它 —— 导致 admin 填了手机号也存不进去 → 员工后面用手机号登不上。
+    //    normalizePhone 会扫掉空格 / 短横线 / +86 前缀，把 "+86 138 0013 8000"
+    //    自动归一为 "13800138000"。
+    const phone_raw = value(formData, "phone");
+    const phone = phone_raw ? normalizePhone(phone_raw) : null;
 
     if (!email || !email.includes("@")) throw new Error("请输入正确的成员邮箱。");
     if (!display_name) throw new Error("请输入成员姓名。");
     if (!password || password.length < 12) throw new Error("初始密码至少需要 12 位。");
     if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
       throw new Error("初始密码需同时包含字母和数字。");
+    }
+    if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+      throw new Error("手机号格式不正确 —— 请填 11 位的中国大陆手机号。");
     }
     if (!["admin", "manager", "member"].includes(role_key)) {
       throw new Error("第一版仅支持添加 Admin / Manager / Member 三类人类成员。");
@@ -134,7 +162,7 @@ export async function createHumanMemberAction(
 
     if (existingError) throw existingError;
 
-    const memberPayload = {
+    const memberPayload: Record<string, unknown> = {
       organization_id: organization.id,
       user_id,
       role_id: role.id,
@@ -144,6 +172,8 @@ export async function createHumanMemberAction(
       status: "active",
       metadata: { created_from: "organization_admin" }
     };
+    // 只有填了手机号才写进去，避免覆盖之前已经设过的值（更新分支）
+    if (phone) memberPayload.phone = phone;
 
     const { data: member, error } = existingMember?.id
       ? await admin
@@ -172,7 +202,7 @@ export async function createHumanMemberAction(
       module: "organization",
       related_record_type: "organization_member",
       related_record_id: member.id,
-      after_data: { email, display_name, role_key, status: "active" }
+      after_data: { email, phone, display_name, role_key, status: "active" }
     });
     await emitEvent({
       event_key: existingMember?.id ? "member.updated" : "member.created",
@@ -181,17 +211,20 @@ export async function createHumanMemberAction(
         related_record_type: "organization_member",
         related_record_id: member.id,
         email,
+        phone,
         display_name,
         role_key
       }
     });
 
     revalidatePath("/organization");
+    // 文案里告诉 admin"也能用手机号登录"，避免他们以为只支持邮箱
+    const loginHint = phone ? "邮箱 / 手机号 + 初始密码" : "邮箱和初始密码";
     return {
       ok: true,
       message: existingMember?.id
         ? `已更新 ${display_name} 的账号、角色和初始密码。`
-        : `已创建 ${display_name} 的成员账号，可以用邮箱和初始密码登录。`
+        : `已创建 ${display_name} 的成员账号，可以用${loginHint}登录。`
     };
   } catch (error) {
     return { ok: false, message: getErrorMessage(error) };
@@ -207,14 +240,18 @@ export async function updateMemberAction(
     const member_id = value(formData, "member_id");
     const display_name = value(formData, "display_name");
     const email = value(formData, "email")?.toLowerCase();
-    const phone = value(formData, "phone") ?? null;
+    const phone_raw = value(formData, "phone");
+    // 归一化手机号（允许空格 / +86 / 短横线）—— 跟 createHumanMemberAction 行为一致
+    const phone = phone_raw ? normalizePhone(phone_raw) : null;
     const role_key = value(formData, "role_key");
     const password = value(formData, "password");
 
     if (!member_id) return { ok: false, message: "缺少成员 ID。" };
     if (!display_name) return { ok: false, message: "姓名不能为空。" };
     if (email && !email.includes("@")) return { ok: false, message: "请输入正确的邮箱地址。" };
-    if (phone && !/^1[3-9]\d{9}$/.test(phone)) return { ok: false, message: "手机号格式不正确（11位数字）。" };
+    if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+      return { ok: false, message: "手机号格式不正确 —— 请填 11 位的中国大陆手机号。" };
+    }
     if (password && password.length < 12) return { ok: false, message: "密码至少需要 12 位。" };
     if (password && (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password))) {
       return { ok: false, message: "密码需同时包含字母和数字。" };

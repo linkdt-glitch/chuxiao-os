@@ -11,17 +11,44 @@ function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-/** 11位纯数字 → 手机号 */
-function isPhone(identifier: string) {
-  return /^1[3-9]\d{9}$/.test(identifier);
+/**
+ * 输入是否"长得像手机号" —— 没有 @ 且去掉空格 / 短横线 / +86 后是纯数字。
+ * 用来决定要不要走"手机号→查 DB 拿邮箱"分支。
+ * 不做严格 11 位校验，让 normalizePhone 之后再判定，
+ * 这样 "+86 138 0013 8000" 这种带格式输入也能进入手机号匹配。
+ */
+function looksLikePhone(identifier: string) {
+  if (identifier.includes("@")) return false;
+  const digits = identifier.replace(/\D/g, "");
+  return digits.length >= 7 && digits.length <= 15;
 }
 
-/** 在 Supabase 中通过手机号查找邮箱 */
+/**
+ * 归一化手机号 —— 跟 organization/actions.ts 里的 normalizePhone 保持一致：
+ *   "138 0013 8000"      → "13800138000"
+ *   "138-0013-8000"      → "13800138000"
+ *   "+86 138 0013 8000"  → "13800138000"
+ *   "0086 138 0013 8000" → "13800138000"
+ */
+function normalizePhone(raw: string): string {
+  if (!raw) return "";
+  const digitsOnly = raw.replace(/[\s\-()+]/g, "");
+  const noCC = digitsOnly.replace(/^0086/, "").replace(/^86(?=1[3-9]\d{9}$)/, "");
+  return noCC;
+}
+
+/** 严格校验：11 位中国大陆手机号 */
+function isValidChinaMobile(phone: string) {
+  return /^1[3-9]\d{9}$/.test(phone);
+}
+
+/** 在 Supabase 中通过手机号查找邮箱（限定在 active / invited 成员，停用账号查不出来） */
 async function emailFromPhone(phone: string, supabase: NonNullable<Awaited<ReturnType<typeof createSupabaseServerClient>>>) {
   const { data } = await supabase
     .from("organization_members")
     .select("email")
     .eq("phone", phone)
+    .in("status", ["active", "invited"])
     .maybeSingle();
   return data?.email ?? null;
 }
@@ -29,19 +56,31 @@ async function emailFromPhone(phone: string, supabase: NonNullable<Awaited<Retur
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const identifier = text(body.identifier || body.email).toLowerCase();
+    const identifierRaw = text(body.identifier || body.email);
+    const identifier = identifierRaw.toLowerCase();
     const password = text(body.password);
 
     if (!identifier || !password) {
       return NextResponse.json({ error: "请输入邮箱 / 手机号和密码。" }, { status: 400 });
     }
 
+    // 提前判断"是不是手机号" + 归一化。toLowerCase 对纯数字 / 空格 / + 号不影响；
+    // 但保留 identifierRaw 备用 —— 万一以后要支持邮箱大小写敏感场景。
+    const treatAsPhone = looksLikePhone(identifier);
+    const normalizedPhone = treatAsPhone ? normalizePhone(identifier) : "";
+    if (treatAsPhone && !isValidChinaMobile(normalizedPhone)) {
+      return NextResponse.json(
+        { error: "手机号格式不正确 —— 请填 11 位的中国大陆手机号（138 / 139 / 188 等）。" },
+        { status: 400 }
+      );
+    }
+
     // ── Demo mode ──────────────────────────────────────────────
     if (isDemoModeEnabled()) {
       // Resolve phone → email
       let resolvedEmail = identifier;
-      if (isPhone(identifier)) {
-        const member = demoMembers.find((m) => m.phone === identifier);
+      if (treatAsPhone) {
+        const member = demoMembers.find((m) => m.phone === normalizedPhone);
         if (!member?.email) {
           return NextResponse.json({ error: "手机号未找到对应账号。" }, { status: 401 });
         }
@@ -79,10 +118,13 @@ export async function POST(request: Request) {
 
     // Resolve phone → email via DB
     let email = identifier;
-    if (isPhone(identifier)) {
-      const found = await emailFromPhone(identifier, supabase);
+    if (treatAsPhone) {
+      const found = await emailFromPhone(normalizedPhone, supabase);
       if (!found) {
-        return NextResponse.json({ error: "手机号未找到对应账号。" }, { status: 401 });
+        return NextResponse.json(
+          { error: "手机号未找到对应账号 —— 请检查号码，或联系管理员先在「组织 → 成员」补上手机号。" },
+          { status: 401 }
+        );
       }
       email = found;
     }

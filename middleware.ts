@@ -68,11 +68,28 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  // ⚠️ supabase.auth.getUser() 在网络抖动 / Supabase 短暂不可用时会抛错。
+  // 之前没有 try/catch —— 一旦抛错整个 middleware 崩，Next.js 返回 500 给
+  // 所有受保护页面，全公司同时打不开网站。
+  //
+  // 容错策略：抓住异常，记录日志，**当作没登录**处理（最保守）。
+  //   - 受保护 API → 401（前端可识别后弹"请稍后重试"）
+  //   - 受保护页面 → /login（用户会看到登录页，避免出现白屏 500）
+  //   - 公开页面 /login 本身已在 isPublicPath 提前 return，不受这里影响
+  let user: { id: string } | null = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch (error) {
+    console.error("[middleware] supabase.auth.getUser() threw — fail closed to /login:", {
+      error_name: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error),
+      pathname
+    });
+    user = null;
+  }
 
-  // 未登录访问受保护路由 → 重定向到登录页或返回 401
+  // 未登录（或 supabase 异常被当作未登录）访问受保护路由 → 重定向到登录页或返回 401
   if (!user) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "请先登录后再操作。" }, { status: 401 });

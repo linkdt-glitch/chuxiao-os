@@ -4,8 +4,18 @@ import { logAction } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 import { requirePermission } from "@/lib/permissions";
 
+// ⚠️ 必须包含 iOS / Android 相机原生格式，否则用户拍照上传直接被拒。
+// iPhone Safari 默认 image/heic 或 image/heif（iOS 11+），不在白名单 → 上传必失败。
+// Android 新款相机 image/avif。Windows 截图 image/bmp。扫描件常见 image/tiff。
+// 部分浏览器 / Server Action 会传 "" 空 MIME（前端未识别），也要兜底放行。
 const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+  "", // 空字符串兜底：浏览器没识别出 MIME 时，凭文件扩展名（前端 accept 已过滤）放行
+  "application/octet-stream", // 同上兜底
+  "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+  "image/heic", "image/heif",            // ⭐ iOS 相机默认格式
+  "image/avif",                          // Android 新机 / Chrome
+  "image/bmp", "image/x-ms-bmp",         // Windows 截图
+  "image/tiff", "image/x-tiff",          // 扫描件
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -15,10 +25,13 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "text/plain", "text/csv", "text/markdown",
   "application/zip", "application/x-zip-compressed",
-  "video/mp4", "video/webm",
-  "audio/mpeg", "audio/wav", "audio/ogg"
+  "video/mp4", "video/webm", "video/quicktime", // iOS 录像默认 .mov / video/quicktime
+  "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-m4a" // iOS 录音 .m4a
 ]);
 
+// 普通图片票据通常 < 20MB；视频可能大。100MB 兜底防恶意。
+// 注意：next.config.ts 的 serverActions.bodySizeLimit 是 30MB，单次提交多个大文件
+// 总和不能超过 30MB —— 上层 UI 应限制并发上传数量。
 const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 function normalizeStoragePath(organizationId: string, storagePath: string) {

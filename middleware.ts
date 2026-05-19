@@ -53,6 +53,7 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers }
   });
 
+  const cookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -60,7 +61,8 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
+          const finalOptions = cookieDomain ? { ...options, domain: cookieDomain } : options;
+          response.cookies.set(name, value, finalOptions);
         });
       }
     }

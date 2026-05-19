@@ -2,7 +2,10 @@ type HeaderReader = {
   get(name: string): string | null;
 };
 
-const productionOrigin = "https://chuxiao-os.onrender.com";
+// 生产域名 fallback（实际优先用 APP_URL / NEXT_PUBLIC_APP_URL / 请求 Host）。
+// 主要用于 OTP/magic-link 邮件 emailRedirectTo —— 必须和用户真实访问的域名一致，
+// 否则 Supabase 邮件里的链接点开后域名对不上，cookie 拿不到，登录瞬间失败。
+const productionOrigin = "https://m0f.com";
 
 function toSafeOrigin(value: string | null | undefined) {
   if (!value) return null;
